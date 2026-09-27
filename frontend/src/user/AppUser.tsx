@@ -314,8 +314,8 @@ export function generateSyntheticTwinDetails(realName: string, id: string | numb
   const treatmentPattern = treatmentPatterns[hash % treatmentPatterns.length]
 
   const randomDigits = ((hash * 137) % 900) + 100
-  const emailName = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '')
-  const email = `${emailName}${randomDigits}@gmail.com`
+  const decoyEmailName = decoyName.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const email = `${decoyEmailName}${randomDigits}@gmail.com`
 
   const aadhaarPart1 = ((hash * 43) % 9000) + 1000
   const aadhaarPart2 = ((hash * 89) % 9000) + 1000
