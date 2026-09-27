@@ -1375,10 +1375,11 @@ export default function AppUser() {
                 onSimulateIntercept={() => {
                   playAlertBeep()
                   setSimulatedInterceptions((prev) => prev + 1)
-                  const samples = [
-                    { target: 'P-01 (sonu)', decoy: 'SYN-01 (Karthik Reddy)' },
-                    { target: 'P-03 (Vijay)', decoy: 'SYN-03 (Rajesh Kapoor)' },
-                    { target: 'P-04 (Ajay Y.V)', decoy: 'SYN-04 (Rahul Kulkarni)' },
+                  const samples = patients.length > 0 ? patients.map(p => {
+                    const syn = generateSyntheticTwinName(p.name, p.patient_id || p.id)
+                    return { target: `P-${p.patient_id || p.id} (${p.name})`, decoy: `${syn.decoyId} (${syn.decoyName})` }
+                  }) : [
+                    { target: 'P-01 (Registered Patient)', decoy: 'SYN-01 (Synthetic Decoy Twin)' },
                   ]
                   const sample = samples[Math.floor(Math.random() * samples.length)]
                   setLiveDeflectionToast({
@@ -2449,7 +2450,7 @@ export default function AppUser() {
                         query: 'GET /api/patients/1 (Single Patient Theft Attempt)',
                         score: 88,
                         decision: 'DIVERT ➡️ Served Decoy Twin: Karthik Reddy (SYN-01)',
-                        realStatus: 'Protected (sonu untouched)',
+                        realStatus: patients.length > 0 ? `Protected (${patients[0].name} untouched)` : 'Protected (Vault locked)',
                         isThreat: true,
                         time: 'Just now',
                       },
@@ -2702,7 +2703,7 @@ export default function AppUser() {
                               <strong style={{ color: '#34d399', fontSize: '0.9rem' }}>PROTECTED REAL PATIENT (SECURE VAULT)</strong>
                             </div>
                             <div style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1' }}>
-                              <div><strong>Real Patient Name:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{forensicScanResult.dossier?.recovered_real_patient?.name || 'sonu'}</span></div>
+                              <div><strong>Real Patient Name:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{forensicScanResult.dossier?.recovered_real_patient?.name || (patients[0]?.name || 'Clinical Vault Record')}</span></div>
                               <div><strong>Real ID:</strong> <code style={{ color: '#38bdf8' }}>{forensicScanResult.dossier?.recovered_real_patient?.id || forensicScanResult.dossier?.recovered_real_patient?.patient_id || 'P-01'}</code></div>
                               <div><strong>Vault Status:</strong> <span style={{ color: '#34d399', fontWeight: 700 }}>100% Untouched & Encrypted</span></div>
                               <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(16, 185, 129, 0.2)', borderRadius: 6, color: '#a7f3d0', fontSize: '0.75rem', fontWeight: 600 }}>
@@ -2810,7 +2811,7 @@ export default function AppUser() {
                   <MetricCard 
                     title="Real Patient PII Leaked" 
                     value="0.0%" 
-                    subtitle={`100% Safe (${patients.length} Active: ${patients.map(p => p.name).join(', ') || 'sonu, Suddha, Vijay'})`} 
+                    subtitle={`100% Safe (${patients.length} Active${patients.length > 0 ? ': ' + patients.map(p => p.name).join(', ') : ''})`} 
                     icon="🔒" 
                     accentColor="#10b981" 
                   />
@@ -3281,24 +3282,21 @@ export default function AppUser() {
         </tr>
       </thead>
       <tbody>
+        ${patients.length === 0 ? `
         <tr>
-          <td><strong>P-01: sonu (23 yrs)</strong></td>
+          <td colspan="4" style="text-align: center; color: #94a3b8; padding: 12px;">No active hospital patients registered. Zero PHI at risk.</td>
+        </tr>
+        ` : patients.map(p => {
+          const syn = generateSyntheticTwinName(p.name, p.patient_id || p.id)
+          return `
+        <tr>
+          <td><strong>P-${p.patient_id || p.id}: ${p.name} (${p.age || 30} yrs)</strong></td>
           <td><span style="color: #34d399; font-weight: 700;">100% Isolated in Vault</span></td>
-          <td><code>SYN-01: Karthik Reddy</code> (Poisoned Clinical Twin)</td>
+          <td><code>${syn.decoyId}: ${syn.decoyName}</code> (Poisoned Clinical Twin)</td>
           <td><span style="color: #38bdf8; font-weight: 600;">WM-AI-SECURITY-ACTIVE</span></td>
         </tr>
-        <tr>
-          <td><strong>P-02: Suddha Sen (23 yrs)</strong></td>
-          <td><span style="color: #34d399; font-weight: 700;">100% Isolated in Vault</span></td>
-          <td><code>SYN-02: Aditya Patel</code> (Poisoned Clinical Twin)</td>
-          <td><span style="color: #38bdf8; font-weight: 600;">WM-AI-SECURITY-ACTIVE</span></td>
-        </tr>
-        <tr>
-          <td><strong>P-03: Vijay (22 yrs)</strong></td>
-          <td><span style="color: #34d399; font-weight: 700;">100% Isolated in Vault</span></td>
-          <td><code>SYN-03: Rajesh Kapoor</code> (Poisoned Clinical Twin)</td>
-          <td><span style="color: #38bdf8; font-weight: 600;">WM-AI-SECURITY-ACTIVE</span></td>
-        </tr>
+          `
+        }).join('')}
       </tbody>
     </table>
 
@@ -3348,11 +3346,16 @@ export default function AppUser() {
                     real_pii_compromise_percentage: 0.0,
                     deception_success_rate: "100.0%"
                   },
-                  patient_shielding_manifest: [
-                    { real_id: "P-01", patient_name: "sonu", isolation_status: "UNTOUCHED", served_decoy: "SYN-01 (Karthik Reddy)", tracking_watermark: "WM-AI-SECURITY-ACTIVE" },
-                    { real_id: "P-02", patient_name: "Suddha Sen", isolation_status: "UNTOUCHED", served_decoy: "SYN-02 (Aditya Patel)", tracking_watermark: "WM-AI-SECURITY-ACTIVE" },
-                    { real_id: "P-03", patient_name: "Vijay", isolation_status: "UNTOUCHED", served_decoy: "SYN-03 (Rajesh Kapoor)", tracking_watermark: "WM-AI-SECURITY-ACTIVE" }
-                  ],
+                  patient_shielding_manifest: patients.map(p => {
+                    const syn = generateSyntheticTwinName(p.name, p.patient_id || p.id)
+                    return {
+                      real_id: `P-${p.patient_id || p.id}`,
+                      patient_name: p.name,
+                      isolation_status: "UNTOUCHED",
+                      served_decoy: `${syn.decoyId} (${syn.decoyName})`,
+                      tracking_watermark: "WM-AI-SECURITY-ACTIVE"
+                    }
+                  }),
                   technical_safeguard_findings: {
                     hipaa_164_312_a_1_access_control: "PASSED - 100% Adversary Routing to Port 8001 Deception Sandbox",
                     hipaa_164_312_c_1_integrity_controls: "PASSED - Real Vault Enclave Cryptographically Isolated",
@@ -3549,31 +3552,36 @@ export default function AppUser() {
                       👥 Protected Inpatient Shielding & Decoy Substitution Ledger
                     </h4>
                     <div style={{ display: 'grid', gap: 10 }}>
-                      {[
-                        { realId: 'P-01', realName: 'sonu', age: '23 yrs', decoyId: 'SYN-01', decoyName: 'Karthik Reddy', wm: 'WM-AI-SECURITY-ACTIVE' },
-                        { realId: 'P-02', realName: 'Suddha Sen', age: '23 yrs', decoyId: 'SYN-02', decoyName: 'Aditya Patel', wm: 'WM-AI-SECURITY-ACTIVE' },
-                        { realId: 'P-03', realName: 'Vijay', age: '22 yrs', decoyId: 'SYN-03', decoyName: 'Rajesh Kapoor', wm: 'WM-AI-SECURITY-ACTIVE' },
-                      ].map((item) => (
-                        <div key={item.realId} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc' }}>
-                              {item.realId}: {item.realName} ({item.age})
-                            </span>
-                            <span style={{ fontSize: '0.74rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: 999, fontWeight: 700 }}>
-                              🛡️ 100% Protected Vault
-                            </span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '0.8rem' }}>
-                            <span style={{ color: '#94a3b8' }}>
-                              Decoy Served: <code style={{ color: '#c084fc', fontWeight: 700 }}>{item.decoyId} ({item.decoyName})</code>
-                            </span>
-                            <span style={{ color: '#64748b' }}>•</span>
-                            <span style={{ color: '#38bdf8', fontFamily: 'monospace', fontSize: '0.75rem' }}>
-                              {item.wm}
-                            </span>
-                          </div>
+                      {patients.length === 0 ? (
+                        <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', background: 'rgba(255,255,255,0.02)', borderRadius: 12 }}>
+                          No active patient records registered in vault. Add a patient to populate the Shielding Ledger.
                         </div>
-                      ))}
+                      ) : (
+                        patients.map((p) => {
+                          const syn = generateSyntheticTwinName(p.name, p.patient_id || p.id)
+                          return (
+                            <div key={p.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc' }}>
+                                  P-{p.patient_id || p.id}: {p.name} ({p.age || 30} yrs)
+                                </span>
+                                <span style={{ fontSize: '0.74rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: 999, fontWeight: 700 }}>
+                                  🛡️ 100% Protected Vault
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '0.8rem' }}>
+                                <span style={{ color: '#94a3b8' }}>
+                                  Decoy Served: <code style={{ color: '#c084fc', fontWeight: 700 }}>{syn.decoyId} ({syn.decoyName})</code>
+                                </span>
+                                <span style={{ color: '#64748b' }}>•</span>
+                                <span style={{ color: '#38bdf8', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                                  WM-AI-SECURITY-ACTIVE
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })
+                      )}
                     </div>
                   </div>
 
