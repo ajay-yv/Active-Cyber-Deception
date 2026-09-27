@@ -1,0 +1,76 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@real-db:5432/real_healthcare
+      SYNTHETIC_DATABASE_URL: postgresql+psycopg://postgres:postgres@synthetic-db:5432/synthetic_healthcare
+      SECURITY_DATABASE_URL: postgresql+psycopg://postgres:postgres@security-db:5432/security_events
+      REDIS_URL: redis://redis:6379/0
+      GATEWAY_URL: http://gateway:8001
+      AI_ENGINE_URL: http://ai-engine:8002
+    depends_on:
+      - real-db
+      - synthetic-db
+      - security-db
+      - redis
+    ports:
+      - "8000:8000"
+
+  gateway:
+    build:
+      context: ./gateway
+    environment:
+      GATEWAY_MODE: development
+    ports:
+      - "8001:8001"
+
+  ai-engine:
+    build:
+      context: ./ai-engine
+    environment:
+      MODEL_MODE: local
+    ports:
+      - "8002:8002"
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+      - gateway
+
+  real-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: real_healthcare
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+
+  synthetic-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: synthetic_healthcare
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+
+  security-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: security_events
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"

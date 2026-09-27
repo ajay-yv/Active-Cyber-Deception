@@ -1,0 +1,33 @@
+INFO:     Started server process [2072]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:17492 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [16260]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:64385 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42837 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54269 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54278 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [2568]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:18412 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [16164]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:14765 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [19156]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:19120 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [21884]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:29220 - "GET /health HTTP/1.1" 200 OK

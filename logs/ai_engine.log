@@ -1,0 +1,210 @@
+INFO:     Started server process [21428]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:17493 - "GET /health HTTP/1.1" 200 OK
+Exception in callback _ProactorBasePipeTransport._call_connection_lost()
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost()>
+Traceback (most recent call last):
+  File "C:\Program Files\Python313\Lib\asyncio\events.py", line 89, in _run
+    self._context.run(self._callback, *self._args)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python313\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+    self._sock.shutdown(socket.SHUT_RDWR)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
+INFO:     Started server process [24376]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:64386 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27325 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21722 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42838 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54239 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54240 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54241 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54242 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54245 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54279 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [12268]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:18413 - "GET /health HTTP/1.1" 200 OK
+Exception in callback _ProactorBasePipeTransport._call_connection_lost()
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost()>
+Traceback (most recent call last):
+  File "C:\Program Files\Python313\Lib\asyncio\events.py", line 89, in _run
+    self._context.run(self._callback, *self._args)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python313\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+    self._sock.shutdown(socket.SHUT_RDWR)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
+INFO:     Started server process [12732]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:14766 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [25452]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:19121 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [14340]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:29221 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41183 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41186 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41188 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34189 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61314 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61317 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61319 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3188 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2991 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3006 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3007 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3009 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3010 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3014 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3015 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3016 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3018 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3019 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3023 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3024 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3025 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3027 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3028 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3032 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3033 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3034 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3036 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3037 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3041 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3042 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3043 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3045 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3046 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3056 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3059 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3061 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3064 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3066 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3069 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3071 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3074 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3076 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3079 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3081 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3084 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3086 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3089 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3091 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3094 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3095 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3099 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3100 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3106 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3112 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3117 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3119 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3120 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3122 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3123 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3124 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3126 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3129 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3131 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3134 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3136 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3139 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3141 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3162 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:3167 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48501 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48507 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48513 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48523 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48527 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48528 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56816 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58644 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58647 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58649 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58652 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58654 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58657 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58658 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58662 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58663 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58673 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58677 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58678 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58682 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58683 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58687 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58688 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58692 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58693 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58696 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58698 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58701 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58703 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58706 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58708 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58711 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58713 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58716 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58718 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58723 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58729 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58735 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58738 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58740 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58743 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58744 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58748 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58749 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58769 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58775 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58781 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58786 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58792 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58802 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58805 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58807 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:23113 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42799 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55607 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55610 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55612 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12352 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12355 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42729 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:26791 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:26793 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1522 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1524 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:1539 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12739 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52185 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:31926 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:24763 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33015 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:20418 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52806 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:26464 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:26467 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16830 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17392 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10761 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48829 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61324 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:24958 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40462 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55221 - "GET /twins/profile HTTP/1.1" 200 OK

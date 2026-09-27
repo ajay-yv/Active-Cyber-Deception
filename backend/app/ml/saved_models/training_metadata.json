@@ -1,0 +1,10 @@
+{
+  "train_samples": 200,
+  "test_samples": 50,
+  "label_map": {
+    "attack": 0,
+    "data_exfiltration": 1,
+    "normal": 2,
+    "recon": 3
+  }
+}

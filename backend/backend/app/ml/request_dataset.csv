@@ -1,0 +1,251 @@
+role,device,browser,operating_system,country,method,path,body,params,label
+doctor,managed,firefox,ios,high-risk,DELETE,/api/security/alerts,<script>alert('xss')</script>,,recon
+researcher,trusted,safari,unknown,ru,PUT,/api/patients?patient_id=234,SELECT * FROM patients WHERE id = 1;,,recon
+anonymous,unknown,python-requests,linux,ru,GET,/api/export,"{""update"": ""record""}",,recon
+doctor,unknown,chrome,android,in,PUT,/api/security/alerts,<script>alert('xss')</script>,patient_id=42,recon
+anonymous,lab-equipment,unknown,android,cn,POST,/api/patients/123,"{""action"": ""login""}",patient_id=42,normal
+hacker,lab-equipment,python-requests,macos,ru,DELETE,/api/auth/login,"{""query"": ""status""}",page=1,attack
+hacker,lab-equipment,curl,windows,cn,GET,/api/security/alerts,,limit=10,recon
+researcher,managed,python-requests,ios,in,PUT,/api/patients,SELECT * FROM patients WHERE id = 1;,limit=10,recon
+researcher,personal,curl,windows,ru,POST,/api/patients?limit=200,"{""query"": ""status""}",patient_id=42,attack
+doctor,managed,firefox,bot,cn,PUT,/api/patients/123,,patient_id=42&count=1000,attack
+hacker,lab-equipment,unknown,macos,high-risk,DELETE,/api/auth/login,"{""query"": ""status""}",patient_id=42,data_exfiltration
+doctor,personal,unknown,ios,cn,GET,/api/patients,SELECT * FROM patients WHERE id = 1;,limit=10,recon
+anonymous,personal,curl,android,cn,POST,/api/patients?patient_id=234,<script>alert('xss')</script>,page=1,data_exfiltration
+nurse,unknown,python-requests,ios,unknown,POST,/api/patients?limit=200,"{""action"": ""login""}",patient_id=42&count=1000,recon
+nurse,lab-equipment,safari,windows,gb,GET,/api/export,"{""query"": ""status""}",,data_exfiltration
+nurse,lab-equipment,curl,macos,in,DELETE,/api/patients?limit=200,,,data_exfiltration
+doctor,managed,curl,windows,cn,GET,/api/patients?patient_id=234,,patient_id=42&count=1000,attack
+doctor,unknown,firefox,android,gb,PUT,/api/patients,SELECT * FROM patients WHERE id = 1;,patient_id=42&count=1000,recon
+doctor,unknown,chrome,android,in,GET,/api/dashboard,"{""update"": ""record""}",patient_id=42,normal
+anonymous,trusted,curl,linux,unknown,GET,/api/patients?patient_id=234,,page=1,normal
+hacker,unknown,unknown,bot,gb,POST,/api/patients?patient_id=234,"{""update"": ""record""}",patient_id=42&count=1000,attack
+hacker,personal,curl,macos,cn,POST,/api/auth/login,<script>alert('xss')</script>,patient_id=42,attack
+administrator,personal,curl,macos,unknown,DELETE,/api/patients?limit=200,SELECT * FROM patients WHERE id = 1;,page=1,data_exfiltration
+administrator,trusted,chrome,ios,cn,DELETE,/api/patients?patient_id=234,"{""update"": ""record""}",,normal
+administrator,lab-equipment,curl,windows,in,GET,/api/patients?patient_id=234,<script>alert('xss')</script>,page=1,recon
+nurse,managed,curl,android,high-risk,DELETE,/api/security/alerts,"{""query"": ""status""}",page=1,normal
+doctor,lab-equipment,chrome,linux,in,POST,/api/patients/123,"{""update"": ""record""}",patient_id=42,normal
+nurse,managed,python-requests,windows,us,GET,/api/patients?patient_id=234,SELECT * FROM patients WHERE id = 1;,page=1,data_exfiltration
+researcher,personal,curl,ios,high-risk,PUT,/api/patients?limit=200,"{""query"": ""status""}",page=1,data_exfiltration
+doctor,trusted,chrome,unknown,in,PUT,/api/patients/123,"{""update"": ""record""}",page=1,normal
+doctor,unknown,curl,ios,gb,DELETE,/api/patients?patient_id=234,"{""query"": ""status""}",patient_id=42,normal
+nurse,managed,firefox,ios,ru,POST,/api/security/alerts,<script>alert('xss')</script>,patient_id=42,attack
+researcher,trusted,safari,windows,in,GET,/api/security/alerts,SELECT * FROM patients WHERE id = 1;,patient_id=42&count=1000,data_exfiltration
+researcher,personal,chrome,macos,us,POST,/api/auth/login,SELECT * FROM patients WHERE id = 1;,patient_id=42,recon
+hacker,unknown,curl,windows,gb,DELETE,/api/patients/123,"{""query"": ""status""}",page=1,data_exfiltration
+nurse,personal,unknown,macos,cn,GET,/api/auth/login,"{""update"": ""record""}",limit=10,normal
+administrator,trusted,curl,ios,gb,POST,/api/export,"{""action"": ""login""}",page=1,attack
+nurse,unknown,firefox,android,us,DELETE,/api/dashboard,,,normal
+doctor,managed,safari,bot,gb,GET,/api/export,<script>alert('xss')</script>,patient_id=42,data_exfiltration
+researcher,trusted,curl,linux,high-risk,PUT,/api/patients?patient_id=234,<script>alert('xss')</script>,patient_id=42,recon
+doctor,trusted,curl,android,high-risk,DELETE,/api/export,<script>alert('xss')</script>,patient_id=42&count=1000,recon
+hacker,personal,curl,windows,cn,GET,/api/patients?limit=200,"{""update"": ""record""}",,recon
+anonymous,trusted,chrome,android,ru,DELETE,/api/patients,,page=1,normal
+doctor,trusted,unknown,bot,ru,POST,/api/dashboard,"{""action"": ""login""}",patient_id=42,normal
+doctor,trusted,curl,macos,unknown,DELETE,/api/auth/login,<script>alert('xss')</script>,page=1,recon
+researcher,lab-equipment,safari,ios,gb,PUT,/api/security/alerts,,page=1,normal
+doctor,lab-equipment,firefox,bot,ru,POST,/api/dashboard,"{""action"": ""login""}",,normal
+hacker,personal,curl,linux,us,POST,/api/patients?limit=200,SELECT * FROM patients WHERE id = 1;,page=1,attack
+anonymous,managed,safari,macos,us,GET,/api/patients,"{""query"": ""status""}",limit=10,normal
+doctor,unknown,safari,linux,ru,PUT,/api/dashboard,SELECT * FROM patients WHERE id = 1;,page=1,attack
+hacker,unknown,safari,bot,us,POST,/api/auth/login,SELECT * FROM patients WHERE id = 1;,page=1,attack
+doctor,managed,chrome,windows,cn,PUT,/api/export,<script>alert('xss')</script>,limit=10,attack
+nurse,trusted,chrome,linux,ru,POST,/api/patients?limit=200,SELECT * FROM patients WHERE id = 1;,patient_id=42&count=1000,attack
+anonymous,personal,chrome,unknown,gb,POST,/api/security/alerts,"{""action"": ""login""}",page=1,normal
+hacker,lab-equipment,unknown,macos,in,PUT,/api/security/alerts,,patient_id=42&count=1000,data_exfiltration
+doctor,lab-equipment,unknown,windows,cn,DELETE,/api/security/alerts,,,normal
+doctor,trusted,safari,windows,unknown,PUT,/api/patients/123,"{""update"": ""record""}",patient_id=42&count=1000,attack
+researcher,lab-equipment,curl,bot,gb,PUT,/api/security/alerts,SELECT * FROM patients WHERE id = 1;,limit=10,data_exfiltration
+nurse,personal,unknown,bot,cn,POST,/api/patients/123,"{""query"": ""status""}",patient_id=42&count=1000,attack
+anonymous,unknown,firefox,linux,gb,POST,/api/security/alerts,"{""query"": ""status""}",patient_id=42,normal
+anonymous,trusted,python-requests,linux,us,DELETE,/api/export,"{""action"": ""login""}",patient_id=42&count=1000,recon
+nurse,lab-equipment,chrome,bot,gb,DELETE,/api/patients,<script>alert('xss')</script>,page=1,recon
+nurse,lab-equipment,firefox,unknown,gb,PUT,/api/patients/123,"{""update"": ""record""}",patient_id=42&count=1000,data_exfiltration
+anonymous,unknown,curl,bot,in,DELETE,/api/auth/login,"{""action"": ""login""}",limit=10,normal
+nurse,personal,safari,macos,gb,POST,/api/dashboard,<script>alert('xss')</script>,limit=10,data_exfiltration
+hacker,lab-equipment,firefox,windows,ru,POST,/api/auth/login,"{""action"": ""login""}",limit=10,attack
+researcher,personal,chrome,unknown,ru,POST,/api/patients?limit=200,SELECT * FROM patients WHERE id = 1;,,data_exfiltration
+doctor,personal,chrome,unknown,unknown,PUT,/api/security/alerts,,patient_id=42,normal
+nurse,personal,chrome,windows,unknown,DELETE,/api/dashboard,,patient_id=42,normal
+doctor,personal,python-requests,android,ru,DELETE,/api/export,"{""query"": ""status""}",patient_id=42,data_exfiltration
+anonymous,trusted,python-requests,android,ru,POST,/api/patients/123,"{""query"": ""status""}",page=1,normal
+researcher,personal,python-requests,linux,in,POST,/api/patients?patient_id=234,"{""update"": ""record""}",patient_id=42&count=1000,attack
+researcher,personal,python-requests,macos,cn,DELETE,/api/dashboard,,page=1,normal
+nurse,managed,safari,android,gb,GET,/api/export,"{""query"": ""status""}",page=1,recon
+nurse,unknown,chrome,unknown,high-risk,DELETE,/api/patients/123,SELECT * FROM patients WHERE id = 1;,page=1,data_exfiltration
+doctor,trusted,unknown,bot,cn,GET,/api/security/alerts,"{""update"": ""record""}",page=1,normal
+anonymous,lab-equipment,unknown,ios,unknown,GET,/api/security/alerts,SELECT * FROM patients WHERE id = 1;,,attack
+doctor,personal,safari,ios,unknown,DELETE,/api/patients?limit=200,,page=1,attack
+doctor,lab-equipment,chrome,ios,unknown,GET,/api/patients?limit=200,"{""query"": ""status""}",,recon
+researcher,unknown,chrome,android,us,DELETE,/api/patients/123,<script>alert('xss')</script>,page=1,data_exfiltration
+doctor,managed,firefox,bot,high-risk,GET,/api/export,SELECT * FROM patients WHERE id = 1;,limit=10,data_exfiltration
+nurse,unknown,curl,bot,cn,DELETE,/api/patients/123,,,normal
+doctor,trusted,firefox,bot,high-risk,POST,/api/patients?patient_id=234,SELECT * FROM patients WHERE id = 1;,patient_id=42&count=1000,data_exfiltration
+researcher,lab-equipment,chrome,macos,us,GET,/api/patients?patient_id=234,"{""action"": ""login""}",,normal
+nurse,managed,unknown,bot,us,DELETE,/api/auth/login,SELECT * FROM patients WHERE id = 1;,page=1,attack
+administrator,managed,python-requests,android,gb,DELETE,/api/export,"{""update"": ""record""}",patient_id=42,attack
+nurse,personal,firefox,android,cn,PUT,/api/dashboard,SELECT * FROM patients WHERE id = 1;,patient_id=42&count=1000,recon
+anonymous,lab-equipment,unknown,unknown,cn,PUT,/api/dashboard,,limit=10,normal
+administrator,unknown,firefox,android,in,GET,/api/patients?limit=200,,,recon
+doctor,trusted,chrome,unknown,ru,DELETE,/api/patients/123,SELECT * FROM patients WHERE id = 1;,page=1,data_exfiltration
+hacker,unknown,firefox,ios,cn,GET,/api/export,,patient_id=42&count=1000,attack
+researcher,lab-equipment,curl,unknown,in,GET,/api/patients?patient_id=234,"{""query"": ""status""}",limit=10,normal
+hacker,managed,python-requests,ios,high-risk,GET,/api/patients?patient_id=234,"{""action"": ""login""}",limit=10,attack
+anonymous,trusted,safari,android,unknown,DELETE,/api/patients,,patient_id=42,normal
+doctor,managed,chrome,ios,gb,PUT,/api/patients,"{""update"": ""record""}",limit=10,normal
+anonymous,unknown,unknown,windows,us,GET,/api/export,SELECT * FROM patients WHERE id = 1;,patient_id=42,attack
+doctor,trusted,curl,android,gb,POST,/api/auth/login,"{""update"": ""record""}",patient_id=42,normal
+doctor,unknown,curl,unknown,cn,DELETE,/api/patients?patient_id=234,"{""query"": ""status""}",patient_id=42,normal
+nurse,lab-equipment,curl,macos,in,POST,/api/auth/login,"{""query"": ""status""}",limit=10,normal
+doctor,unknown,python-requests,ios,ru,DELETE,/api/patients?limit=200,"{""update"": ""record""}",page=1,recon
+doctor,personal,curl,macos,high-risk,GET,/api/patients?patient_id=234,"{""query"": ""status""}",patient_id=42,normal
+anonymous,managed,unknown,android,cn,GET,/api/dashboard,SELECT * FROM patients WHERE id = 1;,,data_exfiltration
+researcher,personal,curl,unknown,unknown,DELETE,/api/export,,patient_id=42&count=1000,recon
+doctor,unknown,python-requests,ios,us,PUT,/api/patients?limit=200,"{""update"": ""record""}",page=1,recon
+researcher,managed,python-requests,unknown,us,POST,/api/export,"{""update"": ""record""}",limit=10,data_exfiltration
+researcher,managed,chrome,macos,ru,PUT,/api/patients?limit=200,<script>alert('xss')</script>,patient_id=42&count=1000,attack
+anonymous,managed,unknown,windows,us,DELETE,/api/export,"{""action"": ""login""}",page=1,attack
+nurse,personal,unknown,windows,high-risk,DELETE,/api/security/alerts,<script>alert('xss')</script>,patient_id=42&count=1000,data_exfiltration
+administrator,lab-equipment,firefox,bot,gb,GET,/api/patients?patient_id=234,SELECT * FROM patients WHERE id = 1;,,attack
+anonymous,managed,firefox,macos,ru,DELETE,/api/auth/login,,page=1,normal
+doctor,trusted,chrome,android,us,POST,/api/patients?limit=200,"{""action"": ""login""}",patient_id=42&count=1000,attack
+researcher,trusted,python-requests,linux,unknown,GET,/api/patients?limit=200,SELECT * FROM patients WHERE id = 1;,patient_id=42,recon
+researcher,managed,safari,windows,us,GET,/api/export,"{""query"": ""status""}",page=1,attack
+doctor,unknown,firefox,linux,unknown,PUT,/api/patients,"{""action"": ""login""}",patient_id=42,normal
+doctor,unknown,curl,macos,gb,PUT,/api/patients?limit=200,"{""update"": ""record""}",limit=10,recon
+anonymous,managed,curl,linux,gb,DELETE,/api/patients?patient_id=234,,patient_id=42,normal
+nurse,trusted,curl,unknown,ru,DELETE,/api/security/alerts,"{""query"": ""status""}",patient_id=42,normal
+nurse,personal,safari,bot,in,DELETE,/api/auth/login,,,normal
+nurse,unknown,curl,windows,ru,PUT,/api/security/alerts,SELECT * FROM patients WHERE id = 1;,patient_id=42&count=1000,data_exfiltration
+researcher,trusted,python-requests,android,gb,POST,/api/export,,limit=10,data_exfiltration
+doctor,personal,unknown,android,high-risk,POST,/api/patients?limit=200,"{""action"": ""login""}",patient_id=42,attack
+doctor,personal,safari,macos,ru,POST,/api/patients/123,<script>alert('xss')</script>,patient_id=42&count=1000,attack
+researcher,trusted,chrome,android,cn,GET,/api/dashboard,"{""update"": ""record""}",,normal
+anonymous,lab-equipment,chrome,bot,high-risk,DELETE,/api/dashboard,"{""update"": ""record""}",limit=10,normal
+doctor,trusted,firefox,android,cn,GET,/api/auth/login,"{""action"": ""login""}",limit=10,normal
+anonymous,lab-equipment,chrome,ios,gb,PUT,/api/dashboard,,limit=10,normal
+doctor,unknown,safari,ios,unknown,DELETE,/api/auth/login,"{""action"": ""login""}",patient_id=42&count=1000,attack
+hacker,trusted,unknown,windows,ru,GET,/api/export,"{""query"": ""status""}",,data_exfiltration
+researcher,lab-equipment,firefox,android,unknown,GET,/api/export,"{""action"": ""login""}",,recon
+doctor,unknown,safari,ios,in,PUT,/api/patients?limit=200,"{""query"": ""status""}",page=1,attack
+anonymous,trusted,unknown,macos,unknown,POST,/api/auth/login,,,normal
+hacker,lab-equipment,safari,windows,unknown,PUT,/api/patients?limit=200,SELECT * FROM patients WHERE id = 1;,,recon
+doctor,personal,curl,bot,gb,GET,/api/patients?patient_id=234,,,normal
+doctor,unknown,chrome,ios,ru,GET,/api/patients?limit=200,SELECT * FROM patients WHERE id = 1;,page=1,attack
+nurse,trusted,python-requests,android,in,GET,/api/patients?patient_id=234,"{""update"": ""record""}",,normal
+anonymous,personal,python-requests,unknown,high-risk,POST,/api/patients?patient_id=234,SELECT * FROM patients WHERE id = 1;,patient_id=42,attack
+doctor,personal,python-requests,linux,in,DELETE,/api/patients?limit=200,,page=1,recon
+doctor,managed,curl,android,ru,PUT,/api/auth/login,,limit=10,normal
+administrator,managed,firefox,ios,gb,POST,/api/patients,"{""query"": ""status""}",,normal
+nurse,managed,python-requests,android,high-risk,DELETE,/api/dashboard,,patient_id=42,normal
+anonymous,unknown,safari,linux,gb,PUT,/api/auth/login,"{""query"": ""status""}",limit=10,normal
+hacker,unknown,safari,macos,ru,DELETE,/api/export,SELECT * FROM patients WHERE id = 1;,patient_id=42&count=1000,data_exfiltration
+doctor,lab-equipment,safari,bot,ru,GET,/api/auth/login,SELECT * FROM patients WHERE id = 1;,limit=10,recon
+researcher,unknown,safari,linux,high-risk,POST,/api/patients,SELECT * FROM patients WHERE id = 1;,patient_id=42,attack
+doctor,trusted,chrome,bot,ru,POST,/api/patients,,page=1,normal
+administrator,personal,python-requests,macos,ru,POST,/api/security/alerts,"{""query"": ""status""}",patient_id=42,normal
+nurse,unknown,chrome,android,unknown,DELETE,/api/dashboard,,page=1,normal
+doctor,unknown,safari,android,gb,DELETE,/api/dashboard,"{""query"": ""status""}",patient_id=42&count=1000,recon
+doctor,trusted,curl,bot,high-risk,POST,/api/auth/login,"{""action"": ""login""}",patient_id=42,normal
+doctor,lab-equipment,curl,android,ru,PUT,/api/patients/123,"{""update"": ""record""}",limit=10,normal
+doctor,managed,chrome,ios,us,POST,/api/patients?patient_id=234,"{""update"": ""record""}",patient_id=42&count=1000,recon
+administrator,personal,firefox,linux,high-risk,DELETE,/api/patients?patient_id=234,"{""update"": ""record""}",,normal
+researcher,trusted,safari,unknown,gb,PUT,/api/dashboard,<script>alert('xss')</script>,page=1,recon
+researcher,lab-equipment,safari,ios,in,PUT,/api/patients/123,"{""query"": ""status""}",,normal
+nurse,trusted,firefox,ios,high-risk,PUT,/api/export,,patient_id=42&count=1000,attack
+administrator,unknown,safari,windows,high-risk,POST,/api/patients/123,"{""query"": ""status""}",limit=10,normal
+doctor,managed,curl,windows,in,GET,/api/patients,"{""action"": ""login""}",patient_id=42&count=1000,data_exfiltration
+anonymous,trusted,chrome,linux,us,DELETE,/api/security/alerts,SELECT * FROM patients WHERE id = 1;,,attack
+hacker,unknown,python-requests,macos,us,PUT,/api/patients?limit=200,,,recon
+doctor,trusted,python-requests,macos,unknown,PUT,/api/dashboard,SELECT * FROM patients WHERE id = 1;,limit=10,recon
+doctor,personal,safari,windows,ru,POST,/api/patients?limit=200,"{""update"": ""record""}",page=1,attack
+anonymous,trusted,python-requests,ios,gb,PUT,/api/auth/login,"{""update"": ""record""}",,normal
+nurse,personal,python-requests,unknown,high-risk,PUT,/api/patients?limit=200,<script>alert('xss')</script>,patient_id=42&count=1000,data_exfiltration
+doctor,managed,firefox,unknown,us,DELETE,/api/dashboard,"{""action"": ""login""}",patient_id=42&count=1000,attack
+anonymous,unknown,chrome,android,in,GET,/api/export,"{""action"": ""login""}",page=1,recon
+researcher,personal,unknown,unknown,high-risk,DELETE,/api/patients/123,<script>alert('xss')</script>,,attack
+doctor,managed,python-requests,bot,cn,POST,/api/dashboard,"{""query"": ""status""}",,normal
+researcher,trusted,python-requests,ios,unknown,PUT,/api/export,,patient_id=42,recon
+nurse,personal,curl,unknown,gb,DELETE,/api/auth/login,,patient_id=42&count=1000,data_exfiltration
+nurse,trusted,curl,unknown,ru,POST,/api/export,"{""update"": ""record""}",,recon
+researcher,lab-equipment,curl,unknown,unknown,DELETE,/api/patients?limit=200,,patient_id=42&count=1000,data_exfiltration
+anonymous,lab-equipment,firefox,linux,in,DELETE,/api/patients/123,"{""query"": ""status""}",patient_id=42,normal
+doctor,personal,unknown,linux,cn,PUT,/api/auth/login,"{""query"": ""status""}",,normal
+doctor,trusted,unknown,ios,ru,DELETE,/api/auth/login,"{""update"": ""record""}",limit=10,normal
+doctor,trusted,chrome,macos,gb,POST,/api/patients,SELECT * FROM patients WHERE id = 1;,,attack
+administrator,lab-equipment,python-requests,ios,us,PUT,/api/security/alerts,"{""update"": ""record""}",limit=10,normal
+doctor,personal,python-requests,ios,us,PUT,/api/patients?patient_id=234,"{""query"": ""status""}",patient_id=42&count=1000,recon
+researcher,unknown,firefox,ios,in,PUT,/api/patients?limit=200,,limit=10,recon
+doctor,lab-equipment,python-requests,ios,in,GET,/api/export,<script>alert('xss')</script>,limit=10,attack
+anonymous,managed,unknown,linux,cn,POST,/api/auth/login,<script>alert('xss')</script>,page=1,recon
+doctor,unknown,curl,unknown,in,GET,/api/patients,<script>alert('xss')</script>,patient_id=42&count=1000,attack
+anonymous,managed,unknown,bot,cn,GET,/api/patients/123,,,normal
+doctor,trusted,chrome,macos,high-risk,DELETE,/api/patients/123,SELECT * FROM patients WHERE id = 1;,patient_id=42&count=1000,recon
+researcher,lab-equipment,safari,android,unknown,PUT,/api/auth/login,"{""action"": ""login""}",patient_id=42&count=1000,attack
+nurse,lab-equipment,safari,ios,unknown,POST,/api/patients?patient_id=234,"{""update"": ""record""}",page=1,normal
+nurse,managed,chrome,unknown,in,GET,/api/dashboard,,limit=10,normal
+doctor,trusted,python-requests,windows,us,DELETE,/api/security/alerts,"{""query"": ""status""}",page=1,normal
+nurse,unknown,curl,ios,unknown,POST,/api/security/alerts,<script>alert('xss')</script>,limit=10,attack
+hacker,managed,firefox,android,in,POST,/api/patients,<script>alert('xss')</script>,page=1,recon
+nurse,managed,curl,linux,cn,PUT,/api/patients/123,"{""query"": ""status""}",limit=10,normal
+researcher,lab-equipment,python-requests,bot,cn,POST,/api/patients/123,"{""update"": ""record""}",patient_id=42&count=1000,recon
+doctor,personal,unknown,windows,high-risk,POST,/api/patients?limit=200,SELECT * FROM patients WHERE id = 1;,,recon
+nurse,trusted,python-requests,ios,in,PUT,/api/patients?limit=200,,limit=10,data_exfiltration
+doctor,personal,safari,bot,in,DELETE,/api/patients/123,,,normal
+nurse,trusted,safari,windows,cn,DELETE,/api/patients?limit=200,<script>alert('xss')</script>,page=1,attack
+doctor,trusted,firefox,ios,ru,GET,/api/patients,,page=1,normal
+doctor,lab-equipment,safari,bot,in,GET,/api/patients?limit=200,<script>alert('xss')</script>,patient_id=42&count=1000,data_exfiltration
+doctor,lab-equipment,curl,windows,unknown,POST,/api/security/alerts,,patient_id=42,normal
+doctor,personal,unknown,unknown,in,POST,/api/patients?patient_id=234,"{""update"": ""record""}",page=1,normal
+doctor,trusted,python-requests,unknown,high-risk,PUT,/api/patients,"{""action"": ""login""}",,normal
+doctor,managed,safari,unknown,gb,PUT,/api/patients,<script>alert('xss')</script>,patient_id=42&count=1000,data_exfiltration
+nurse,personal,python-requests,macos,gb,GET,/api/auth/login,"{""action"": ""login""}",limit=10,normal
+doctor,unknown,unknown,bot,unknown,GET,/api/patients/123,<script>alert('xss')</script>,patient_id=42&count=1000,attack
+doctor,unknown,firefox,linux,in,DELETE,/api/auth/login,<script>alert('xss')</script>,patient_id=42&count=1000,recon
+doctor,unknown,safari,android,in,PUT,/api/auth/login,,patient_id=42&count=1000,attack
+doctor,managed,python-requests,windows,in,GET,/api/patients?patient_id=234,"{""update"": ""record""}",,normal
+anonymous,trusted,chrome,bot,in,PUT,/api/patients,SELECT * FROM patients WHERE id = 1;,patient_id=42&count=1000,attack
+administrator,trusted,chrome,ios,in,POST,/api/export,SELECT * FROM patients WHERE id = 1;,patient_id=42,attack
+nurse,managed,curl,linux,unknown,DELETE,/api/patients?limit=200,"{""update"": ""record""}",patient_id=42,recon
+administrator,lab-equipment,unknown,macos,cn,PUT,/api/export,"{""query"": ""status""}",limit=10,data_exfiltration
+researcher,personal,curl,android,us,GET,/api/export,"{""action"": ""login""}",patient_id=42&count=1000,data_exfiltration
+administrator,managed,chrome,android,ru,POST,/api/dashboard,,page=1,normal
+anonymous,unknown,firefox,windows,high-risk,DELETE,/api/auth/login,,,normal
+nurse,lab-equipment,curl,ios,unknown,POST,/api/patients,<script>alert('xss')</script>,page=1,recon
+researcher,trusted,python-requests,android,high-risk,PUT,/api/dashboard,"{""update"": ""record""}",patient_id=42,normal
+doctor,unknown,firefox,bot,ru,PUT,/api/patients/123,,page=1,normal
+administrator,personal,safari,android,unknown,DELETE,/api/patients/123,"{""update"": ""record""}",patient_id=42&count=1000,recon
+researcher,managed,firefox,android,in,POST,/api/security/alerts,,page=1,normal
+doctor,managed,unknown,windows,cn,GET,/api/patients,"{""action"": ""login""}",limit=10,normal
+doctor,personal,safari,unknown,cn,PUT,/api/patients?limit=200,,patient_id=42&count=1000,data_exfiltration
+administrator,unknown,safari,ios,high-risk,PUT,/api/export,"{""action"": ""login""}",page=1,data_exfiltration
+doctor,lab-equipment,chrome,bot,ru,POST,/api/security/alerts,"{""update"": ""record""}",,normal
+anonymous,unknown,chrome,windows,ru,POST,/api/dashboard,"{""query"": ""status""}",page=1,normal
+researcher,trusted,chrome,linux,cn,PUT,/api/patients/123,SELECT * FROM patients WHERE id = 1;,patient_id=42&count=1000,recon
+doctor,unknown,chrome,windows,gb,POST,/api/patients/123,"{""update"": ""record""}",limit=10,normal
+nurse,trusted,chrome,linux,us,POST,/api/patients?limit=200,"{""update"": ""record""}",patient_id=42&count=1000,data_exfiltration
+doctor,managed,unknown,ios,gb,PUT,/api/patients?patient_id=234,<script>alert('xss')</script>,page=1,recon
+anonymous,managed,curl,ios,us,PUT,/api/auth/login,"{""action"": ""login""}",page=1,normal
+administrator,lab-equipment,firefox,linux,us,POST,/api/patients/123,,,normal
+nurse,trusted,python-requests,linux,gb,POST,/api/patients?limit=200,SELECT * FROM patients WHERE id = 1;,limit=10,data_exfiltration
+nurse,trusted,curl,linux,us,PUT,/api/export,"{""update"": ""record""}",limit=10,recon
+nurse,personal,curl,ios,us,POST,/api/patients?patient_id=234,<script>alert('xss')</script>,page=1,attack
+researcher,trusted,curl,macos,unknown,DELETE,/api/export,"{""action"": ""login""}",patient_id=42&count=1000,data_exfiltration
+researcher,trusted,unknown,linux,in,PUT,/api/security/alerts,<script>alert('xss')</script>,patient_id=42,data_exfiltration
+doctor,managed,safari,macos,cn,GET,/api/patients,<script>alert('xss')</script>,patient_id=42&count=1000,recon
+administrator,managed,curl,bot,us,DELETE,/api/dashboard,,patient_id=42&count=1000,data_exfiltration
+hacker,managed,safari,android,gb,PUT,/api/export,"{""update"": ""record""}",limit=10,recon
+hacker,personal,safari,bot,us,PUT,/api/patients?patient_id=234,<script>alert('xss')</script>,,data_exfiltration
+hacker,trusted,safari,bot,unknown,GET,/api/patients,<script>alert('xss')</script>,limit=10,data_exfiltration
+anonymous,lab-equipment,unknown,linux,ru,DELETE,/api/patients?limit=200,"{""update"": ""record""}",,data_exfiltration
+nurse,lab-equipment,firefox,windows,ru,DELETE,/api/patients/123,,page=1,normal
+hacker,managed,python-requests,ios,us,PUT,/api/patients?patient_id=234,<script>alert('xss')</script>,page=1,data_exfiltration
+researcher,trusted,safari,bot,in,POST,/api/patients?patient_id=234,SELECT * FROM patients WHERE id = 1;,patient_id=42&count=1000,data_exfiltration
+researcher,lab-equipment,firefox,macos,us,PUT,/api/security/alerts,"{""action"": ""login""}",limit=10,normal
+doctor,unknown,chrome,linux,in,POST,/api/patients?patient_id=234,,limit=10,normal
+researcher,lab-equipment,curl,android,ru,PUT,/api/auth/login,<script>alert('xss')</script>,page=1,attack
+researcher,unknown,python-requests,bot,high-risk,GET,/api/patients,,patient_id=42&count=1000,attack
+anonymous,managed,unknown,ios,ru,GET,/api/patients/123,"{""action"": ""login""}",patient_id=42&count=1000,data_exfiltration
+doctor,trusted,safari,android,high-risk,POST,/api/dashboard,<script>alert('xss')</script>,,recon
+doctor,personal,unknown,windows,unknown,PUT,/api/patients?patient_id=234,"{""update"": ""record""}",patient_id=42&count=1000,attack
