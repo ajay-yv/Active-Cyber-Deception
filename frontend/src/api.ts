@@ -450,52 +450,7 @@ export async function fetchPatients(token: string): Promise<{ patients: PatientR
     console.warn('Patients fetch fallback used:', err)
   }
 
-  return {
-    patients: [
-      {
-        patient_id: 1,
-        id: 'P-01',
-        name: 'Aarav Sharma',
-        age: 45,
-        disease: 'Essential Hypertension',
-        diagnosis: 'Stage 2 Primary Essential Hypertension with mild LVH',
-        medicines: ['Telmisartan 40mg', 'Amlodipine 5mg'],
-        dosages: ['1 tab OD morning', '1 tab OD evening'],
-        treatment_pattern: 'Standard Cardiology Protocol',
-        gender: 'Male',
-        date_of_birth: '1979-05-14',
-        blood_group: 'O+',
-        phone: '+91-98765-43210',
-        email: 'aarav.sharma@stjude-hospital.org',
-        address: 'Flat 402, Lotus Towers, Pune, MH',
-        aadhaar: '5544-3322-1100',
-        doctor_assigned: 'Dr. Priya Nair (Cardiology)',
-        department: 'Cardiology',
-        admission_date: '2026-03-01',
-      },
-      {
-        patient_id: 2,
-        id: 'P-02',
-        name: 'Karthik Reddy',
-        age: 38,
-        disease: 'Type 2 Diabetes Mellitus',
-        diagnosis: 'Uncontrolled Type 2 Diabetes with Peripheral Neuropathy',
-        medicines: ['Metformin 500mg', 'Glimepiride 1mg'],
-        dosages: ['1 tab BD after meals', '1 tab OD before breakfast'],
-        treatment_pattern: 'Endocrinology Protocol',
-        gender: 'Male',
-        date_of_birth: '1986-11-20',
-        blood_group: 'A+',
-        phone: '+91-98123-45678',
-        email: 'karthik.reddy@stjude-hospital.org',
-        address: '301 Sunview Residency, Bengaluru, KA',
-        aadhaar: '9988-7766-5544',
-        doctor_assigned: 'Dr. Suresh Rao (Endocrinology)',
-        department: 'Endocrinology',
-        admission_date: '2026-03-05',
-      },
-    ],
-  }
+  return { patients: [] }
 }
 
 export async function deletePatient(patientId: string, token: string): Promise<{ status: string; message: string }> {

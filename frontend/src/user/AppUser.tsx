@@ -246,6 +246,22 @@ function calculateAgeFromDob(dobString: string): number {
   return age >= 0 ? age : 0
 }
 
+export function generateSyntheticTwinName(realName: string, id: string | number): { decoyName: string; decoyId: string } {
+  const cleanName = (realName || 'Patient').trim()
+  const hash = (cleanName + String(id || '1')).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  const decoyFirstNames = ['Karthik', 'Aditya', 'Rajesh', 'Vikram', 'Ananya', 'Rohan', 'Sneha', 'Deepak', 'Meera', 'Arjun']
+  const decoyLastNames = ['Reddy', 'Patel', 'Kapoor', 'Sharma', 'Verma', 'Joshi', 'Chawla', 'Deshmukh', 'Mehta', 'Nair']
+  
+  const firstName = decoyFirstNames[hash % decoyFirstNames.length]
+  const lastName = decoyLastNames[(hash + 3) % decoyLastNames.length]
+  const numId = String(id).replace(/\D/g, '') || '1'
+  
+  return {
+    decoyName: `${firstName} ${lastName} (Decoy Twin)`,
+    decoyId: `SYN-${numId.padStart(2, '0')}`,
+  }
+}
+
 
 
 const DEFAULT_SECURITY_EVENTS: AuditEvent[] = [
@@ -2351,59 +2367,57 @@ export default function AppUser() {
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
-                    {patients.map((p) => {
-                      const decoyProfiles: Record<string, { id: string; name: string; disease: string; ageRange: string }> = {
-                        '1': { id: 'SYN-01', name: 'Karthik Reddy', disease: 'Stable Symptomatic Presentation with Routine Follow-up', ageRange: '21-26 yrs' },
-                        'P-01': { id: 'SYN-01', name: 'Karthik Reddy', disease: 'Stable Symptomatic Presentation with Routine Follow-up', ageRange: '21-26 yrs' },
-                        '2': { id: 'SYN-02', name: 'Aditya Patel', disease: 'Stable Symptomatic Clinical Presentation under Routine Protocol', ageRange: '22-27 yrs' },
-                        'P-02': { id: 'SYN-02', name: 'Aditya Patel', disease: 'Stable Symptomatic Clinical Presentation under Routine Protocol', ageRange: '22-27 yrs' },
-                        '3': { id: 'SYN-03', name: 'Rajesh Kapoor', disease: 'Grade III Retinopathy With Arterial Narrowing', ageRange: '20-25 yrs' },
-                        'P-03': { id: 'SYN-03', name: 'Rajesh Kapoor', disease: 'Grade III Retinopathy With Arterial Narrowing', ageRange: '20-25 yrs' },
-                      }
-                      const key = String(p.patient_id || p.id)
-                      const matched = decoyProfiles[key]
-                      const syn = p.forensic_record
-                      const synName = matched?.name || syn?.name || `Decoy Twin (${p.name})`
-                      const synId = matched?.id || syn?.synthetic_patient_id || `SYN-0${p.patient_id || p.id}`
-                      const synDisease = matched?.disease || syn?.disease || p.disease
-                      const synAgeRange = matched?.ageRange || syn?.age_range || `${p.age - 2}-${p.age + 3} yrs`
+                    {patients.length === 0 ? (
+                      <div style={{ gridColumn: '1 / -1', padding: '32px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.1)' }}>
+                        <div style={{ fontSize: '1.2rem', color: '#cbd5e1', fontWeight: 700, marginBottom: 6 }}>📋 No Active Patient Records</div>
+                        <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Register a real patient in the Clinical Register tab. The system will automatically generate a dynamic synthetic decoy twin.</div>
+                      </div>
+                    ) : (
+                      patients.map((p) => {
+                        const synInfo = generateSyntheticTwinName(p.name, p.patient_id || p.id)
+                        const syn = p.forensic_record
+                        const synName = syn?.name || synInfo.decoyName
+                        const synId = syn?.synthetic_patient_id || synInfo.decoyId
+                        const synDisease = syn?.disease || `${p.disease || 'Clinical Condition'} (Synthetic Twin)`
+                        const synAgeRange = syn?.age_range || `${Math.max(18, (p.age || 30) - 3)}-${(p.age || 30) + 3} yrs`
 
-                      return (
-                        <div key={p.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: 16, padding: 18, display: 'grid', gap: 10 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              <span style={{ fontSize: '0.72rem', color: '#c084fc', fontWeight: 800, textTransform: 'uppercase' }}>Synthetic Twin Decoy</span>
-                              <h4 style={{ margin: '2px 0 0', color: '#f8fafc', fontSize: '1.05rem', fontWeight: 700 }}>{synName}</h4>
+                        return (
+                          <div key={p.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: 16, padding: 18, display: 'grid', gap: 10 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <div>
+                                <span style={{ fontSize: '0.72rem', color: '#c084fc', fontWeight: 800, textTransform: 'uppercase' }}>Synthetic Twin Decoy</span>
+                                <h4 style={{ margin: '2px 0 0', color: '#f8fafc', fontSize: '1.05rem', fontWeight: 700 }}>{synName}</h4>
+                              </div>
+                              <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: 6 }}>
+                                {synId}
+                              </span>
                             </div>
-                            <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: 6 }}>
-                              {synId}
-                            </span>
-                          </div>
 
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '0.8rem', color: '#cbd5e1' }}>
-                            <div><strong>Condition:</strong> <span style={{ color: '#e2e8f0' }}>{synDisease}</span></div>
-                            <div><strong>Age Range:</strong> {synAgeRange}</div>
-                            <div><strong>Department:</strong> {p.department || 'Cardiology'}</div>
-                            <div><strong>Doctor:</strong> {p.doctor_assigned || 'Dr. Priya Nair'}</div>
-                            <div><strong>Watermark:</strong> <code style={{ color: '#38bdf8' }}>{p.watermark_id?.slice(0, 12) || 'WM-SYNTH'}</code></div>
-                            <div><strong>Lure Status:</strong> <span style={{ color: '#34d399', fontWeight: 700 }}>Adaptive Lure Active</span></div>
-                          </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '0.8rem', color: '#cbd5e1' }}>
+                              <div><strong>Condition:</strong> <span style={{ color: '#e2e8f0' }}>{synDisease}</span></div>
+                              <div><strong>Age Range:</strong> {synAgeRange}</div>
+                              <div><strong>Department:</strong> {p.department || 'Cardiology'}</div>
+                              <div><strong>Doctor:</strong> {p.doctor_assigned || 'Dr. Priya Nair'}</div>
+                              <div><strong>Watermark:</strong> <code style={{ color: '#38bdf8' }}>{p.watermark_id?.slice(0, 12) || 'WM-SYNTH'}</code></div>
+                              <div><strong>Lure Status:</strong> <span style={{ color: '#34d399', fontWeight: 700 }}>Adaptive Lure Active</span></div>
+                            </div>
 
-                          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Linked to Real: P-{p.patient_id || p.id} ({p.name})</span>
-                            <button
-                              onClick={() => {
-                                setSelectedTwinComparison(p)
-                                setIsCompareModalOpen(true)
-                              }}
-                              style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #c084fc', background: 'rgba(168, 85, 247, 0.15)', color: '#e9d5ff', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
-                            >
-                              🔍 Compare Side-by-Side
-                            </button>
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Linked to Real: P-{p.patient_id || p.id} ({p.name})</span>
+                              <button
+                                onClick={() => {
+                                  setSelectedTwinComparison(p)
+                                  setIsCompareModalOpen(true)
+                                }}
+                                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #c084fc', background: 'rgba(168, 85, 247, 0.15)', color: '#e9d5ff', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                              >
+                                🔍 Compare Side-by-Side
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      })
+                    )}
                   </div>
                 </div>
               </div>
@@ -2894,100 +2908,59 @@ export default function AppUser() {
                       <span style={{ textAlign: 'center', minWidth: 140 }}>Real-Time Action</span>
                     </div>
 
-                    {/* Row 1: sonu */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr auto', alignItems: 'center', padding: '14px 16px', background: activeDeflection === 'sonu' ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255, 255, 255, 0.02)', border: activeDeflection === 'sonu' ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 12, fontSize: '0.86rem', transition: 'all 0.3s ease' }}>
-                      <div>
-                        <strong style={{ color: '#f8fafc' }}>P-01: sonu (23 yrs)</strong>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Condition: Normal Clinical Record</div>
+                    {patients.length === 0 ? (
+                      <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 12, border: '1px dashed rgba(255, 255, 255, 0.12)' }}>
+                        <div style={{ fontSize: '1.1rem', color: '#cbd5e1', fontWeight: 700, marginBottom: 4 }}>📋 No Active Patients in Vault</div>
+                        <div style={{ fontSize: '0.82rem' }}>Register a real patient in the Clinical Register tab. The system will dynamically generate a corresponding synthetic decoy twin matrix.</div>
                       </div>
-                      <div style={{ color: '#c084fc', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span>🧬</span>
-                        <div>
-                          <strong>SYN-01: Karthik Reddy</strong>
-                          <div style={{ color: '#a855f7', fontSize: '0.75rem' }}>Poisoned Decoy Twin Served</div>
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ color: '#34d399', fontWeight: 700, fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '4px 10px', borderRadius: 8 }}>
-                          🛡️ 100% UNTOUCHED
-                        </span>
-                      </div>
-                      <div style={{ minWidth: 140, textAlign: 'center' }}>
-                        <button
-                          onClick={() => triggerMatrixInterception('sonu', 'P-01: sonu', 'SYN-01: Karthik Reddy')}
-                          style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #38bdf8', background: activeDeflection === 'sonu' ? '#0284c7' : 'rgba(56, 189, 248, 0.15)', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                        >
-                          {activeDeflection === 'sonu' ? '⚡ INTERCEPTED' : '⚡ Test Intercept'}
-                        </button>
-                      </div>
-                    </div>
+                    ) : (
+                      patients.map((p, idx) => {
+                        const syn = generateSyntheticTwinName(p.name, p.patient_id || p.id)
+                        const key = `p-${p.patient_id || p.id}`
+                        const targetLabel = `P-${String(p.patient_id || p.id).padStart(2, '0')}: ${p.name} (${p.age || 30} yrs)`
+                        const decoyLabel = `${syn.decoyId}: ${syn.decoyName}`
 
-                    {/* Row 2: Suddha Sen */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr auto', alignItems: 'center', padding: '14px 16px', background: activeDeflection === 'suddha' ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255, 255, 255, 0.02)', border: activeDeflection === 'suddha' ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 12, fontSize: '0.86rem', transition: 'all 0.3s ease' }}>
-                      <div>
-                        <strong style={{ color: '#f8fafc' }}>P-02: Suddha Sen (23 yrs)</strong>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Condition: Fever (Normal Evaluation)</div>
-                      </div>
-                      <div style={{ color: '#c084fc', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span>🧬</span>
-                        <div>
-                          <strong>SYN-02: Aditya Patel</strong>
-                          <div style={{ color: '#a855f7', fontSize: '0.75rem' }}>Poisoned Decoy Twin Served</div>
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ color: '#34d399', fontWeight: 700, fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '4px 10px', borderRadius: 8 }}>
-                          🛡️ 100% UNTOUCHED
-                        </span>
-                      </div>
-                      <div style={{ minWidth: 140, textAlign: 'center' }}>
-                        <button
-                          onClick={() => triggerMatrixInterception('suddha', 'P-02: Suddha Sen', 'SYN-02: Aditya Patel')}
-                          style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #38bdf8', background: activeDeflection === 'suddha' ? '#0284c7' : 'rgba(56, 189, 248, 0.15)', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                        >
-                          {activeDeflection === 'suddha' ? '⚡ INTERCEPTED' : '⚡ Test Intercept'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Row 3: Vijay */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr auto', alignItems: 'center', padding: '14px 16px', background: activeDeflection === 'vijay' ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255, 255, 255, 0.02)', border: activeDeflection === 'vijay' ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 12, fontSize: '0.86rem', transition: 'all 0.3s ease' }}>
-                      <div>
-                        <strong style={{ color: '#f8fafc' }}>P-03: Vijay (22 yrs)</strong>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Condition: Serious Inpatient</div>
-                      </div>
-                      <div style={{ color: '#c084fc', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span>🧬</span>
-                        <div>
-                          <strong>SYN-03: Rajesh Kapoor</strong>
-                          <div style={{ color: '#a855f7', fontSize: '0.75rem' }}>Poisoned Decoy Twin Served</div>
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ color: '#34d399', fontWeight: 700, fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '4px 10px', borderRadius: 8 }}>
-                          🛡️ 100% UNTOUCHED
-                        </span>
-                      </div>
-                      <div style={{ minWidth: 140, textAlign: 'center' }}>
-                        <button
-                          onClick={() => triggerMatrixInterception('vijay', 'P-03: Vijay', 'SYN-03: Rajesh Kapoor')}
-                          style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #38bdf8', background: activeDeflection === 'vijay' ? '#0284c7' : 'rgba(56, 189, 248, 0.15)', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                        >
-                          {activeDeflection === 'vijay' ? '⚡ INTERCEPTED' : '⚡ Test Intercept'}
-                        </button>
-                      </div>
-                    </div>
+                        return (
+                          <div key={p.id || idx} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr auto', alignItems: 'center', padding: '14px 16px', background: activeDeflection === key ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255, 255, 255, 0.02)', border: activeDeflection === key ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 12, fontSize: '0.86rem', transition: 'all 0.3s ease' }}>
+                            <div>
+                              <strong style={{ color: '#f8fafc' }}>{targetLabel}</strong>
+                              <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Condition: {p.disease || 'Active Clinical Record'}</div>
+                            </div>
+                            <div style={{ color: '#c084fc', display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span>🧬</span>
+                              <div>
+                                <strong>{decoyLabel}</strong>
+                                <div style={{ color: '#a855f7', fontSize: '0.75rem' }}>Poisoned Decoy Twin Served</div>
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ color: '#34d399', fontWeight: 700, fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '4px 10px', borderRadius: 8 }}>
+                                🛡️ 100% UNTOUCHED
+                              </span>
+                            </div>
+                            <div style={{ minWidth: 140, textAlign: 'center' }}>
+                              <button
+                                onClick={() => triggerMatrixInterception(key, targetLabel, decoyLabel)}
+                                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #38bdf8', background: activeDeflection === key ? '#0284c7' : 'rgba(56, 189, 248, 0.15)', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              >
+                                {activeDeflection === key ? '⚡ INTERCEPTED' : '⚡ Test Intercept'}
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
 
                     {/* Row 4: Mass Exfiltration */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr auto', alignItems: 'center', padding: '14px 16px', background: activeDeflection === 'mass' ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255, 255, 255, 0.02)', border: activeDeflection === 'mass' ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 12, fontSize: '0.86rem', transition: 'all 0.3s ease' }}>
                       <div>
                         <strong style={{ color: '#f8fafc' }}>Mass Exfiltration (ALL PATIENTS)</strong>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Command: .\hack.bat exfiltration 3</div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Command: .\hack.bat exfiltration {patients.length || 3}</div>
                       </div>
                       <div style={{ color: '#c084fc', display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span>🧬</span>
                         <div>
-                          <strong>3 Synthetic Twins Dumped</strong>
+                          <strong>{patients.length > 0 ? `${patients.length} Synthetic Twins Dumped` : 'Synthetic Twins Dumped'}</strong>
                           <div style={{ color: '#a855f7', fontSize: '0.75rem' }}>Watermarked AI Decoys Only</div>
                         </div>
                       </div>
@@ -2998,7 +2971,7 @@ export default function AppUser() {
                       </div>
                       <div style={{ minWidth: 140, textAlign: 'center' }}>
                         <button
-                          onClick={() => triggerMatrixInterception('mass', 'Mass Exfiltration (All Patients)', '3 Synthetic Decoy Twins')}
+                          onClick={() => triggerMatrixInterception('mass', 'Mass Exfiltration (All Patients)', `${patients.length || 3} Synthetic Decoy Twins`)}
                           style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #38bdf8', background: activeDeflection === 'mass' ? '#0284c7' : 'rgba(56, 189, 248, 0.15)', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
                         >
                           {activeDeflection === 'mass' ? '⚡ INTERCEPTED' : '⚡ Test Intercept'}
