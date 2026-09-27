@@ -265,8 +265,8 @@ export function generateSyntheticTwinDetails(realName: string, id: string | numb
   const numId = String(id).replace(/\D/g, '') || '1'
   const hash = (cleanName + numId).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
 
-  const decoyFirstNames = ['Karthik', 'Aditya', 'Rajesh', 'Vikram', 'Ananya', 'Rohan', 'Sneha', 'Deepak', 'Meera', 'Arjun', 'Suresh', 'Pooja', 'Priya', 'Kavita', 'Siddharth']
-  const decoyLastNames = ['Reddy', 'Patel', 'Kapoor', 'Sharma', 'Verma', 'Joshi', 'Chawla', 'Deshmukh', 'Mehta', 'Nair', 'Rao', 'Kulkarni', 'Iyer', 'Bhat', 'Gupta']
+  const decoyFirstNames = ['Devansh', 'Tarun', 'Manish', 'Harish', 'Nikhil', 'Gautam', 'Varun', 'Yash', 'Alok', 'Pranav', 'Suresh', 'Bhavna', 'Ritu', 'Tanvi', 'Vandana']
+  const decoyLastNames = ['Desai', 'Saxena', 'Choudhury', 'Trivedi', 'Bansal', 'Nambiar', 'Ranganathan', 'Pillai', 'Singhania', 'Mukherjee', 'Dutta', 'Menon', 'Prasad', 'Sengupta', 'Mishra']
 
   const firstName = decoyFirstNames[hash % decoyFirstNames.length]
   const lastName = decoyLastNames[(hash + 7) % decoyLastNames.length]
@@ -359,7 +359,7 @@ const DEFAULT_SECURITY_EVENTS: AuditEvent[] = [
     event_type: 'DECEPTION_GATEWAY_INTERCEPT',
     severity: 'CRITICAL',
     actor: 'Adversary (Port 8001)',
-    details: 'AI Security Gateway on Port 8001 intercepted SQL injection probe (UNION SELECT / OR 1=1). Request dynamically diverted to synthetic decoy twin SYN-01 (Karthik Reddy). 0 bytes of real patient EHR touched.',
+    details: 'AI Security Gateway on Port 8001 intercepted SQL injection probe (UNION SELECT / OR 1=1). Request dynamically diverted to synthetic decoy twin SYN-01 (Devansh Desai). 0 bytes of real patient EHR touched.',
     created_at: new Date(Date.now() - 2 * 60000).toISOString(),
     status: '100% BLOCKED & DEFLECTED',
   },
@@ -368,7 +368,7 @@ const DEFAULT_SECURITY_EVENTS: AuditEvent[] = [
     event_type: 'IDOR_THEFT_CONTAINED',
     severity: 'HIGH',
     actor: 'Adversary (Terminal)',
-    details: 'Unauthorized targeted probe attempted against active patient P-02 (Suddha Sen). ADO State Machine deployed Poisoned Decoy Twin SYN-02 (Aditya Patel) with zero-width tracking watermark.',
+    details: 'Unauthorized targeted probe attempted against active patient P-02 (Suddha Sen). ADO State Machine deployed Poisoned Decoy Twin SYN-02 (Tarun Saxena) with zero-width tracking watermark.',
     created_at: new Date(Date.now() - 8 * 60000).toISOString(),
     status: 'DECOY SERVED',
   },
@@ -703,10 +703,10 @@ export default function AppUser() {
     setError('')
 
     const lower = textToScan.toLowerCase()
-    const isKarthik = lower.includes('karthik') || textToScan.includes('SYN-01')
-    const isAditya = lower.includes('aditya') || textToScan.includes('SYN-02')
-    const isRajesh = lower.includes('rajesh') || textToScan.includes('SYN-03')
-    const isSynthetic = lower.includes('syn-') || lower.includes('decoy') || lower.includes('verification hash') || lower.includes('leaked dump') || lower.includes('exfiltrated record') || lower.includes('breach dump') || isKarthik || isAditya || isRajesh
+    const isSyn1 = lower.includes('syn-01') || lower.includes('devansh')
+    const isSyn2 = lower.includes('syn-02') || lower.includes('tarun')
+    const isSyn3 = lower.includes('syn-03') || lower.includes('nikhil')
+    const isSynthetic = lower.includes('syn-') || lower.includes('decoy') || lower.includes('verification hash') || lower.includes('leaked dump') || lower.includes('exfiltrated record') || lower.includes('breach dump') || isSyn1 || isSyn2 || isSyn3
     const isClean = lower.includes('cardiovascular') || lower.includes('dietary sodium') || lower.includes('textbook') || lower.includes('generic medical')
 
     let serverResult: any = null
@@ -730,14 +730,14 @@ export default function AppUser() {
       let realId = firstPatient.id
       let hash = syn.fingerprint
 
-      if (isAditya && patients[1]) {
+      if (isSyn2 && patients[1]) {
         const syn2 = generateSyntheticTwinDetails(patients[1].name, patients[1].patient_id || patients[1].id)
         decoyName = syn2.decoyName
         synId = syn2.decoyId
         realName = patients[1].name
         realId = patients[1].id
         hash = syn2.fingerprint
-      } else if (isRajesh && patients[2]) {
+      } else if (isSyn3 && patients[2]) {
         const syn3 = generateSyntheticTwinDetails(patients[2].name, patients[2].patient_id || patients[2].id)
         decoyName = syn3.decoyName
         synId = syn3.decoyId
@@ -2561,7 +2561,7 @@ export default function AppUser() {
                         client: 'Adversary Probe (Terminal: .\\hack.bat 1)',
                         query: 'GET /api/patients/1 (Single Patient Theft Attempt)',
                         score: 88,
-                        decision: 'DIVERT ➡️ Served Decoy Twin: Karthik Reddy (SYN-01)',
+                        decision: 'DIVERT ➡️ Served Decoy Twin: Devansh Desai (SYN-01)',
                         realStatus: patients.length > 0 ? `Protected (${patients[0].name} untouched)` : 'Protected (Vault locked)',
                         isThreat: true,
                         time: 'Just now',
@@ -2729,35 +2729,38 @@ export default function AppUser() {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       <button
                         onClick={() => {
-                          const testText = "LEAKED DUMP: Patient Karthik Reddy | ID: SYN-01 | Condition: Cancer | Verification Hash: 0f4cc290-ca36-4a62-b111-5552018bf539 | Doctor: Dr. Rohan Patel"
+                          const syn1 = generateSyntheticTwinDetails(patients[0]?.name || 'sonu', patients[0]?.id || 'P-01')
+                          const testText = `LEAKED DUMP: Patient ${syn1.decoyName} | ID: ${syn1.decoyId} | Condition: ${syn1.disease} | Verification Hash: ${syn1.fingerprint}`
                           setForensicScanInput(testText)
                           handleRealtimeScan(testText)
                         }}
                         style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #10b981', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                       >
-                        🧪 Test Decoy #1 (Karthik Reddy)
+                        🧪 Test Decoy #1 (Dynamic Twin)
                       </button>
 
                       <button
                         onClick={() => {
-                          const testText = "EXFILTRATED RECORD: Patient Aditya Patel | ID: SYN-02 | Condition: Acute Viral Pyrexia | Verification Hash: f968645d-3758-4749-a754-3578c7ed4fbf"
+                          const syn2 = generateSyntheticTwinDetails(patients[1]?.name || 'Suddha Sen', patients[1]?.id || 'P-02')
+                          const testText = `EXFILTRATED RECORD: Patient ${syn2.decoyName} | ID: ${syn2.decoyId} | Condition: ${syn2.disease} | Verification Hash: ${syn2.fingerprint}`
                           setForensicScanInput(testText)
                           handleRealtimeScan(testText)
                         }}
                         style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #38bdf8', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                       >
-                        🧪 Test Decoy #2 (Aditya Patel)
+                        🧪 Test Decoy #2 (Dynamic Twin)
                       </button>
 
                       <button
                         onClick={() => {
-                          const testText = "BREACH DUMP: Patient Rajesh Kapoor | ID: SYN-03 | Condition: Essential Primary Hypertension | Verification Hash: 4c50e84c-9b82-4311-b597-5c4be7e05161"
+                          const syn3 = generateSyntheticTwinDetails(patients[2]?.name || 'Vijay', patients[2]?.id || 'P-03')
+                          const testText = `BREACH DUMP: Patient ${syn3.decoyName} | ID: ${syn3.decoyId} | Condition: ${syn3.disease} | Verification Hash: ${syn3.fingerprint}`
                           setForensicScanInput(testText)
                           handleRealtimeScan(testText)
                         }}
                         style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #a855f7', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                       >
-                        🧪 Test Decoy #3 (Rajesh Kapoor)
+                        🧪 Test Decoy #3 (Dynamic Twin)
                       </button>
 
                       <button
@@ -2831,7 +2834,7 @@ export default function AppUser() {
                               <strong style={{ color: '#fca5a5', fontSize: '0.9rem' }}>DECOY RECORD EXFILTRATED BY ATTACKER</strong>
                             </div>
                             <div style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1' }}>
-                              <div><strong>Decoy Patient:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{forensicScanResult.dossier?.decoy_patient?.name || 'Karthik Reddy'}</span></div>
+                              <div><strong>Decoy Patient:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{forensicScanResult.dossier?.decoy_patient?.name || 'Devansh Desai'}</span></div>
                               <div><strong>Decoy Twin ID:</strong> <code style={{ color: '#f43f5e' }}>{forensicScanResult.watermark?.source_id || 'SYN-01'}</code></div>
                               <div><strong>Attributed Attack Session:</strong> <code style={{ color: '#38bdf8' }}>{forensicScanResult.watermark?.session_id || 'adversary-exfiltration-session'}</code></div>
                               <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(239, 68, 68, 0.2)', borderRadius: 6, color: '#fca5a5', fontSize: '0.75rem', fontWeight: 600 }}>
@@ -2996,13 +2999,16 @@ export default function AppUser() {
                       <button
                         onClick={() => {
                           setActiveTab('watermarks')
+                          const syn1 = generateSyntheticTwinDetails(patients[0]?.name || 'sonu', patients[0]?.id || 'P-01')
+                          const syn2 = generateSyntheticTwinDetails(patients[1]?.name || 'Suddha Sen', patients[1]?.id || 'P-02')
+                          const syn3 = generateSyntheticTwinDetails(patients[2]?.name || 'Vijay', patients[2]?.id || 'P-03')
                           const sampleText = liveDeflectionToast.id === 'suddha' 
-                            ? "EXFILTRATED RECORD: Patient Aditya Patel | ID: SYN-02 | Condition: Acute Viral Pyrexia | Verification Hash: f968645d-3758-4749-a754-3578c7ed4fbf"
+                            ? `EXFILTRATED RECORD: Patient ${syn2.decoyName} | ID: ${syn2.decoyId} | Condition: ${syn2.disease} | Verification Hash: ${syn2.fingerprint}`
                             : liveDeflectionToast.id === 'vijay'
-                            ? "BREACH DUMP: Patient Rajesh Kapoor | ID: SYN-03 | Condition: Essential Primary Hypertension | Verification Hash: 4c50e84c-9b82-4311-b597-5c4be7e05161"
+                            ? `BREACH DUMP: Patient ${syn3.decoyName} | ID: ${syn3.decoyId} | Condition: ${syn3.disease} | Verification Hash: ${syn3.fingerprint}`
                             : liveDeflectionToast.id === 'mass'
-                            ? "LEAKED DUMP: Multiple Decoys Exfiltrated: SYN-01 Karthik Reddy, SYN-02 Aditya Patel, SYN-03 Rajesh Kapoor | Hash: 0f4cc290-ca36-4a62-b111-5552018bf539"
-                            : "LEAKED DUMP: Patient Karthik Reddy | ID: SYN-01 | Condition: Cancer | Verification Hash: 0f4cc290-ca36-4a62-b111-5552018bf539 | Doctor: Dr. Rohan Patel"
+                            ? `LEAKED DUMP: Multiple Decoys Exfiltrated: ${syn1.decoyId} ${syn1.decoyName}, ${syn2.decoyId} ${syn2.decoyName}, ${syn3.decoyId} ${syn3.decoyName} | Hash: ${syn1.fingerprint}`
+                            : `LEAKED DUMP: Patient ${syn1.decoyName} | ID: ${syn1.decoyId} | Condition: ${syn1.disease} | Verification Hash: ${syn1.fingerprint}`
                           setForensicScanInput(sampleText)
                           handleRealtimeScan(sampleText)
                         }}

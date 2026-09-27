@@ -333,16 +333,16 @@ class TwinGeneratorProxy:
 
     def _generate_realistic_name(self, real_name: str, gender: str, fingerprint: str) -> str:
         male_first_names = [
-            "Suresh", "Rohan", "Vikram", "Aravind", "Deepak", "Rajesh", "Manish",
-            "Sanjay", "Amit", "Arjun", "Karthik", "Aditya", "Rahul", "Naveen", "Girish"
+            "Suresh", "Rohan", "Vikram", "Aravind", "Deepak", "Devansh", "Manish",
+            "Sanjay", "Amit", "Arjun", "Tarun", "Nikhil", "Rahul", "Naveen", "Girish"
         ]
         female_first_names = [
-            "Priya", "Sunita", "Ananya", "Kavita", "Meera", "Pooja", "Neha",
+            "Priya", "Sunita", "Ananya", "Ritu", "Meera", "Pooja", "Neha",
             "Divya", "Sneha", "Swati", "Tanvi", "Shreya", "Radha", "Lakshmi", "Anjali"
         ]
         last_names = [
-            "Varma", "Kulkarni", "Nair", "Rangan", "Choudhury", "Patel", "Sharma", "Iyer",
-            "Deshmukh", "Gupta", "Reddy", "Joshi", "Bhat", "Menon", "Kapoor", "Singhania"
+            "Varma", "Kulkarni", "Nair", "Rangan", "Choudhury", "Desai", "Sharma", "Iyer",
+            "Deshmukh", "Gupta", "Saxena", "Joshi", "Bhat", "Menon", "Singhania", "Trivedi"
         ]
 
         first_list = female_first_names if gender.lower() == "female" else male_first_names

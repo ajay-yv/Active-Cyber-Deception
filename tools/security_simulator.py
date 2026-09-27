@@ -126,7 +126,7 @@ def _clean_patient_id(raw_pid: str | None) -> str:
 
 def _clean_name(raw_name: str | None) -> str:
     if not raw_name:
-        return "Karthik Reddy"
+        return "Dynamic Decoy Twin"
     cleaned = str(raw_name).replace("Fake ", "").replace("fake ", "").replace("Decoy ", "").replace("decoy ", "")
     return cleaned.strip()
 
@@ -136,7 +136,7 @@ def _format_response_summary(res: dict | str) -> str:
         if "patient" in res and isinstance(res["patient"], dict):
             p = res["patient"]
             pid = _clean_patient_id(p.get("id", "P-01"))
-            pname = _clean_name(p.get("name", "Karthik Reddy"))
+            pname = _clean_name(p.get("name", "Dynamic Decoy Twin"))
             pdiag = p.get("diagnosis", "Routine Follow-up")
             return f"Patient Record (ID: {pid}, Name: '{pname}', Diagnosis: '{pdiag}')"
         if "patients" in res and isinstance(res["patients"], list):
@@ -155,7 +155,7 @@ def _format_response_summary(res: dict | str) -> str:
 def _print_extracted_patient(header: str, patient_data: dict | None) -> None:
     data = patient_data or {}
     pid = _clean_patient_id(data.get("patient_id") or data.get("id") or data.get("synthetic_id") or "P-01")
-    name = _clean_name(data.get("name") or data.get("fake_name") or "Karthik Reddy")
+    name = _clean_name(data.get("name") or data.get("fake_name") or "Dynamic Decoy Twin")
     disease = _clean_disease_name(data.get("disease") or data.get("fake_disease") or "Essential Hypertension")
     diagnosis = data.get("diagnosis") or "Stable Clinical Presentation with Routine Follow-up"
     doctor = data.get("doctor") or "Dr. Rohan Patel (General Medicine)"

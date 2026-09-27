@@ -303,8 +303,8 @@ export function generateSyntheticTwinDetails(realName: string, id: string | numb
   const numId = String(id).replace(/\D/g, '') || '1'
   const hash = (cleanName + numId).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
 
-  const decoyFirstNames = ['Karthik', 'Aditya', 'Rajesh', 'Vikram', 'Ananya', 'Rohan', 'Sneha', 'Deepak', 'Meera', 'Arjun', 'Suresh', 'Pooja', 'Priya', 'Kavita', 'Siddharth']
-  const decoyLastNames = ['Reddy', 'Patel', 'Kapoor', 'Sharma', 'Verma', 'Joshi', 'Chawla', 'Deshmukh', 'Mehta', 'Nair', 'Rao', 'Kulkarni', 'Iyer', 'Bhat', 'Gupta']
+  const decoyFirstNames = ['Devansh', 'Tarun', 'Manish', 'Harish', 'Nikhil', 'Gautam', 'Varun', 'Yash', 'Alok', 'Pranav', 'Suresh', 'Bhavna', 'Ritu', 'Tanvi', 'Vandana']
+  const decoyLastNames = ['Desai', 'Saxena', 'Choudhury', 'Trivedi', 'Bansal', 'Nambiar', 'Ranganathan', 'Pillai', 'Singhania', 'Mukherjee', 'Dutta', 'Menon', 'Prasad', 'Sengupta', 'Mishra']
 
   const firstName = decoyFirstNames[hash % decoyFirstNames.length]
   const lastName = decoyLastNames[(hash + 7) % decoyLastNames.length]
@@ -518,7 +518,7 @@ export async function fetchDashboard(kind: DashboardKind, token: string): Promis
     },
     recent_patients: [
       { id: 'P-01', name: 'Aarav Sharma', status: 'Protected (Real)' },
-      { id: 'P-02', name: 'Karthik Reddy', status: 'Protected (Real)' },
+      { id: 'P-02', name: 'Suddha Sen', status: 'Protected (Real)' },
       { id: 'P-03', name: 'Rohan Verma', status: 'Protected (Real)' },
     ],
     deception_assets: [
