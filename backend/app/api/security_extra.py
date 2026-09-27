@@ -135,11 +135,11 @@ def security_test_marker(
     sample_decoy = {
         "patient_id": display_pid,
         "id": display_pid,
-        "name": getattr(first_decoy, "name", "Karthik Reddy") if first_decoy else "Karthik Reddy",
+        "name": getattr(first_decoy, "name", "Synthetic Twin Decoy") if first_decoy else "Synthetic Twin Decoy",
         "disease": clean_disease,
-        "diagnosis": getattr(first_decoy, "diagnosis", "Stable Clinical Presentation with Routine Follow-up") if first_decoy else "Stable Clinical Presentation with Routine Follow-up",
+        "diagnosis": getattr(first_decoy, "diagnosis", "Procedurally Generated Synthetic Twin (Served to Decoys)") if first_decoy else "Procedurally Generated Synthetic Twin (Served to Decoys)",
         "gender": getattr(first_decoy, "gender", "Male") if first_decoy else "Male",
-        "age": getattr(first_decoy, "age", "24") if first_decoy else "24",
+        "age": getattr(first_decoy, "age", "45") if first_decoy else "45",
         "watermark_id": wm_id,
     }
 

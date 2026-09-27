@@ -721,24 +721,29 @@ export default function AppUser() {
     if (serverResult && serverResult.matched) {
       setForensicScanResult(serverResult)
     } else if (isSynthetic && !isClean) {
-      let decoyName = 'Karthik Reddy'
-      let synId = 'SYN-01'
-      let realName = 'sonu'
-      let realId = 'P-01'
-      let hash = '0f4cc290-ca36-4a62-b111-5552018bf539'
+      const firstPatient = patients[0] || { name: 'sonu', id: 'P-01', patient_id: 'P-01' }
+      const syn = generateSyntheticTwinDetails(firstPatient.name, firstPatient.patient_id || firstPatient.id)
 
-      if (isAditya) {
-        decoyName = 'Aditya Patel'
-        synId = 'SYN-02'
-        realName = 'Suddha Sen'
-        realId = 'P-02'
-        hash = 'f968645d-3758-4749-a754-3578c7ed4fbf'
-      } else if (isRajesh) {
-        decoyName = 'Rajesh Kapoor'
-        synId = 'SYN-03'
-        realName = 'Vijay'
-        realId = 'P-03'
-        hash = '4c50e84c-9b82-4311-b597-5c4be7e05161'
+      let decoyName = syn.decoyName
+      let synId = syn.decoyId
+      let realName = firstPatient.name
+      let realId = firstPatient.id
+      let hash = syn.fingerprint
+
+      if (isAditya && patients[1]) {
+        const syn2 = generateSyntheticTwinDetails(patients[1].name, patients[1].patient_id || patients[1].id)
+        decoyName = syn2.decoyName
+        synId = syn2.decoyId
+        realName = patients[1].name
+        realId = patients[1].id
+        hash = syn2.fingerprint
+      } else if (isRajesh && patients[2]) {
+        const syn3 = generateSyntheticTwinDetails(patients[2].name, patients[2].patient_id || patients[2].id)
+        decoyName = syn3.decoyName
+        synId = syn3.decoyId
+        realName = patients[2].name
+        realId = patients[2].id
+        hash = syn3.fingerprint
       }
 
       setForensicScanResult({

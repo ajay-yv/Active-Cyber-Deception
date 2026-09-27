@@ -554,3 +554,4 @@ INFO:     127.0.0.1:17094 - "GET /api/dashboard/admin HTTP/1.1" 200 OK
 INFO:     127.0.0.1:17097 - "GET /api/analytics/summary HTTP/1.1" 200 OK
 INFO:     127.0.0.1:20723 - "DELETE /api/patients/history/P-08 HTTP/1.1" 200 OK
 INFO:     connection closed
+INFO:     127.0.0.1:42139 - "GET /api/patients?patient_id=P-01 HTTP/1.1" 200 OK

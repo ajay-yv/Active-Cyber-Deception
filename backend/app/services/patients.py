@@ -13,9 +13,9 @@ from app.repositories.watermark_repository import watermark_repository
 
 def _clean_name(raw: str | None) -> str:
     if not raw:
-        return "Karthik Reddy"
+        return "Synthetic Patient Twin"
     cleaned = str(raw).replace("Synthetic ", "").replace("synthetic ", "").replace("Fake ", "").replace("fake ", "").replace("Decoy ", "").replace("decoy ", "")
-    return cleaned.strip() or "Karthik Reddy"
+    return cleaned.strip() or "Synthetic Patient Twin"
 
 
 def _clean_disease(raw: str | None) -> str:

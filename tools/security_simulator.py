@@ -221,7 +221,7 @@ def run_attack(args: argparse.Namespace) -> None:
         _, res = request(target, "/api/patients?patient_id=P-01", token=probe_token, session_id=session_id)
         decoy = res.get("patient") if isinstance(res, dict) else None
         if not decoy:
-            decoy = {"patient_id": "P-01", "name": "Karthik Reddy", "disease": "Hypertension", "gender": "Male", "age": "24", "diagnosis": "Routine Clinical Follow-up", "doctor": "Dr. Rohan Patel (General Medicine)", "watermark_id": "cda09535-ce71-4728-8228-33dc5f2786f5"}
+            decoy = {"patient_id": "SYN-01", "name": "Dynamic Synthetic Decoy Twin", "disease": "Stage 2 Essential Hypertension with mild LVH", "gender": "Male", "age": "45", "diagnosis": "Procedurally Generated Synthetic Twin (Served to Decoys)", "doctor": "Dr. Priya Nair (Cardiology)", "watermark_id": "WM-AI-SECURITY-ACTIVE"}
         _print_extracted_patient("[HACKER DATA EXTRACTION PROBE AFTER BRUTE FORCE]:", decoy)
 
     elif attack_name == "credential-stuffing":
@@ -244,7 +244,7 @@ def run_attack(args: argparse.Namespace) -> None:
         _, res = request(target, "/api/patients?patient_id=P-01", token=probe_token, session_id=session_id)
         decoy = res.get("patient") if isinstance(res, dict) else None
         if not decoy:
-            decoy = {"patient_id": "P-01", "name": "Karthik Reddy", "disease": "Hypertension", "gender": "Male", "age": "24", "diagnosis": "Routine Clinical Follow-up", "doctor": "Dr. Rohan Patel (General Medicine)", "watermark_id": "cda09535-ce71-4728-8228-33dc5f2786f5"}
+            decoy = {"patient_id": "SYN-01", "name": "Dynamic Synthetic Decoy Twin", "disease": "Stage 2 Essential Hypertension with mild LVH", "gender": "Male", "age": "45", "diagnosis": "Procedurally Generated Synthetic Twin (Served to Decoys)", "doctor": "Dr. Priya Nair (Cardiology)", "watermark_id": "WM-AI-SECURITY-ACTIVE"}
         _print_extracted_patient("[HACKER DATA EXTRACTION PROBE AFTER CREDENTIAL STUFFING]:", decoy)
 
     elif attack_name == "enumeration":
@@ -273,7 +273,7 @@ def run_attack(args: argparse.Namespace) -> None:
         _, res = request(target, "/api/patients?patient_id=P-01", token=token, session_id=session_id)
         decoy = res.get("patient") if isinstance(res, dict) else None
         if not decoy:
-            decoy = {"patient_id": "P-01", "name": "Karthik Reddy", "disease": "Hypertension", "gender": "Male", "age": "24", "diagnosis": "Routine Clinical Follow-up", "doctor": "Dr. Rohan Patel (General Medicine)", "watermark_id": "cda09535-ce71-4728-8228-33dc5f2786f5"}
+            decoy = {"patient_id": "SYN-01", "name": "Dynamic Synthetic Decoy Twin", "disease": "Stage 2 Essential Hypertension with mild LVH", "gender": "Male", "age": "45", "diagnosis": "Procedurally Generated Synthetic Twin (Served to Decoys)", "doctor": "Dr. Priya Nair (Cardiology)", "watermark_id": "WM-AI-SECURITY-ACTIVE"}
         _print_extracted_patient("[HACKER DATA EXTRACTION PROBE AFTER API ABUSE]:", decoy)
 
     elif attack_name in {"patient", "single", "single-patient", "1"}:
@@ -315,7 +315,7 @@ def run_attack(args: argparse.Namespace) -> None:
         _, res = request(target, "/api/patients?patient_id=P-01", token=token, session_id=session_id)
         decoy = res.get("patient") if isinstance(res, dict) else None
         if not decoy:
-            decoy = {"patient_id": "P-01", "name": "Karthik Reddy", "disease": "Hypertension", "gender": "Male", "age": "24", "diagnosis": "Routine Clinical Follow-up", "doctor": "Dr. Rohan Patel (General Medicine)", "watermark_id": "cda09535-ce71-4728-8228-33dc5f2786f5"}
+            decoy = {"patient_id": "SYN-01", "name": "Dynamic Synthetic Decoy Twin", "disease": "Stage 2 Essential Hypertension with mild LVH", "gender": "Male", "age": "45", "diagnosis": "Procedurally Generated Synthetic Twin (Served to Decoys)", "doctor": "Dr. Priya Nair (Cardiology)", "watermark_id": "WM-AI-SECURITY-ACTIVE"}
         _print_extracted_patient("[HACKER DATA PROBE AFTER FORGED SESSION REJECTION]:", decoy)
 
     elif attack_name in {"sql-injection", "traversal"}:
@@ -339,7 +339,7 @@ def run_attack(args: argparse.Namespace) -> None:
             if isinstance(syn_res, dict) and "patient" in syn_res:
                 decoy = syn_res["patient"]
         if not decoy:
-            decoy = {"patient_id": "P-01", "name": "Karthik Reddy", "disease": "Hypertension", "gender": "Male", "age": "24", "diagnosis": "Routine Clinical Follow-up", "doctor": "Dr. Rohan Patel (General Medicine)", "watermark_id": "cda09535-ce71-4728-8228-33dc5f2786f5"}
+            decoy = {"patient_id": "SYN-01", "name": "Dynamic Synthetic Decoy Twin", "disease": "Stage 2 Essential Hypertension with mild LVH", "gender": "Male", "age": "45", "diagnosis": "Procedurally Generated Synthetic Twin (Served to Decoys)", "doctor": "Dr. Priya Nair (Cardiology)", "watermark_id": "WM-AI-SECURITY-ACTIVE"}
 
         label = "SQL INJECTION DUMP" if attack_name == "sql-injection" else "DIRECTORY TRAVERSAL EXFILTRATION"
         _print_extracted_patient(f"[HACKER RECEIVED {label}]:", decoy)
