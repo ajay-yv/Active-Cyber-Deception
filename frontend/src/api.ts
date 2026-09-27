@@ -284,6 +284,103 @@ export type PatientCreateResponse = {
   }
 }
 
+export type SyntheticTwinDetails = {
+  decoyId: string
+  decoyName: string
+  age: number
+  ageRange: string
+  disease: string
+  diagnosis: string
+  treatmentPattern: string
+  aadhaar: string
+  phone: string
+  email: string
+  fingerprint: string
+}
+
+export function generateSyntheticTwinDetails(realName: string, id: string | number, realAge?: number): SyntheticTwinDetails {
+  const cleanName = (realName || 'Patient').trim()
+  const numId = String(id).replace(/\D/g, '') || '1'
+  const hash = (cleanName + numId).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+
+  const decoyFirstNames = ['Karthik', 'Aditya', 'Rajesh', 'Vikram', 'Ananya', 'Rohan', 'Sneha', 'Deepak', 'Meera', 'Arjun', 'Suresh', 'Pooja', 'Priya', 'Kavita', 'Siddharth']
+  const decoyLastNames = ['Reddy', 'Patel', 'Kapoor', 'Sharma', 'Verma', 'Joshi', 'Chawla', 'Deshmukh', 'Mehta', 'Nair', 'Rao', 'Kulkarni', 'Iyer', 'Bhat', 'Gupta']
+
+  const firstName = decoyFirstNames[hash % decoyFirstNames.length]
+  const lastName = decoyLastNames[(hash + 7) % decoyLastNames.length]
+  const decoyName = `${firstName} ${lastName}`
+
+  const baseAge = realAge || 35
+  const decoyAge = Math.min(85, Math.max(22, (baseAge * 1.4 + (hash % 15)) % 65 + 20))
+  const ageRange = `${Math.floor(decoyAge - 2)}-${Math.floor(decoyAge + 3)} yrs`
+
+  const diseases = [
+    'Type 2 Diabetes Mellitus with Peripheral Neuropathy',
+    'Essential Hypertension (Stage 2 Primary with LVH)',
+    'Ischemic Heart Disease (Coronary Artery Disease)',
+    'Chronic Kidney Disease (Stage 3A Glomerulonephritis)',
+    'Bronchial Asthma (Moderate Persistent Airway Disease)',
+    'Rheumatoid Arthritis (Seropositive Polyarthritis)',
+    'Hyperthyroidism (Graves Autoimmune Thyroid Disease)',
+    'Gastroesophageal Reflux Disease (GERD Grade II)',
+  ]
+
+  const diagnoses = [
+    'Uncontrolled Hyperglycemia with Distal Microvascular Changes',
+    'Elevated Systolic BP (165/98 mmHg) & Concentric Cardiac Remodeling',
+    'Subendocardial Ischemia with Exertional Angina',
+    'Mild GFR Reduction (52 mL/min) with Microalbuminuria',
+    'Bronchospasm with Reduced FEV1/FVC Ratio (68%)',
+    'Bilateral Symmetrical Joint Inflammation & Elevated ESR',
+    'Suppressed TSH (<0.01 uIU/mL) with Diffuse Thyroid Enlargement',
+    'Endoscopic Reflux Esophagitis & Lower Esophageal Sphincter Incompetence',
+  ]
+
+  const treatmentPatterns = [
+    'Metformin 1000mg BID + Empagliflozin 10mg QD + Retinal Screening',
+    'Telmisartan 40mg + Amlodipine 5mg Daily + Low Sodium Diet',
+    'Atorvastatin 40mg + Aspirin 75mg + Sublingual Nitroglycerin PRN',
+    'Ramipril 5mg QD + Nephrology Monitoring + Fluid Balance Protocol',
+    'Fluticasone/Salmeterol 250/50 Inhaler BID + Montelukast 10mg',
+    'Methotrexate 15mg Weekly + Folic Acid 5mg + Hydroxychloroquine 200mg',
+    'Methimazole 15mg Daily + Propranolol 20mg TID',
+    'Pantoprazole 40mg AC + Sucralfate Suspension + Lifestyle Modification',
+  ]
+
+  const disease = diseases[hash % diseases.length]
+  const diagnosis = diagnoses[hash % diagnoses.length]
+  const treatmentPattern = treatmentPatterns[hash % treatmentPatterns.length]
+
+  const randomDigits = ((hash * 137) % 900) + 100
+  const emailName = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const email = `${emailName}${randomDigits}@gmail.com`
+
+  const aadhaarPart1 = ((hash * 43) % 9000) + 1000
+  const aadhaarPart2 = ((hash * 89) % 9000) + 1000
+  const aadhaarPart3 = ((hash * 167) % 9000) + 1000
+  const aadhaar = `${aadhaarPart1} ${aadhaarPart2} ${aadhaarPart3}`
+
+  const phoneSuffix = ((hash * 97) % 90000) + 10000
+  const phone = `+91 9845${phoneSuffix}`
+
+  const fingerprintHex = (hash * 9999999).toString(16).toUpperCase().padStart(8, '0')
+  const fingerprint = `WM-FINGERPRINT-${fingerprintHex}`
+
+  return {
+    decoyId: `SYN-${String(numId).padStart(2, '0')}`,
+    decoyName,
+    age: Math.round(decoyAge),
+    ageRange,
+    disease,
+    diagnosis,
+    treatmentPattern,
+    aadhaar,
+    phone,
+    email,
+    fingerprint,
+  }
+}
+
 export type RoleName = LoginResponse['user']['role']
 
 const configuredApiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').trim()
@@ -705,19 +802,24 @@ export async function createPatient(patient: PatientCreate, token: string, sessi
   }
 
   const newNumId = Math.floor(100 + Math.random() * 900)
+  const synDetails = generateSyntheticTwinDetails(patient.name, newNumId, patient.age)
+
   const createdRecord: PatientRecord = {
     ...patient,
     patient_id: newNumId,
     id: `P-${newNumId}`,
-    watermark_id: `WM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+    watermark_id: synDetails.fingerprint,
     forensic_record: {
-      synthetic_patient_id: `SYN-${newNumId}`,
-      watermark_fingerprint: `WM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-      name: `Decoy Twin (${patient.name})`,
-      disease: patient.disease || 'Clinical Condition',
-      diagnosis: patient.diagnosis || 'Evaluation',
-      treatment_pattern: 'Decoy Clinical Care',
-      age_range: `${Math.max(18, patient.age - 3)}-${patient.age + 3} yrs`,
+      synthetic_patient_id: synDetails.decoyId,
+      watermark_fingerprint: synDetails.fingerprint,
+      name: synDetails.decoyName,
+      disease: synDetails.disease,
+      diagnosis: synDetails.diagnosis,
+      treatment_pattern: synDetails.treatmentPattern,
+      age_range: synDetails.ageRange,
+      aadhaar_number: synDetails.aadhaar,
+      phone_number: synDetails.phone,
+      email: synDetails.email,
     },
   }
 
@@ -725,21 +827,21 @@ export async function createPatient(patient: PatientCreate, token: string, sessi
     decision: { route: 'allow', threat_score: 0, reason: 'Local Enclave Registered' },
     patient: createdRecord,
     synthetic_twin: {
-      synthetic_patient_id: `SYN-${newNumId}`,
+      synthetic_patient_id: synDetails.decoyId,
       real_patient_id: `P-${newNumId}`,
-      name: `Decoy Twin (${patient.name})`,
+      name: synDetails.decoyName,
       address: patient.address || 'Confidential',
-      phone_number: patient.phone || '9999999999',
-      aadhaar_number: patient.aadhaar || '000000000000',
-      email: `${patient.name.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
+      phone_number: synDetails.phone,
+      aadhaar_number: synDetails.aadhaar,
+      email: synDetails.email,
       insurance_details: 'Standard Network Cover',
       emergency_contact: patient.emergency_contact || 'None',
-      disease: patient.disease || 'Clinical Evaluation',
-      diagnosis: patient.diagnosis || 'Observation',
+      disease: synDetails.disease,
+      diagnosis: synDetails.diagnosis,
       medicines: patient.symptoms || [],
-      treatment_pattern: 'Standard Clinical Support',
-      age_range: `${Math.max(18, patient.age - 3)}-${patient.age + 3} yrs`,
-      watermark_fingerprint: `WM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+      treatment_pattern: synDetails.treatmentPattern,
+      age_range: synDetails.ageRange,
+      watermark_fingerprint: synDetails.fingerprint,
     },
   }
 }
@@ -770,19 +872,24 @@ export async function updatePatient(patientId: string, patient: PatientCreate, t
   }
 
   const numId = parseInt(String(patientId).replace(/\D/g, '')) || 101
+  const synDetails = generateSyntheticTwinDetails(patient.name, numId, patient.age)
+
   const updatedRecord: PatientRecord = {
     ...patient,
     patient_id: numId,
     id: patientId,
-    watermark_id: `WM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+    watermark_id: synDetails.fingerprint,
     forensic_record: {
-      synthetic_patient_id: `SYN-${numId}`,
-      watermark_fingerprint: `WM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-      name: `Decoy Twin (${patient.name})`,
-      disease: patient.disease || 'Clinical Condition',
-      diagnosis: patient.diagnosis || 'Evaluation',
-      treatment_pattern: 'Decoy Clinical Care',
-      age_range: `${Math.max(18, patient.age - 3)}-${patient.age + 3} yrs`,
+      synthetic_patient_id: synDetails.decoyId,
+      watermark_fingerprint: synDetails.fingerprint,
+      name: synDetails.decoyName,
+      disease: synDetails.disease,
+      diagnosis: synDetails.diagnosis,
+      treatment_pattern: synDetails.treatmentPattern,
+      age_range: synDetails.ageRange,
+      aadhaar_number: synDetails.aadhaar,
+      phone_number: synDetails.phone,
+      email: synDetails.email,
     },
   }
 
@@ -790,21 +897,21 @@ export async function updatePatient(patientId: string, patient: PatientCreate, t
     decision: { route: 'allow', threat_score: 0, reason: 'Local Enclave Updated' },
     patient: updatedRecord,
     synthetic_twin: {
-      synthetic_patient_id: `SYN-${numId}`,
+      synthetic_patient_id: synDetails.decoyId,
       real_patient_id: String(patientId),
-      name: `Decoy Twin (${patient.name})`,
+      name: synDetails.decoyName,
       address: patient.address || 'Confidential',
-      phone_number: patient.phone || '9999999999',
-      aadhaar_number: patient.aadhaar || '000000000000',
-      email: `${patient.name.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
+      phone_number: synDetails.phone,
+      aadhaar_number: synDetails.aadhaar,
+      email: synDetails.email,
       insurance_details: 'Standard Network Cover',
       emergency_contact: patient.emergency_contact || 'None',
-      disease: patient.disease || 'Clinical Evaluation',
-      diagnosis: patient.diagnosis || 'Observation',
+      disease: synDetails.disease,
+      diagnosis: synDetails.diagnosis,
       medicines: patient.symptoms || [],
-      treatment_pattern: 'Standard Clinical Support',
-      age_range: `${Math.max(18, patient.age - 3)}-${patient.age + 3} yrs`,
-      watermark_fingerprint: `WM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+      treatment_pattern: synDetails.treatmentPattern,
+      age_range: synDetails.ageRange,
+      watermark_fingerprint: synDetails.fingerprint,
     },
   }
 }

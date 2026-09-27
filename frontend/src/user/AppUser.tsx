@@ -246,19 +246,108 @@ function calculateAgeFromDob(dobString: string): number {
   return age >= 0 ? age : 0
 }
 
-export function generateSyntheticTwinName(realName: string, id: string | number): { decoyName: string; decoyId: string } {
+export type SyntheticTwinDetails = {
+  decoyId: string
+  decoyName: string
+  age: number
+  ageRange: string
+  disease: string
+  diagnosis: string
+  treatmentPattern: string
+  aadhaar: string
+  phone: string
+  email: string
+  fingerprint: string
+}
+
+export function generateSyntheticTwinDetails(realName: string, id: string | number, realAge?: number): SyntheticTwinDetails {
   const cleanName = (realName || 'Patient').trim()
-  const hash = (cleanName + String(id || '1')).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  const decoyFirstNames = ['Karthik', 'Aditya', 'Rajesh', 'Vikram', 'Ananya', 'Rohan', 'Sneha', 'Deepak', 'Meera', 'Arjun']
-  const decoyLastNames = ['Reddy', 'Patel', 'Kapoor', 'Sharma', 'Verma', 'Joshi', 'Chawla', 'Deshmukh', 'Mehta', 'Nair']
-  
-  const firstName = decoyFirstNames[hash % decoyFirstNames.length]
-  const lastName = decoyLastNames[(hash + 3) % decoyLastNames.length]
   const numId = String(id).replace(/\D/g, '') || '1'
-  
+  const hash = (cleanName + numId).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+
+  const decoyFirstNames = ['Karthik', 'Aditya', 'Rajesh', 'Vikram', 'Ananya', 'Rohan', 'Sneha', 'Deepak', 'Meera', 'Arjun', 'Suresh', 'Pooja', 'Priya', 'Kavita', 'Siddharth']
+  const decoyLastNames = ['Reddy', 'Patel', 'Kapoor', 'Sharma', 'Verma', 'Joshi', 'Chawla', 'Deshmukh', 'Mehta', 'Nair', 'Rao', 'Kulkarni', 'Iyer', 'Bhat', 'Gupta']
+
+  const firstName = decoyFirstNames[hash % decoyFirstNames.length]
+  const lastName = decoyLastNames[(hash + 7) % decoyLastNames.length]
+  const decoyName = `${firstName} ${lastName}`
+
+  const baseAge = realAge || 35
+  const decoyAge = Math.min(85, Math.max(22, (baseAge * 1.4 + (hash % 15)) % 65 + 20))
+  const ageRange = `${Math.floor(decoyAge - 2)}-${Math.floor(decoyAge + 3)} yrs`
+
+  const diseases = [
+    'Type 2 Diabetes Mellitus with Peripheral Neuropathy',
+    'Essential Hypertension (Stage 2 Primary with LVH)',
+    'Ischemic Heart Disease (Coronary Artery Disease)',
+    'Chronic Kidney Disease (Stage 3A Glomerulonephritis)',
+    'Bronchial Asthma (Moderate Persistent Airway Disease)',
+    'Rheumatoid Arthritis (Seropositive Polyarthritis)',
+    'Hyperthyroidism (Graves Autoimmune Thyroid Disease)',
+    'Gastroesophageal Reflux Disease (GERD Grade II)',
+  ]
+
+  const diagnoses = [
+    'Uncontrolled Hyperglycemia with Distal Microvascular Changes',
+    'Elevated Systolic BP (165/98 mmHg) & Concentric Cardiac Remodeling',
+    'Subendocardial Ischemia with Exertional Angina',
+    'Mild GFR Reduction (52 mL/min) with Microalbuminuria',
+    'Bronchospasm with Reduced FEV1/FVC Ratio (68%)',
+    'Bilateral Symmetrical Joint Inflammation & Elevated ESR',
+    'Suppressed TSH (<0.01 uIU/mL) with Diffuse Thyroid Enlargement',
+    'Endoscopic Reflux Esophagitis & Lower Esophageal Sphincter Incompetence',
+  ]
+
+  const treatmentPatterns = [
+    'Metformin 1000mg BID + Empagliflozin 10mg QD + Retinal Screening',
+    'Telmisartan 40mg + Amlodipine 5mg Daily + Low Sodium Diet',
+    'Atorvastatin 40mg + Aspirin 75mg + Sublingual Nitroglycerin PRN',
+    'Ramipril 5mg QD + Nephrology Monitoring + Fluid Balance Protocol',
+    'Fluticasone/Salmeterol 250/50 Inhaler BID + Montelukast 10mg',
+    'Methotrexate 15mg Weekly + Folic Acid 5mg + Hydroxychloroquine 200mg',
+    'Methimazole 15mg Daily + Propranolol 20mg TID',
+    'Pantoprazole 40mg AC + Sucralfate Suspension + Lifestyle Modification',
+  ]
+
+  const disease = diseases[hash % diseases.length]
+  const diagnosis = diagnoses[hash % diagnoses.length]
+  const treatmentPattern = treatmentPatterns[hash % treatmentPatterns.length]
+
+  const randomDigits = ((hash * 137) % 900) + 100
+  const emailName = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const email = `${emailName}${randomDigits}@gmail.com`
+
+  const aadhaarPart1 = ((hash * 43) % 9000) + 1000
+  const aadhaarPart2 = ((hash * 89) % 9000) + 1000
+  const aadhaarPart3 = ((hash * 167) % 9000) + 1000
+  const aadhaar = `${aadhaarPart1} ${aadhaarPart2} ${aadhaarPart3}`
+
+  const phoneSuffix = ((hash * 97) % 90000) + 10000
+  const phone = `+91 9845${phoneSuffix}`
+
+  const fingerprintHex = (hash * 9999999).toString(16).toUpperCase().padStart(8, '0')
+  const fingerprint = `WM-FINGERPRINT-${fingerprintHex}`
+
   return {
-    decoyName: `${firstName} ${lastName} (Decoy Twin)`,
-    decoyId: `SYN-${numId.padStart(2, '0')}`,
+    decoyId: `SYN-${String(numId).padStart(2, '0')}`,
+    decoyName,
+    age: Math.round(decoyAge),
+    ageRange,
+    disease,
+    diagnosis,
+    treatmentPattern,
+    aadhaar,
+    phone,
+    email,
+    fingerprint,
+  }
+}
+
+export function generateSyntheticTwinName(realName: string, id: string | number): { decoyName: string; decoyId: string } {
+  const details = generateSyntheticTwinDetails(realName, id)
+  return {
+    decoyName: details.decoyName,
+    decoyId: details.decoyId,
   }
 }
 
@@ -2383,32 +2472,42 @@ export default function AppUser() {
                       </div>
                     ) : (
                       patients.map((p) => {
-                        const synInfo = generateSyntheticTwinName(p.name, p.patient_id || p.id)
+                        const synDetails = generateSyntheticTwinDetails(p.name, p.patient_id || p.id, p.age)
                         const syn = p.forensic_record
-                        const synName = syn?.name || synInfo.decoyName
-                        const synId = syn?.synthetic_patient_id || synInfo.decoyId
-                        const synDisease = syn?.disease || `${p.disease || 'Clinical Condition'} (Synthetic Twin)`
-                        const synAgeRange = syn?.age_range || `${Math.max(18, (p.age || 30) - 3)}-${(p.age || 30) + 3} yrs`
+                        const synName = (syn?.name && !syn.name.includes('Decoy Twin (') ? syn.name : synDetails.decoyName)
+                        const synId = syn?.synthetic_patient_id || synDetails.decoyId
+                        const synDisease = syn?.disease && !syn.disease.includes('(Synthetic Twin)') ? syn.disease : synDetails.disease
+                        const synDiagnosis = syn?.diagnosis || synDetails.diagnosis
+                        const synTreatment = syn?.treatment_pattern || synDetails.treatmentPattern
+                        const synAgeRange = syn?.age_range || synDetails.ageRange
+                        const synAadhaar = syn?.aadhaar_number || synDetails.aadhaar
+                        const synPhone = syn?.phone_number || synDetails.phone
+                        const synEmail = syn?.email || synDetails.email
+                        const synFingerprint = syn?.watermark_fingerprint || synDetails.fingerprint
 
                         return (
-                          <div key={p.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: 16, padding: 18, display: 'grid', gap: 10 }}>
+                          <div key={p.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: 16, padding: 18, display: 'grid', gap: 12 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                               <div>
                                 <span style={{ fontSize: '0.72rem', color: '#c084fc', fontWeight: 800, textTransform: 'uppercase' }}>Synthetic Twin Decoy</span>
-                                <h4 style={{ margin: '2px 0 0', color: '#f8fafc', fontSize: '1.05rem', fontWeight: 700 }}>{synName}</h4>
+                                <h4 style={{ margin: '2px 0 0', color: '#f8fafc', fontSize: '1.1rem', fontWeight: 700 }}>{synName}</h4>
                               </div>
                               <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: 6 }}>
                                 {synId}
                               </span>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '0.8rem', color: '#cbd5e1' }}>
+                            <div style={{ display: 'grid', gap: 6, fontSize: '0.8rem', color: '#cbd5e1' }}>
                               <div><strong>Condition:</strong> <span style={{ color: '#e2e8f0' }}>{synDisease}</span></div>
-                              <div><strong>Age Range:</strong> {synAgeRange}</div>
-                              <div><strong>Department:</strong> {p.department || 'Cardiology'}</div>
-                              <div><strong>Doctor:</strong> {p.doctor_assigned || 'Dr. Priya Nair'}</div>
-                              <div><strong>Watermark:</strong> <code style={{ color: '#38bdf8' }}>{p.watermark_id?.slice(0, 12) || 'WM-SYNTH'}</code></div>
-                              <div><strong>Lure Status:</strong> <span style={{ color: '#34d399', fontWeight: 700 }}>Adaptive Lure Active</span></div>
+                              <div><strong>Diagnosis:</strong> <span style={{ color: '#94a3b8' }}>{synDiagnosis}</span></div>
+                              <div><strong>Treatment Pattern:</strong> <span style={{ color: '#a7f3d0' }}>{synTreatment}</span></div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 4 }}>
+                                <div><strong>Age Range:</strong> {synAgeRange}</div>
+                                <div><strong>Phone:</strong> {synPhone}</div>
+                                <div><strong>Aadhaar:</strong> {synAadhaar}</div>
+                                <div><strong>Email:</strong> <span style={{ color: '#38bdf8' }}>{synEmail}</span></div>
+                              </div>
+                              <div><strong>Watermark Fingerprint:</strong> <code style={{ color: '#c084fc', fontSize: '0.75rem' }}>{synFingerprint}</code></div>
                             </div>
 
                             <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
