@@ -750,7 +750,15 @@ export default function AppUser() {
     if (dashboardRes.status === 'fulfilled') setDashboard(dashboardRes.value)
     else setError(String((dashboardRes as PromiseRejectedResult).reason))
 
-    if (patientsRes.status === 'fulfilled') setPatients(patientsRes.value.patients || [])
+    if (patientsRes.status === 'fulfilled') {
+      const fetched = patientsRes.value.patients || []
+      setPatients((prev) => {
+        if (fetched.length === 0) return prev
+        const fetchedIds = new Set(fetched.map((p) => String(p.id)))
+        const localOnly = prev.filter((p) => !fetchedIds.has(String(p.id)))
+        return [...fetched, ...localOnly]
+      })
+    }
     if (historyRes.status === 'fulfilled') setPatientHistory(historyRes.value.history || [])
     if (analyticsRes.status === 'fulfilled') setAnalytics(analyticsRes.value)
     if (auditRes.status === 'fulfilled') setAuditEvents(auditRes.value || [])
