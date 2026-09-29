@@ -12,10 +12,14 @@ export type DashboardResponse = {
   recent_patients?: Array<{ id: string; name: string; status: string }>
   deception_assets?: Array<{ type: string; label: string }>
   synthetic_records?: Array<{
+    id?: string
+    patient_id?: string
     synthetic_patient_id: string
     name: string
+    age?: string
     disease: string
     diagnosis: string
+    treatment_pattern?: string
     medicines: string[]
     age_range?: string
     phone_number?: string
@@ -23,6 +27,7 @@ export type DashboardResponse = {
     aadhaar_number?: string
     address?: string
     insurance_details?: string
+    watermark_fingerprint?: string
   }>
   alerts?: DashboardAlert[]
 }

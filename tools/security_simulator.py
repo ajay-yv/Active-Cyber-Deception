@@ -105,39 +105,29 @@ def login(target: str, username: str = DUMMY_USERNAME, password: str = DUMMY_PAS
 
 def _clean_disease_name(raw_disease: str | None) -> str:
     if not raw_disease:
-        return "Hypertension Management"
-    cleaned = str(raw_disease).replace("Transformed ", "").replace("transformed ", "")
-    cleaned = cleaned.replace(" (Vip Executive Protocol)", "").replace(" (VIP Executive Protocol)", "")
-    return cleaned.strip()
+        return ""
+    return str(raw_disease).strip()
 
 
 def _clean_patient_id(raw_pid: str | None) -> str:
     if not raw_pid:
-        return "P-01"
-    pid = str(raw_pid).strip()
-    if pid.upper().startswith("SYN-"):
-        return f"P-{pid[4:]}"
-    if pid.upper().startswith("SYN"):
-        return f"P-{pid[3:]}"
-    if pid.upper().startswith("PAT-"):
-        return f"P-{pid[4:]}"
-    return pid
+        return ""
+    return str(raw_pid).strip()
 
 
 def _clean_name(raw_name: str | None) -> str:
     if not raw_name:
-        return "Dynamic Decoy Twin"
-    cleaned = str(raw_name).replace("Fake ", "").replace("fake ", "").replace("Decoy ", "").replace("decoy ", "")
-    return cleaned.strip()
+        return ""
+    return str(raw_name).strip()
 
 
 def _format_response_summary(res: dict | str) -> str:
     if isinstance(res, dict):
         if "patient" in res and isinstance(res["patient"], dict):
             p = res["patient"]
-            pid = _clean_patient_id(p.get("id", "P-01"))
-            pname = _clean_name(p.get("name", "Dynamic Decoy Twin"))
-            pdiag = p.get("diagnosis", "Routine Follow-up")
+            pid = _clean_patient_id(p.get("synthetic_patient_id") or p.get("id"))
+            pname = _clean_name(p.get("name"))
+            pdiag = p.get("diagnosis", "")
             return f"Patient Record (ID: {pid}, Name: '{pname}', Diagnosis: '{pdiag}')"
         if "patients" in res and isinstance(res["patients"], list):
             count = len(res["patients"])
@@ -153,16 +143,19 @@ def _format_response_summary(res: dict | str) -> str:
 
 
 def _print_extracted_patient(header: str, patient_data: dict | None) -> None:
+    if not patient_data:
+        print(f"             {header} No persisted synthetic twin was available.")
+        return
     data = patient_data or {}
-    pid = _clean_patient_id(data.get("patient_id") or data.get("id") or data.get("synthetic_id") or "P-01")
-    name = _clean_name(data.get("name") or data.get("fake_name") or "Dynamic Decoy Twin")
-    disease = _clean_disease_name(data.get("disease") or data.get("fake_disease") or "Essential Hypertension")
-    diagnosis = data.get("diagnosis") or "Stable Clinical Presentation with Routine Follow-up"
-    doctor = data.get("doctor") or "Dr. Rohan Patel (General Medicine)"
-    gender = data.get("gender") or "Male"
-    age = str(data.get("age") or "24")
+    pid = _clean_patient_id(data.get("patient_id") or data.get("id") or data.get("synthetic_patient_id"))
+    name = _clean_name(data.get("name") or data.get("fake_name"))
+    disease = _clean_disease_name(data.get("disease") or data.get("fake_disease"))
+    diagnosis = data.get("diagnosis") or ""
+    doctor = data.get("doctor_assigned") or data.get("doctor") or ""
+    gender = data.get("gender") or ""
+    age = str(data.get("age_range") or data.get("age") or "")
     raw_wm = data.get("watermark_id")
-    checksum = raw_wm if raw_wm else "cda09535-ce71-4728-8228-33dc5f2786f5"
+    checksum = raw_wm or ""
 
     print("             --------------------------------------------------")
     print(f"             {header}")
@@ -220,8 +213,6 @@ def run_attack(args: argparse.Namespace) -> None:
         probe_token = login(target)
         _, res = request(target, "/api/patients?patient_id=P-01", token=probe_token, session_id=session_id)
         decoy = res.get("patient") if isinstance(res, dict) else None
-        if not decoy:
-            decoy = {"patient_id": "SYN-01", "name": "Dynamic Synthetic Decoy Twin", "disease": "Stage 2 Essential Hypertension with mild LVH", "gender": "Male", "age": "45", "diagnosis": "Procedurally Generated Synthetic Twin (Served to Decoys)", "doctor": "Dr. Priya Nair (Cardiology)", "watermark_id": "WM-AI-SECURITY-ACTIVE"}
         _print_extracted_patient("[HACKER DATA EXTRACTION PROBE AFTER BRUTE FORCE]:", decoy)
 
     elif attack_name == "credential-stuffing":
@@ -243,8 +234,6 @@ def run_attack(args: argparse.Namespace) -> None:
         probe_token = login(target)
         _, res = request(target, "/api/patients?patient_id=P-01", token=probe_token, session_id=session_id)
         decoy = res.get("patient") if isinstance(res, dict) else None
-        if not decoy:
-            decoy = {"patient_id": "SYN-01", "name": "Dynamic Synthetic Decoy Twin", "disease": "Stage 2 Essential Hypertension with mild LVH", "gender": "Male", "age": "45", "diagnosis": "Procedurally Generated Synthetic Twin (Served to Decoys)", "doctor": "Dr. Priya Nair (Cardiology)", "watermark_id": "WM-AI-SECURITY-ACTIVE"}
         _print_extracted_patient("[HACKER DATA EXTRACTION PROBE AFTER CREDENTIAL STUFFING]:", decoy)
 
     elif attack_name == "enumeration":
@@ -272,8 +261,6 @@ def run_attack(args: argparse.Namespace) -> None:
 
         _, res = request(target, "/api/patients?patient_id=P-01", token=token, session_id=session_id)
         decoy = res.get("patient") if isinstance(res, dict) else None
-        if not decoy:
-            decoy = {"patient_id": "SYN-01", "name": "Dynamic Synthetic Decoy Twin", "disease": "Stage 2 Essential Hypertension with mild LVH", "gender": "Male", "age": "45", "diagnosis": "Procedurally Generated Synthetic Twin (Served to Decoys)", "doctor": "Dr. Priya Nair (Cardiology)", "watermark_id": "WM-AI-SECURITY-ACTIVE"}
         _print_extracted_patient("[HACKER DATA EXTRACTION PROBE AFTER API ABUSE]:", decoy)
 
     elif attack_name in {"patient", "single", "single-patient", "1"}:
@@ -284,8 +271,7 @@ def run_attack(args: argparse.Namespace) -> None:
         print(f"[SIMULATION] [1/1] GET {path} -> HTTP {status} ({summary})")
         decoy = res.get("patient") if isinstance(res, dict) else (res.get("patients", [{}])[0] if isinstance(res, dict) and res.get("patients") else None)
         _print_extracted_patient(f"[HACKER RETRIEVED 1 RECORD FOR {path}]:", decoy)
-        print("             [SYNTHETIC OUTPUT] Records requested: 1 | Synthetic records returned: 1")
-        print("             [!] Real-time Burglar Alarm Dispatched to User/Admin dashboard!")
+        print(f"             [SYNTHETIC OUTPUT] Records requested: 1 | Synthetic records returned: {1 if decoy else 0}")
 
     elif attack_name == "exfiltration":
         dump_count = bounded(records_cnt, MAX_RECORDS, "count")
@@ -299,8 +285,8 @@ def run_attack(args: argparse.Namespace) -> None:
             for p in dumped_records:
                 c_name = _clean_name(p.get("name"))
                 c_disease = _clean_disease_name(p.get("disease"))
-                pid = _clean_patient_id(p.get("id") or "P-01")
-                checksum = p.get("watermark_id") or "cda09535-ce71-4728-8228-33dc5f2786f5"
+                pid = _clean_patient_id(p.get("synthetic_patient_id") or p.get("id"))
+                checksum = p.get("watermark_id") or ""
                 print(f"             - Patient Record: [{pid}] {c_name} | {c_disease} | Verification Hash: {checksum}")
 
     elif attack_name == "session-abuse":
@@ -314,8 +300,6 @@ def run_attack(args: argparse.Namespace) -> None:
 
         _, res = request(target, "/api/patients?patient_id=P-01", token=token, session_id=session_id)
         decoy = res.get("patient") if isinstance(res, dict) else None
-        if not decoy:
-            decoy = {"patient_id": "SYN-01", "name": "Dynamic Synthetic Decoy Twin", "disease": "Stage 2 Essential Hypertension with mild LVH", "gender": "Male", "age": "45", "diagnosis": "Procedurally Generated Synthetic Twin (Served to Decoys)", "doctor": "Dr. Priya Nair (Cardiology)", "watermark_id": "WM-AI-SECURITY-ACTIVE"}
         _print_extracted_patient("[HACKER DATA PROBE AFTER FORGED SESSION REJECTION]:", decoy)
 
     elif attack_name in {"sql-injection", "traversal"}:
@@ -338,9 +322,6 @@ def run_attack(args: argparse.Namespace) -> None:
             _, syn_res = request(target, "/api/patients?patient_id=P-01", token=token, session_id=session_id)
             if isinstance(syn_res, dict) and "patient" in syn_res:
                 decoy = syn_res["patient"]
-        if not decoy:
-            decoy = {"patient_id": "SYN-01", "name": "Dynamic Synthetic Decoy Twin", "disease": "Stage 2 Essential Hypertension with mild LVH", "gender": "Male", "age": "45", "diagnosis": "Procedurally Generated Synthetic Twin (Served to Decoys)", "doctor": "Dr. Priya Nair (Cardiology)", "watermark_id": "WM-AI-SECURITY-ACTIVE"}
-
         label = "SQL INJECTION DUMP" if attack_name == "sql-injection" else "DIRECTORY TRAVERSAL EXFILTRATION"
         _print_extracted_patient(f"[HACKER RECEIVED {label}]:", decoy)
 

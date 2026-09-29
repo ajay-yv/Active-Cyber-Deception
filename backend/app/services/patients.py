@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.repositories.patient_repository import PatientRepository
-from app.repositories.synthetic_repository import SyntheticRepository
+from app.repositories.synthetic_repository import SyntheticRepository, serialize_catalog_twin
 from app.schemas import PatientCreate, PatientRecord, TwinRecord
 from .ai_engine_proxy import TwinGeneratorProxy
 from .registries import patient_repository, synthetic_repository
@@ -56,11 +56,11 @@ class PatientService:
         real_pid_val = patient.id or str(patient.patient_id or "")
         twin["real_patient_id"] = real_pid_val
 
-        # Deterministic 1:1 synthetic ID mapping: P-01 -> SYN-01, P-02 -> SYN-02
+        # Deterministic 1:1 synthetic ID mapping: P-01 -> P-01, P-02 -> P-02
         if real_pid_val.upper().startswith("P-"):
-            twin["synthetic_patient_id"] = f"SYN-{real_pid_val[2:]}"
+            twin["synthetic_patient_id"] = f"P-{real_pid_val[2:]}"
         elif str(real_pid_val).isdigit():
-            twin["synthetic_patient_id"] = f"SYN-{int(real_pid_val):02d}"
+            twin["synthetic_patient_id"] = f"P-{int(real_pid_val):02d}"
 
         # Ensure synthetic values are strictly different from the original real patient
         if twin.get("name") == patient.name or not twin.get("name"):
@@ -152,44 +152,36 @@ class PatientService:
         ip_address: str = "127.0.0.1",
         user_agent: str = "",
         username: str | None = None,
-    ) -> dict:
+    ) -> dict | None:
         real_patient = patient_repository.find_by_id(patient_id)
-        if real_patient is None:
-            digits = "".join(ch for ch in str(patient_id) if ch.isdigit())
-            seq_num = int(digits) if digits else 1
-            real_patient = PatientRecord(
-                id=patient_id if str(patient_id).upper().startswith("P-") else f"P-{seq_num:02d}",
-                patient_id=seq_num,
-                name="Original Patient",
-                age=45,
-                disease="Essential Primary Hypertension",
-                diagnosis="Hypertensive Cardiovascular Disease",
-                medicines=["Amlodipine 5mg", "Telmisartan 40mg"],
-                dosages=["1 OD", "1 OD"],
-                treatment_pattern="Standard Cardiology Protocol",
-                phone="+91-91234-56789",
-                email="patient.real@hospital.org",
-                address="Original Patient Residential Address",
-            )
-
-        twin = self.get_or_create_synthetic_twin(real_patient, session_id=session_id, hospital_id=hospital_id)
-        wm = watermark_repository.find_by_source_id(twin.synthetic_patient_id, source_type="synthetic")
-        watermark_id = wm.watermark_id if wm else twin.watermark_id
+        twin = next(
+            (
+                record
+                for record in synthetic_repository.valid_catalog()
+                if record.real_patient_id == patient_id
+            ),
+            None,
+        )
+        wm = watermark_repository.find_by_source_id(twin.synthetic_patient_id, source_type="synthetic") if twin else None
+        watermark_id = wm.watermark_id if wm else (twin.watermark_id if twin else None)
 
         record_forensic_attack(
             attack_type="PATIENT_ENUMERATION",
             session_id=session_id,
             risk_score=94.0,
             gateway_decision="DECEIVE",
-            patient_id=real_patient.id,
-            synthetic_patient_id=twin.synthetic_patient_id,
+            patient_id=real_patient.id if real_patient else patient_id,
+            synthetic_patient_id=twin.synthetic_patient_id if twin else None,
             username=username,
             ip_address=ip_address,
             user_agent=user_agent,
             watermark_id=watermark_id,
-            records_returned=1,
+            records_returned=1 if twin else 0,
             blocked_status=False,
         )
+
+        if twin is None:
+            return None
 
         target_pid = twin.synthetic_patient_id
 
@@ -197,7 +189,7 @@ class PatientService:
             "id": target_pid,
             "patient_id": target_pid,
             "synthetic_patient_id": twin.synthetic_patient_id,
-            "name": _clean_name(twin.name),
+            "name": twin.name,
             "age": twin.age_range,
             "gender": twin.gender or "Male",
             "date_of_birth": twin.date_of_birth or "",
@@ -207,7 +199,7 @@ class PatientService:
             "ward": twin.ward or "General Ward (W-1)",
             "admission_date": twin.admission_date or "",
             "discharge_date": twin.discharge_date or "",
-            "disease": _clean_disease(twin.disease),
+            "disease": twin.disease,
             "diagnosis": twin.diagnosis,
             "symptoms": twin.symptoms or [],
             "allergies": twin.allergies or ["No Known Drug Allergies (NKDA)"],
@@ -260,51 +252,13 @@ class PatientService:
 
     def list_patients(self, session_id: str = "anonymous", hospital_id: str = "HOSPITAL-001", route: str = "real", limit: int | None = None) -> list[dict]:
         if route == "synthetic":
-            real_patients = patient_repository.list_all()
             records: list[dict] = []
-            for rp in real_patients:
-                twin = self.get_or_create_synthetic_twin(rp, session_id=session_id, hospital_id=hospital_id)
+            for twin in synthetic_repository.valid_catalog():
                 watermark = watermark_repository.find_by_source_id(twin.synthetic_patient_id, source_type="synthetic")
-                syn_id = twin.synthetic_patient_id
-                display_pid = rp.id if (rp.id and str(rp.id).upper().startswith("P-")) else (f"P-{syn_id[4:]}" if syn_id.upper().startswith("SYN-") else f"P-{syn_id}")
-                records.append(
-                    {
-                        "id": display_pid,
-                        "patient_id": display_pid,
-                        "synthetic_patient_id": syn_id,
-                        "name": _clean_name(twin.name),
-                        "age": twin.age_range,
-                        "gender": twin.gender or "Male",
-                        "date_of_birth": twin.date_of_birth or "",
-                        "blood_group": twin.blood_group or "O+",
-                        "doctor_assigned": twin.doctor_assigned or "Dr. Priya Nair (Cardiology)",
-                        "department": twin.department or "Cardiology",
-                        "ward": twin.ward or "General Ward (W-1)",
-                        "admission_date": twin.admission_date or "",
-                        "discharge_date": twin.discharge_date or "",
-                        "disease": _clean_disease(twin.disease),
-                        "diagnosis": twin.diagnosis,
-                        "symptoms": twin.symptoms or [],
-                        "allergies": twin.allergies or ["No Known Drug Allergies (NKDA)"],
-                        "medicines": twin.medicines or [],
-                        "dosages": twin.dosages or [],
-                        "treatment_pattern": twin.treatment_pattern,
-                        "lab_reports": twin.lab_reports or [],
-                        "medical_images": twin.medical_images or [],
-                        "insurance_details": twin.insurance_details,
-                        "emergency_contact": twin.emergency_contact,
-                        "phone": twin.phone_number,
-                        "email": twin.email,
-                        "aadhaar": twin.aadhaar_number,
-                        "address": twin.address,
-                        "watermark_id": watermark.watermark_id if watermark else None,
-                        "watermark_text": watermark.watermark_text if watermark else None,
-                        "watermark_fingerprint": watermark.watermark_fingerprint if watermark else None,
-                        "is_attractive_lure": getattr(twin, "is_attractive_lure", False),
-                        "lure_type": getattr(twin, "lure_type", "standard"),
-                        "is_synthetic": True,
-                    }
-                )
+                record = serialize_catalog_twin(twin)
+                record["watermark_id"] = watermark.watermark_id if watermark else None
+                record["watermark_text"] = watermark.watermark_text if watermark else None
+                records.append(record)
             return records[:limit] if limit is not None else records
 
         patients = patient_repository.list_all()

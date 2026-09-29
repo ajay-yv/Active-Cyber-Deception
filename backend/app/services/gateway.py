@@ -11,6 +11,8 @@ from pydantic import BaseModel, Field
 
 from app.ml import model_loader
 from app.repositories.ai_decision_repository import AIDecisionRecord, ai_decision_repository
+from app.repositories.synthetic_repository import is_valid_synthetic_id
+from app.services.registries import synthetic_repository
 from app.services.security import is_session_blocked, log_decision, record_forensic_attack, record_suspicious_activity
 
 _logger = logging.getLogger(__name__)
@@ -292,7 +294,16 @@ def evaluate_request(
     log_decision(session_id=session_id, route=decision.route, score=decision.threat_score, reason=decision.reason, username=username)
 
     if detected_attack_type:
-        synthetic_twin_id = f"SYN-{target_patient_id[2:]}" if (target_patient_id and target_patient_id.startswith("P-")) else None
+        resolved_twin = None
+        if target_patient_id:
+            resolved_twin = synthetic_repository.find_by_real_patient_id(target_patient_id)
+            if resolved_twin is None and is_valid_synthetic_id(target_patient_id):
+                resolved_twin = synthetic_repository.find_by_synthetic_id(target_patient_id)
+        synthetic_twin_id = (
+            resolved_twin.synthetic_patient_id
+            if resolved_twin is not None and is_valid_synthetic_id(resolved_twin.synthetic_patient_id)
+            else None
+        )
         record_forensic_attack(
             attack_type=detected_attack_type,
             session_id=session_id,

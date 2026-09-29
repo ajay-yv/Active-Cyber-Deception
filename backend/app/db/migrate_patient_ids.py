@@ -83,9 +83,9 @@ def migrate_db_file(real_db_path, synth_db_path, sec_db_path):
             new_real_id = id_map.get(old_real_id, old_real_id)
             if new_real_id.startswith("P-"):
                 num_part = new_real_id[2:]
-                new_syn_id = f"SYN-{num_part}"
+                new_syn_id = f"P-{num_part}"
             else:
-                new_syn_id = old_syn_id
+                new_syn_id = old_syn_id.replace("SYN-", "P-") if old_syn_id.startswith("SYN-") else old_syn_id
 
             cur_synth.execute(
                 "UPDATE synthetic_patients SET id = ?, real_patient_id = ? WHERE id = ?",

@@ -77,17 +77,9 @@ frontend_proc = subprocess.Popen(
 )
 
 admin_proc = subprocess.Popen(
-    ["cmd.exe", "/c", "npx.cmd", "vite", "--port", "5173", "--strictPort", "--host", "127.0.0.1"],
+    ["cmd.exe", "/c", "npm.cmd", "run", "dev", "--", "--port", "5173", "--host", "127.0.0.1"],
     cwd=str(frontend_dir),
     stdout=admin_log,
-    stderr=subprocess.STDOUT,
-    creationflags=flags
-)
-
-hacker_proc = subprocess.Popen(
-    ["cmd.exe", "/c", "npx.cmd", "vite", "--port", "5174", "--strictPort", "--host", "127.0.0.1"],
-    cwd=str(frontend_dir),
-    stdout=hacker_log,
     stderr=subprocess.STDOUT,
     creationflags=flags
 )
@@ -111,6 +103,4 @@ check_url("Backend API & Portal", "http://127.0.0.1:8000/health")
 check_url("Backend Frontend Root", "http://127.0.0.1:8000/")
 check_url("AI Gateway", "http://127.0.0.1:8001/health")
 check_url("AI Twin Engine", "http://127.0.0.1:8002/health")
-check_url("Vite Main Dev (3000)", "http://127.0.0.1:3000/")
 check_url("Admin / Hospital Portal (5173)", "http://127.0.0.1:5173/")
-check_url("Hacker Deception Portal (5174)", "http://127.0.0.1:5174/")

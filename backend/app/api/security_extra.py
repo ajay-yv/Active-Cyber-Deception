@@ -120,28 +120,30 @@ def security_test_marker(
     )
 
     from app.repositories.watermark_repository import watermark_repository
-    existing_twins = synthetic_repository.list_all()
+    existing_twins = synthetic_repository.valid_catalog()
     first_decoy = existing_twins[0] if existing_twins else None
 
-    twin_id = getattr(first_decoy, "synthetic_patient_id", getattr(first_decoy, "id", "SYN-01")) if first_decoy else "SYN-01"
-    display_pid = f"P-{twin_id[4:]}" if twin_id.upper().startswith("SYN-") else twin_id
-    wm = watermark_repository.find_by_source_id(twin_id, source_type="synthetic")
-    wm_id = wm.watermark_id if wm else "cda09535-ce71-4728-8228-33dc5f2786f5"
-
-    clean_disease = getattr(first_decoy, "disease", "Cancer") if first_decoy else "Cancer"
-    if clean_disease.startswith("Transformed "):
-        clean_disease = clean_disease.replace("Transformed ", "")
-
-    sample_decoy = {
-        "patient_id": display_pid,
-        "id": display_pid,
-        "name": getattr(first_decoy, "name", "Synthetic Twin Decoy") if first_decoy else "Synthetic Twin Decoy",
-        "disease": clean_disease,
-        "diagnosis": getattr(first_decoy, "diagnosis", "Procedurally Generated Synthetic Twin (Served to Decoys)") if first_decoy else "Procedurally Generated Synthetic Twin (Served to Decoys)",
-        "gender": getattr(first_decoy, "gender", "Male") if first_decoy else "Male",
-        "age": getattr(first_decoy, "age", "45") if first_decoy else "45",
-        "watermark_id": wm_id,
-    }
+    sample_decoy = None
+    if first_decoy is not None:
+        twin_id = first_decoy.synthetic_patient_id
+        wm = watermark_repository.find_by_source_id(twin_id, source_type="synthetic")
+        sample_decoy = {
+            "patient_id": twin_id,
+            "id": twin_id,
+            "synthetic_patient_id": twin_id,
+            "name": first_decoy.name,
+            "disease": first_decoy.disease,
+            "diagnosis": first_decoy.diagnosis,
+            "gender": first_decoy.gender,
+            "age": first_decoy.age_range,
+            "doctor_assigned": first_decoy.doctor_assigned,
+            "department": first_decoy.department,
+            "ward": first_decoy.ward,
+            "phone": first_decoy.phone_number,
+            "email": first_decoy.email,
+            "aadhaar": first_decoy.aadhaar_number,
+            "watermark_id": wm.watermark_id if wm else None,
+        }
 
     deceptive_payload = {
         "attack_type": attack_type,
@@ -150,10 +152,17 @@ def security_test_marker(
         "message": f"Query intercepted and redirected to honeypot telemetry layer.",
     }
 
+    if hasattr(decision, "model_dump"):
+        decision_payload = decision.model_dump()
+    elif hasattr(decision, "dict"):
+        decision_payload = decision.dict()
+    else:
+        decision_payload = vars(decision)
+
     return {
         "status": "detected",
         "marker": payload.marker,
-        "decision": decision.model_dump(),
+        "decision": decision_payload,
         "event": event_payload,
         "deceptive_payload": deceptive_payload,
     }

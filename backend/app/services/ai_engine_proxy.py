@@ -322,7 +322,9 @@ class TwinGeneratorProxy:
             return "Neurology", "Dr. Rajesh Sharma (Neurology)"
         if "asthma" in d or "bronch" in d:
             return "Pulmonology", "Dr. Sunita Deshmukh (Pulmonology)"
-        return dept_hint or "General Medicine", "Dr. Rohan Patel (General Medicine)"
+        if "cancer" in d or "oncol" in d or "tumor" in d:
+            return "Oncology", "Dr. Ananya Varma (Oncology)"
+        return dept_hint or "General Medicine", "Dr. Suresh Deshmukh (General Medicine)"
 
     def _derive_ward(self, department: str, age: int) -> str:
         if department == "Cardiology":

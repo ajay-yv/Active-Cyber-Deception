@@ -194,9 +194,15 @@ class TwinGenerator:
 
         address = self._address_from_fingerprint(fingerprint)
 
-        # Deterministic SYN format
-        id_num = (int(fingerprint[:6], 16) % 89999) + 10001
-        syn_id = f"SYN-{id_num}"
+        # Deterministic P format
+        real_pid_val = str(real_patient.get("id", real_patient.get("patient_id", "")))
+        if real_pid_val.upper().startswith("P-"):
+            syn_id = f"P-{real_pid_val[2:]}"
+        elif real_pid_val.isdigit():
+            syn_id = f"P-{int(real_pid_val):02d}"
+        else:
+            id_num = (int(fingerprint[:6], 16) % 89999) + 10001
+            syn_id = f"P-{id_num}"
 
         insurance_plan = "Star Health & Allied Insurance | Comprehensive Platinum Cover (Cover ID: #SH-884920)" if not is_attractive else "HDFC ERGO Health Optima Super Platinum VIP Corporate Cover (Sum Insured: ₹50,00,000)"
 
@@ -300,7 +306,9 @@ class TwinGenerator:
             return "Pulmonology", "Dr. Sunita Deshmukh (Pulmonology)"
         if "kidney" in d or "nephro" in d:
             return "Nephrology", "Dr. Manish Kapoor (Nephrology)"
-        return dept_hint or "General Medicine", "Dr. Rohan Patel (General Medicine)"
+        if "cancer" in d or "oncol" in d or "tumor" in d:
+            return "Oncology", "Dr. Ananya Varma (Oncology)"
+        return dept_hint or "General Medicine", "Dr. Suresh Deshmukh (General Medicine)"
 
     def _derive_ward(self, department: str, age: int) -> str:
         if department == "Cardiology":

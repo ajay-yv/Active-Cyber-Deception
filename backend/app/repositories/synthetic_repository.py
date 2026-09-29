@@ -1,4 +1,5 @@
 import json
+import re
 from hashlib import sha256
 from dataclasses import dataclass, field
 
@@ -89,6 +90,55 @@ def _to_record(row: SyntheticPatient) -> TwinRecord:
     )
 
 
+_SAFE_SYNTHETIC_ID = re.compile(r"^(?:SYN|PID|P)-[A-Za-z0-9][A-Za-z0-9_-]*$")
+
+
+def is_valid_synthetic_id(value: object) -> bool:
+    """Accept only persisted synthetic IDs that cannot carry query syntax."""
+    return isinstance(value, str) and bool(_SAFE_SYNTHETIC_ID.fullmatch(value))
+
+
+def serialize_catalog_twin(twin: TwinRecord) -> dict:
+    """Serialize persisted twin fields shared by all synthetic catalogs."""
+    return {
+        "id": twin.real_patient_id,
+        "patient_id": twin.real_patient_id,
+        "synthetic_patient_id": twin.synthetic_patient_id,
+        "name": twin.name,
+        "age": twin.age_range,
+        "age_range": twin.age_range,
+        "gender": twin.gender,
+        "date_of_birth": twin.date_of_birth,
+        "blood_group": twin.blood_group,
+        "doctor_assigned": twin.doctor_assigned,
+        "department": twin.department,
+        "ward": twin.ward,
+        "admission_date": twin.admission_date,
+        "discharge_date": twin.discharge_date,
+        "disease": twin.disease,
+        "diagnosis": twin.diagnosis,
+        "symptoms": twin.symptoms,
+        "allergies": twin.allergies,
+        "medicines": twin.medicines,
+        "dosages": twin.dosages,
+        "treatment_pattern": twin.treatment_pattern,
+        "lab_reports": twin.lab_reports,
+        "medical_images": twin.medical_images,
+        "insurance_details": twin.insurance_details,
+        "emergency_contact": twin.emergency_contact,
+        "phone": twin.phone_number,
+        "phone_number": twin.phone_number,
+        "email": twin.email,
+        "aadhaar": twin.aadhaar_number,
+        "aadhaar_number": twin.aadhaar_number,
+        "address": twin.address,
+        "watermark_fingerprint": twin.watermark_fingerprint,
+        "is_attractive_lure": twin.is_attractive_lure,
+        "lure_type": twin.lure_type,
+        "is_synthetic": True,
+    }
+
+
 class SyntheticRepository:
     def upsert(self, twin: TwinRecord, session_id: str, hospital_id: str) -> TwinRecord:
         fingerprint = sha256(
@@ -148,6 +198,10 @@ class SyntheticRepository:
         with SyntheticSessionLocal() as session:
             rows = session.query(SyntheticPatient).order_by(SyntheticPatient.created_at.asc()).all()
         return [_to_record(row) for row in rows]
+
+    def valid_catalog(self) -> list[TwinRecord]:
+        """Return persisted twins safe for catalog and attacker-facing output."""
+        return [twin for twin in self.list_all() if is_valid_synthetic_id(twin.synthetic_patient_id)]
 
     def find_by_synthetic_id(self, synthetic_patient_id: str) -> SyntheticForensicRecord | None:
         with SyntheticSessionLocal() as session:

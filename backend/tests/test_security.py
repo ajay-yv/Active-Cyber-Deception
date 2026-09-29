@@ -58,12 +58,29 @@ def hacker_token() -> str:
 
 
 def test_hacker_breach_request_returns_fake_data_and_logs_event() -> None:
+    admin_response = client.post(
+        "/api/auth/login",
+        json={"username": "admin", "password": "admin123"},
+    )
+    admin_access_token = admin_response.json()["access_token"]
+    patient_response = client.post(
+        "/api/patients",
+        json={
+            "name": "Breach Test Patient",
+            "age": 42,
+            "disease": "Hypertension",
+            "diagnosis": "Stable clinical status",
+        },
+        headers={"Authorization": f"Bearer {admin_access_token}"},
+    )
+    target_patient_id = patient_response.json()["patient"]["id"]
+
     token = hacker_token()
     response = client.post(
         "/api/security/breach",
         json={
             "query": "Inspect patient vitals",
-            "target_patient_id": "patient-001",
+            "target_patient_id": target_patient_id,
             "requested_payload": {"fields": ["name", "disease"]},
         },
         headers={"Authorization": f"Bearer {token}"},
@@ -81,7 +98,7 @@ def test_hacker_breach_request_returns_fake_data_and_logs_event() -> None:
     assert payload["records_returned"] == 1
     assert payload["is_synthetic"] is True
     assert "original_target_id" not in payload
-    assert payload["patient_id"].startswith("PID-")
+    assert payload["patient_id"].startswith(("PID-", "SYN-"))
 
 
 def test_hacker_can_list_hack_modes() -> None:

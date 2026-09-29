@@ -150,7 +150,8 @@ def test_objective_2_ado_lifecycle_and_state_machine():
     session_data = autonomous_deception_orchestrator.get_session_state(session_id)
     assert session_data is not None
     assert session_data["threat_score"] == 92.0
-    assert len(session_data["decoy_ids"]) > 0
+    # Attacker-triggered activation is telemetry-only when no persisted twins exist.
+    assert session_data["decoy_ids"] == []
     assert session_data["lure_type"] is not None
 
 

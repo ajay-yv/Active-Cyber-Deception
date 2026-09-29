@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { DashboardCard } from './components/DashboardCard'
 import { DashboardList } from './components/DashboardList'
@@ -740,6 +740,76 @@ function AdminDashboard({ token }: { token: string }) {
   const [forensic, setForensic] = useState<ForensicLeakResponse | null>(null)
   const [forensicError, setForensicError] = useState('')
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const alarmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const alarmOscillatorRef = useRef<OscillatorNode | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+
+  useEffect(() => {
+    const unlockAudio = () => {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+      if (!AudioContextClass) return
+      const context = audioContextRef.current || new AudioContextClass()
+      audioContextRef.current = context
+      if (context.state === 'suspended') void context.resume()
+    }
+
+    window.addEventListener('click', unlockAudio)
+    window.addEventListener('keydown', unlockAudio)
+    window.addEventListener('touchstart', unlockAudio)
+    window.addEventListener('pointerdown', unlockAudio)
+    return () => {
+      window.removeEventListener('click', unlockAudio)
+      window.removeEventListener('keydown', unlockAudio)
+      window.removeEventListener('touchstart', unlockAudio)
+      window.removeEventListener('pointerdown', unlockAudio)
+      if (alarmIntervalRef.current) clearInterval(alarmIntervalRef.current)
+      alarmIntervalRef.current = null
+      try {
+        alarmOscillatorRef.current?.stop()
+      } catch {
+        // already stopped
+      }
+      alarmOscillatorRef.current = null
+    }
+  }, [])
+
+  function triggerAdminAlarm() {
+    if (alarmIntervalRef.current) clearInterval(alarmIntervalRef.current)
+
+    const playCycle = async () => {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+      if (!AudioContextClass) return
+      const context = audioContextRef.current || new AudioContextClass()
+      audioContextRef.current = context
+      if (context.state === 'suspended') {
+        try {
+          await context.resume()
+        } catch {
+          return
+        }
+      }
+      if (context.state !== 'running') return
+
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      const now = context.currentTime
+      oscillator.type = 'sawtooth'
+      gain.gain.setValueAtTime(0.4, now)
+      for (let index = 0; index < 6; index += 1) {
+        oscillator.frequency.setValueAtTime(650, now + index * 0.35)
+        oscillator.frequency.exponentialRampToValueAtTime(1300, now + index * 0.35 + 0.17)
+        oscillator.frequency.exponentialRampToValueAtTime(650, now + index * 0.35 + 0.35)
+      }
+      oscillator.connect(gain)
+      gain.connect(context.destination)
+      alarmOscillatorRef.current = oscillator
+      oscillator.start(now)
+      oscillator.stop(now + 2.2)
+    }
+
+    void playCycle()
+    alarmIntervalRef.current = setInterval(() => void playCycle(), 2400)
+  }
 
   async function refreshAdminData() {
     try {
@@ -779,6 +849,18 @@ function AdminDashboard({ token }: { token: string }) {
   }, [token])
 
   useRealtimeNotifications(setNotifications, async (type) => {
+    if (
+      type === 'hacker_attack_alert' ||
+      type === 'attack' ||
+      type === 'breach' ||
+      type === 'hacker_breach_request' ||
+      type === 'DATA_EXFILTRATION' ||
+      type === 'PATIENT_ENUMERATION' ||
+      type === 'SQL_INJECTION' ||
+      type === 'attack_alert'
+    ) {
+      triggerAdminAlarm()
+    }
     if (
       type === 'patient_created' ||
       type === 'patient_updated' ||

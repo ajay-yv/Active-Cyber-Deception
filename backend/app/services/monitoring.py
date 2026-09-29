@@ -29,8 +29,8 @@ def record_attack(session_id: str, action: str, details: str) -> SecurityEvent:
             "🏥 Attending Doctor & Department Allocation",
             "🏦 Insurance Policy Account & Emergency Family Contacts",
         ],
-        "synthetic_patient_id": "PID-45242",
-        "watermark_id": "WM-AI-SECURITY-ACTIVE",
+        "synthetic_patient_id": "UNRESOLVED_ATTACK_TARGET",
+        "watermark_id": "UNRESOLVED_ATTACK_TARGET",
     })
     return event
 

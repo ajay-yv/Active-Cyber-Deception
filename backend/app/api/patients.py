@@ -45,7 +45,7 @@ def create_patient(
 @router.get("")
 def list_patients(
     patient_id: str | None = Query(default=None),
-    limit: int | None = Query(default=None),
+    limit: int | None = Query(default=None, ge=0),
     current_user: object = Depends(require_roles_or_deceive("administrator", "doctor", "receptionist", "hacker")),
     context: dict[str, str] = Depends(request_context_headers),
 ) -> dict:
@@ -74,7 +74,7 @@ def list_patients(
                 user_agent=context.get("browser", ""),
                 username=getattr(current_user, "username", None),
             )
-            return {"patient": deceptive_patient, "patients": [deceptive_patient]}
+            return {"patient": deceptive_patient, "patients": [deceptive_patient] if deceptive_patient else []}
 
         syn_patients = service.list_patients(
             session_id=context["session_id"],

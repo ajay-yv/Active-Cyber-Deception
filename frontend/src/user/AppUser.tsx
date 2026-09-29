@@ -429,16 +429,17 @@ const DEFAULT_SECURITY_EVENTS: AuditEvent[] = [
 ]
 
 export default function AppUser() {
-  const [username, setUsername] = useState('doctor')
-  const [password, setPassword] = useState('doctor123')
+  const [username, setUsername] = useState('admin')
+  const [password, setPassword] = useState('')
+  const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(false)
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<LoginResponse['user'] | null>(null)
 
   // Forgot Password & Dynamic OTP State
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false)
   const [forgotStep, setForgotStep] = useState<'step1' | 'step2' | 'success'>('step1')
-  const [forgotUsername, setForgotUsername] = useState('doctor')
-  const [forgotEmail, setForgotEmail] = useState('doctor@stjude.org')
+  const [forgotUsername, setForgotUsername] = useState('admin')
+  const [forgotEmail, setForgotEmail] = useState('admin@healthcare-deception.org')
   const [forgotOtp, setForgotOtp] = useState('')
   const [forgotNewPassword, setForgotNewPassword] = useState('')
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState('')
@@ -532,6 +533,7 @@ export default function AppUser() {
     threatScore: number
   } | null>(null)
   const [isAlarmMuted, setIsAlarmMuted] = useState(false)
+  const [isBurglarAlarmActive, setIsBurglarAlarmActive] = useState(false)
   const alarmIntervalRef = useRef<any>(null)
   const audioContextRef = useRef<any>(null)
   const alarmOscillatorRef = useRef<any>(null)
@@ -561,11 +563,13 @@ export default function AppUser() {
     window.addEventListener('click', unlockAudioContext)
     window.addEventListener('keydown', unlockAudioContext)
     window.addEventListener('touchstart', unlockAudioContext)
+    window.addEventListener('pointerdown', unlockAudioContext)
 
     return () => {
       window.removeEventListener('click', unlockAudioContext)
       window.removeEventListener('keydown', unlockAudioContext)
       window.removeEventListener('touchstart', unlockAudioContext)
+      window.removeEventListener('pointerdown', unlockAudioContext)
     }
   }, [])
 
@@ -591,10 +595,11 @@ export default function AppUser() {
   }
 
   function triggerBurglarAlarm() {
+    setIsBurglarAlarmActive(true)
     if (isAlarmMuted) return
-    stopBurglarAlarm()
+    stopBurglarAlarm(false) // stop existing interval without resetting active state
     try {
-      const playCycle = () => {
+      const playCycle = async () => {
         const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
         if (!AudioContextClass) return
         
@@ -604,7 +609,14 @@ export default function AppUser() {
           sharedAudioCtxRef.current = ctx
         }
         if (ctx.state === 'suspended') {
-          ctx.resume()
+          try {
+            await ctx.resume()
+          } catch {
+            return
+          }
+        }
+        if (ctx.state !== 'running') {
+          return
         }
         audioContextRef.current = ctx
 
@@ -613,7 +625,7 @@ export default function AppUser() {
         alarmOscillatorRef.current = osc
 
         osc.type = 'sawtooth'
-        gain.gain.setValueAtTime(0.35, ctx.currentTime)
+        gain.gain.setValueAtTime(0.40, ctx.currentTime)
 
         const now = ctx.currentTime
         // Alternating European Police / High-Risk Burglar Siren sweep (650Hz <-> 1300Hz)
@@ -636,7 +648,10 @@ export default function AppUser() {
     }
   }
 
-  function stopBurglarAlarm() {
+  function stopBurglarAlarm(clearActiveState: boolean = true) {
+    if (clearActiveState) {
+      setIsBurglarAlarmActive(false)
+    }
     try {
       if (alarmIntervalRef.current) {
         clearInterval(alarmIntervalRef.current)
@@ -1013,15 +1028,16 @@ export default function AppUser() {
 
     login(username, password)
       .then((result) => {
-        if (!['administrator', 'doctor'].includes(result.user.role)) {
-          setError('Please sign in with an administrator or doctor account.')
+        if (!['administrator', 'admin'].includes(result.user.role)) {
+          setError('Please sign in with an Administrator account.')
           return
         }
         setToken(result.access_token)
         setUser(result.user)
-        setMessage(`Signed in successfully as ${result.user.full_name} (${result.user.role}).`)
+        setIsAdminLoginModalOpen(false)
+        setMessage(`Signed in successfully as Administrator (${result.user.full_name}).`)
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Login failed. Check your username and password.'))
+      .catch((err) => setError(err instanceof Error ? err.message : 'Login failed. Invalid Administrator password.'))
   }
 
 
@@ -1213,6 +1229,7 @@ export default function AppUser() {
     setNotifications([])
     setSecurityAlerts([])
     setRealtimeConnected(false)
+    setPassword('')
     setMessage('Logged out successfully.')
     setError('')
     setActiveTab('overview')
@@ -1222,84 +1239,130 @@ export default function AppUser() {
     <div style={{ fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100vh', background: '#020617', color: '#f1f5f9' }}>
 
       {!token ? (
-        /* UNAUTHENTICATED LOGIN CARD */
-        <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', padding: 24, background: 'radial-gradient(circle at 50% 0%, #0f172a 0%, #020617 100%)' }}>
-          <div style={{ width: '100%', maxWidth: 460, background: 'rgba(15, 23, 42, 0.95)', borderRadius: 24, padding: 36, border: '1px solid rgba(56, 189, 248, 0.2)', boxShadow: '0 25px 60px rgba(0,0,0,0.8)' }}>
+        /* CLEAN FRONT PAGE */
+        <div style={{ minHeight: '100vh', background: 'radial-gradient(circle at 50% 0%, #0f172a 0%, #020617 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', position: 'relative', overflow: 'hidden' }}>
+          
+          <div style={{ width: '100%', maxWidth: 440, background: 'rgba(15, 23, 42, 0.95)', borderRadius: 24, padding: 36, border: '1px solid rgba(56, 189, 248, 0.2)', boxShadow: '0 25px 60px rgba(0,0,0,0.8)', textAlign: 'center' }}>
             
-            <div style={{ textAlign: 'center', marginBottom: 28 }}>
-              <div style={{ width: 54, height: 54, borderRadius: 16, background: 'linear-gradient(135deg, #0284c7, #06b6d4)', display: 'grid', placeItems: 'center', fontWeight: 900, fontSize: 26, color: '#fff', margin: '0 auto 14px', boxShadow: '0 6px 20px rgba(2, 132, 199, 0.4)' }}>
-                🛡️
-              </div>
-              <h2 style={{ margin: '0 0 6px', fontSize: '1.75rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.02em' }}>
-                Healthcare Security Portal
-              </h2>
-              <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>
-                Cyber Deception Gateway & Clinical EHR Defense System
-              </p>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #0284c7, #2563eb)', display: 'grid', placeItems: 'center', fontSize: 26, color: '#fff', margin: '0 auto 16px', boxShadow: '0 6px 20px rgba(2, 132, 199, 0.4)' }}>
+              🔐
             </div>
 
-            {/* Status Messages */}
-            {message ? (
-              <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#34d399', marginBottom: 18, fontSize: '0.85rem' }}>
-                ✓ {message}
-              </div>
-            ) : null}
-            {error ? (
-              <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', marginBottom: 18, fontSize: '0.85rem' }}>
-                ⚠ {error}
-              </div>
-            ) : null}
+            <h2 style={{ margin: '0 0 6px', fontSize: '1.75rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+              Healthcare Security Portal
+            </h2>
 
-            <form onSubmit={handleLogin} style={{ display: 'grid', gap: 18 }}>
-              <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
-                Select Account / Username
-                <select
-                  value={username}
-                  onChange={(e) => handleUsernameChange(e.target.value)}
-                  style={{ padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: '#1e293b', color: '#fff', fontSize: '0.95rem', cursor: 'pointer' }}
+            <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 24px' }}>
+              Admin Authentication & Security Command Center
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                setPassword('')
+                setError('')
+                setIsAdminLoginModalOpen(true)
+              }}
+              style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4)' }}
+            >
+              🔐 Admin Portal Access →
+            </button>
+          </div>
+
+          {/* ADMIN PASSWORD AUTHENTICATION MODAL */}
+          {isAdminLoginModalOpen ? (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(10px)', display: 'grid', placeItems: 'center', padding: 20 }}>
+              <div style={{ width: '100%', maxWidth: 440, background: 'rgba(15, 23, 42, 0.98)', borderRadius: 24, padding: 32, border: '1px solid rgba(56, 189, 248, 0.3)', boxShadow: '0 25px 60px rgba(0,0,0,0.9)', position: 'relative' }}>
+                
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPassword('')
+                    setIsAdminLoginModalOpen(false)
+                  }}
+                  style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', color: '#64748b', fontSize: '1.2rem', cursor: 'pointer' }}
                 >
-                  <option value="doctor">Doctor (doctor)</option>
-                  <option value="admin">Administrator (admin)</option>
-                </select>
-              </label>
+                  ✕
+                </button>
 
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <label style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
-                    Password
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForgotUsername(username)
-                      setForgotEmail(`${username}@stjude.org`)
-                      setForgotStep('step1')
-                      setIsForgotModalOpen(true)
-                    }}
-                    style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}
-                  >
-                    Forgot password?
-                  </button>
+                <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                  <div style={{ width: 50, height: 50, borderRadius: 14, background: 'linear-gradient(135deg, #0284c7, #2563eb)', display: 'grid', placeItems: 'center', fontSize: 24, color: '#fff', margin: '0 auto 12px' }}>
+                    🔐
+                  </div>
+                  <h3 style={{ margin: '0 0 4px', fontSize: '1.4rem', fontWeight: 800, color: '#f8fafc' }}>
+                    Admin Portal Authentication
+                  </h3>
+                  <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.82rem' }}>
+                    Enter your administrator credentials to access the security command center.
+                  </p>
                 </div>
 
-                <input
-                  required
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
-                />
-              </div>
+                {/* Status Messages */}
+                {message ? (
+                  <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#34d399', marginBottom: 16, fontSize: '0.82rem' }}>
+                    ✓ {message}
+                  </div>
+                ) : null}
+                {error ? (
+                  <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', marginBottom: 16, fontSize: '0.82rem' }}>
+                    ⚠ {error}
+                  </div>
+                ) : null}
 
-              <button
-                type="submit"
-                style={{ padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4)' }}
-              >
-                Enter Security Command Center →
-              </button>
-            </form>
-          </div>
+                <form onSubmit={handleLogin} style={{ display: 'grid', gap: 16 }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                    Account Role
+                    <input
+                      readOnly
+                      type="text"
+                      value="Administrator (admin)"
+                      style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#38bdf8', fontSize: '0.9rem', fontWeight: 700 }}
+                    />
+                  </label>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <label style={{ fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                        Admin Password
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForgotUsername('admin')
+                          setForgotEmail('admin@healthcare-deception.org')
+                          setForgotStep('step1')
+                          setIsForgotModalOpen(true)
+                        }}
+                        style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+
+                    <input
+                      autoFocus
+                      required
+                      type="password"
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter administrator password"
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(56, 189, 248, 0.3)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.95rem' }}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    style={{ padding: 14, borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '0.98rem', fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4)' }}
+                  >
+                    Authenticate & Enter Admin Console →
+                  </button>
+                </form>
+              </div>
+            </div>
+          ) : null}
+
         </div>
       ) : (
         /* AUTHENTICATED COMMAND CENTER LAYOUT */
@@ -1454,7 +1517,119 @@ export default function AppUser() {
 
             {/* PAGE CONTENT WRAPPER */}
             <main style={{ padding: '32px', flex: 1 }}>
-              
+
+              {/* 🚨 ACTIVE BURGLAR ALARM & HACKER INTRUSION ALERT BANNER */}
+              {isBurglarAlarmActive || hackerAlert ? (
+                <div style={{
+                  marginBottom: 24,
+                  padding: '20px 24px',
+                  borderRadius: 16,
+                  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.35))',
+                  border: '2px solid #ef4444',
+                  boxShadow: '0 0 30px rgba(239, 68, 68, 0.5)',
+                  color: '#fff',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <div style={{ fontSize: '2.5rem' }}>🚨</div>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ background: '#ef4444', color: '#fff', padding: '2px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase' }}>
+                            CRITICAL INTRUSION DETECTED
+                          </span>
+                          <span style={{ color: '#fca5a5', fontSize: '0.85rem', fontWeight: 700 }}>
+                            Risk Score: {hackerAlert?.threatScore || 95}% HIGH THREAT
+                          </span>
+                        </div>
+                        <h4 style={{ margin: '6px 0 2px', fontSize: '1.15rem', color: '#fff', fontWeight: 800 }}>
+                          Adversary Target Probe: {hackerAlert?.action || 'Patient Data Theft Attack'}
+                        </h4>
+                        <p style={{ margin: 0, color: '#fecaca', fontSize: '0.88rem' }}>
+                          Target Scope: <strong>{hackerAlert?.targetPatientName || 'Hospital Patient Database'}</strong> (ID: {hackerAlert?.targetPatientId || 'P-01'})
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <button
+                        onClick={() => {
+                          if (!hackerAlert) {
+                            setHackerAlert({
+                              sessionId: 'hacker-single-probe',
+                              hackerId: 'simulated_hacker',
+                              action: 'Adversary Single Patient Probe Attack',
+                              details: 'Attacker probe attempting to extract data',
+                              targetPatientId: 'P-01',
+                              targetPatientName: 'Karthik Reddy (P-01)',
+                              syntheticPatientId: 'SYN-01',
+                              dataType: 'Patient PII (Aadhaar Number, Mobile Phone, Address, Diagnosis & Prescriptions)',
+                              stolenCategories: [
+                                '🆔 Patient Aadhaar Number & Government Identification',
+                                '📞 Mobile Phone Number & Residential Address',
+                                '🩺 Clinical Diagnoses, Symptoms & Medical History',
+                                '💊 Prescription Medicines & Treatment Regimens',
+                                '🏥 Attending Doctor & Department Allocation',
+                                '🏦 Insurance Policy Account & Emergency Family Contacts',
+                              ],
+                              watermarkId: 'WM-AI-SECURITY-ACTIVE',
+                              timestamp: new Date().toISOString(),
+                              threatScore: 94,
+                            })
+                          }
+                        }}
+                        style={{
+                          padding: '10px 18px',
+                          borderRadius: 10,
+                          background: '#fff',
+                          color: '#991b1b',
+                          border: 'none',
+                          fontWeight: 800,
+                          fontSize: '0.88rem',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                        }}
+                      >
+                        🔍 View Targeted Data Details
+                      </button>
+                      <button
+                        onClick={() => stopBurglarAlarm(true)}
+                        style={{
+                          padding: '10px 18px',
+                          borderRadius: 10,
+                          background: 'rgba(255,255,255,0.15)',
+                          border: '1px solid rgba(255,255,255,0.4)',
+                          color: '#fff',
+                          fontWeight: 700,
+                          fontSize: '0.88rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        🔕 Mute Alarm / Acknowledge
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* DATA FIELDS BEING HACKED / STOLEN */}
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.2)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
+                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 10, border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#fca5a5', fontWeight: 800, textTransform: 'uppercase', display: 'block' }}>
+                        ⚠️ WHAT KIND OF DATA THE HACKER IS TRYING TO STEAL:
+                      </span>
+                      <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600, marginTop: 4 }}>
+                        {hackerAlert?.dataType || 'Patient PII (Aadhaar Number, Mobile Phone, Residential Address, Clinical Diagnosis & Prescriptions)'}
+                      </div>
+                    </div>
+                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.4)' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#6ee7b7', fontWeight: 800, textTransform: 'uppercase', display: 'block' }}>
+                        🛡️ COUNTERMEASURE SERVED TO HACKER:
+                      </span>
+                      <div style={{ fontSize: '0.85rem', color: '#34d399', fontWeight: 700, marginTop: 4 }}>
+                        Served Decoy Twin: <strong>{hackerAlert?.syntheticPatientId || 'SYN-01'}</strong> (100% Synthetic Twin Served to Decoys)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               {/* Status Alerts */}
               {message ? (
                 <div style={{ padding: '14px 20px', borderRadius: 12, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#34d399', marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2465,33 +2640,32 @@ export default function AppUser() {
                       </p>
                     </div>
                     <span style={{ background: 'rgba(168, 85, 247, 0.15)', border: '1px solid #c084fc', color: '#e9d5ff', padding: '6px 14px', borderRadius: 999, fontSize: '0.82rem', fontWeight: 700 }}>
-                      {patients.length} Active Synthetic Decoys
+                      {(dashboard?.synthetic_records ?? []).length} Active Synthetic Decoys
                     </span>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
-                    {patients.length === 0 ? (
+                    {(dashboard?.synthetic_records ?? []).length === 0 ? (
                       <div style={{ gridColumn: '1 / -1', padding: '32px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.1)' }}>
                         <div style={{ fontSize: '1.2rem', color: '#cbd5e1', fontWeight: 700, marginBottom: 6 }}>📋 No Active Patient Records</div>
                         <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Register a real patient in the Clinical Register tab. The system will automatically generate a dynamic synthetic decoy twin.</div>
                       </div>
                     ) : (
-                      patients.map((p) => {
-                        const synDetails = generateSyntheticTwinDetails(p.name, p.patient_id || p.id, p.age)
-                        const syn = p.forensic_record
-                        const synName = (syn?.name && !syn.name.includes('Decoy Twin (') ? syn.name : synDetails.decoyName)
-                        const synId = syn?.synthetic_patient_id || synDetails.decoyId
-                        const synDisease = syn?.disease && !syn.disease.includes('(Synthetic Twin)') ? syn.disease : synDetails.disease
-                        const synDiagnosis = syn?.diagnosis || synDetails.diagnosis
-                        const synTreatment = syn?.treatment_pattern || synDetails.treatmentPattern
-                        const synAgeRange = syn?.age_range || synDetails.ageRange
-                        const synAadhaar = syn?.aadhaar_number || synDetails.aadhaar
-                        const synPhone = syn?.phone_number || synDetails.phone
-                        const synEmail = syn?.email || synDetails.email
-                        const synFingerprint = syn?.watermark_fingerprint || synDetails.fingerprint
+                      (dashboard?.synthetic_records ?? []).map((syn) => {
+                        const linkedPatient = patients.find((patient) => String(patient.id) === String(syn.id || syn.patient_id))
+                        const synName = syn.name || 'Unavailable'
+                        const synId = syn.synthetic_patient_id || 'Unavailable'
+                        const synDisease = syn.disease || 'Unavailable'
+                        const synDiagnosis = syn.diagnosis || 'Unavailable'
+                        const synTreatment = syn.treatment_pattern || 'Unavailable'
+                        const synAgeRange = syn.age_range || syn.age || 'Unavailable'
+                        const synAadhaar = syn.aadhaar_number || 'Unavailable'
+                        const synPhone = syn.phone_number || 'Unavailable'
+                        const synEmail = syn.email || 'Unavailable'
+                        const synFingerprint = syn.watermark_fingerprint || 'Unavailable'
 
                         return (
-                          <div key={p.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: 16, padding: 18, display: 'grid', gap: 12 }}>
+                          <div key={synId} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: 16, padding: 18, display: 'grid', gap: 12 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                               <div>
                                 <span style={{ fontSize: '0.72rem', color: '#c084fc', fontWeight: 800, textTransform: 'uppercase' }}>Synthetic Twin Decoy</span>
@@ -2516,10 +2690,11 @@ export default function AppUser() {
                             </div>
 
                             <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Linked to Real: P-{p.patient_id || p.id} ({p.name})</span>
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Linked to Real: {syn.id || syn.patient_id || 'Unavailable'} ({linkedPatient?.name || 'Unavailable'})</span>
                               <button
                                 onClick={() => {
-                                  setSelectedTwinComparison(p)
+                                  if (!linkedPatient) return
+                                  setSelectedTwinComparison(linkedPatient)
                                   setIsCompareModalOpen(true)
                                 }}
                                 style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #c084fc', background: 'rgba(168, 85, 247, 0.15)', color: '#e9d5ff', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}

@@ -777,33 +777,33 @@ export default function AppHacker() {
                         {breachResponse.decoy_records ? (
                           <div style={{ display: 'grid', gap: 12 }}>
                             <div style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 700 }}>
-                              📦 Bulk Exfiltrated Patient Records ({breachResponse.decoy_records.length} Patients):
+                              📦 Exfiltrated Synthetic Twin Decoy Records ({breachResponse.decoy_records.length} Decoys):
                             </div>
                             {breachResponse.decoy_records.map((rec: any, idx: number) => (
-                              <div key={idx} style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '0.8rem' }}>
-                                <div><strong>Patient ID:</strong> <span style={{ color: '#c084fc' }}>{rec.patient_id || rec.synthetic_patient_id || `P-${idx+101}`}</span></div>
-                                <div><strong>Patient Name:</strong> <span style={{ color: '#f8fafc' }}>{rec.name}</span></div>
-                                <div><strong>Disease:</strong> <span style={{ color: '#f59e0b' }}>{rec.disease}</span></div>
-                                <div><strong>Diagnosis:</strong> <span style={{ color: '#cbd5e1' }}>{rec.diagnosis}</span></div>
-                                <div><strong>Aadhaar Card:</strong> <span style={{ color: '#4ade80' }}>{rec.aadhaar_number}</span></div>
-                                <div><strong>Mobile Number:</strong> <span style={{ color: '#94a3b8' }}>{rec.phone_number}</span></div>
-                                <div><strong>Email:</strong> <span style={{ color: '#38bdf8' }}>{rec.email}</span></div>
-                                <div><strong>Location Address:</strong> <span style={{ color: '#94a3b8' }}>{rec.address}</span></div>
-                                <div style={{ gridColumn: '1 / -1' }}><strong>Prescriptions:</strong> <span style={{ color: '#38bdf8' }}>{Array.isArray(rec.medicines) ? rec.medicines.join(', ') : rec.medicines}</span></div>
+                              <div key={idx} style={{ padding: 14, background: 'rgba(168, 85, 247, 0.05)', borderRadius: 12, border: '1px solid rgba(168, 85, 247, 0.3)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '0.8rem' }}>
+                                <div><strong style={{ color: '#94a3b8' }}>Synthetic Patient ID:</strong> <span style={{ color: '#c084fc', fontWeight: 700 }}>{rec.patient_id ?? rec.synthetic_patient_id ?? 'UNRESOLVED_ATTACK_TARGET'}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Synthetic Decoy Name:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{rec.name}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Decoy Disease:</strong> <span style={{ color: '#c084fc', fontWeight: 600 }}>{rec.disease}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Decoy Diagnosis:</strong> <span style={{ color: '#cbd5e1' }}>{rec.diagnosis}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Synthetic Aadhaar:</strong> <span style={{ color: '#4ade80' }}>{rec.aadhaar_number}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Synthetic Phone:</strong> <span style={{ color: '#94a3b8' }}>{rec.phone_number}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Synthetic Email:</strong> <span style={{ color: '#38bdf8' }}>{rec.email}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Location Address:</strong> <span style={{ color: '#94a3b8' }}>{rec.address}</span></div>
+                                <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: '#94a3b8' }}>Prescriptions:</strong> <span style={{ color: '#38bdf8' }}>{Array.isArray(rec.medicines) ? rec.medicines.join(', ') : rec.medicines}</span></div>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: '0.85rem' }}>
-                            <p style={{ margin: 0 }}><strong>Patient ID:</strong> <span style={{ color: '#c084fc' }}>{breachResponse.patient_id || breachResponse.synthetic_patient_id || targetPatientId}</span></p>
-                            <p style={{ margin: 0 }}><strong>Patient Name:</strong> <span style={{ color: '#f8fafc' }}>{breachResponse.name}</span></p>
-                            <p style={{ margin: 0 }}><strong>Disease:</strong> <span style={{ color: '#f59e0b' }}>{breachResponse.disease}</span></p>
-                            <p style={{ margin: 0 }}><strong>Diagnosis:</strong> <span style={{ color: '#cbd5e1' }}>{breachResponse.diagnosis}</span></p>
-                            <p style={{ margin: 0 }}><strong>Aadhaar Card:</strong> <span style={{ color: '#4ade80' }}>{breachResponse.aadhaar_number}</span></p>
-                            <p style={{ margin: 0 }}><strong>Mobile Number:</strong> <span style={{ color: '#94a3b8' }}>{breachResponse.phone_number}</span></p>
-                            <p style={{ margin: 0 }}><strong>Email:</strong> <span style={{ color: '#38bdf8' }}>{breachResponse.email}</span></p>
-                            <p style={{ margin: 0 }}><strong>Location Address:</strong> <span style={{ color: '#94a3b8' }}>{breachResponse.address}</span></p>
-                            <p style={{ margin: 0, gridColumn: '1 / -1' }}><strong>Prescriptions:</strong> <span style={{ color: '#38bdf8' }}>{Array.isArray(breachResponse.medicines) ? breachResponse.medicines.join(', ') : breachResponse.medicines}</span></p>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: '0.85rem', padding: 14, background: 'rgba(168, 85, 247, 0.05)', borderRadius: 12, border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Synthetic Patient ID:</strong> <span style={{ color: '#c084fc', fontWeight: 700 }}>{breachResponse.patient_id ?? breachResponse.synthetic_patient_id ?? 'UNRESOLVED_ATTACK_TARGET'}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Synthetic Decoy Name:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{breachResponse.name}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Decoy Disease:</strong> <span style={{ color: '#c084fc', fontWeight: 600 }}>{breachResponse.disease}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Decoy Diagnosis:</strong> <span style={{ color: '#cbd5e1' }}>{breachResponse.diagnosis}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Synthetic Aadhaar:</strong> <span style={{ color: '#4ade80' }}>{breachResponse.aadhaar_number}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Synthetic Phone:</strong> <span style={{ color: '#94a3b8' }}>{breachResponse.phone_number}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Synthetic Email:</strong> <span style={{ color: '#38bdf8' }}>{breachResponse.email}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Location Address:</strong> <span style={{ color: '#94a3b8' }}>{breachResponse.address}</span></p>
+                            <p style={{ margin: 0, gridColumn: '1 / -1' }}><strong style={{ color: '#94a3b8' }}>Prescriptions:</strong> <span style={{ color: '#38bdf8' }}>{Array.isArray(breachResponse.medicines) ? breachResponse.medicines.join(', ') : breachResponse.medicines}</span></p>
                           </div>
                         )}
                       </div>

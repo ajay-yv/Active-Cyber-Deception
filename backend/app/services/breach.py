@@ -1,13 +1,9 @@
 import json
 from datetime import datetime, timezone
-from hashlib import sha256
 from uuid import uuid4
 
 from app.repositories.breach_repository import BreachLogRecord, BreachRepository
-from app.repositories.patient_repository import PatientRepository
-from app.repositories.synthetic_repository import SyntheticRepository
-from app.schemas import TwinRecord
-from app.services.ai_engine_proxy import TwinGeneratorProxy
+from app.repositories.synthetic_repository import SyntheticRepository, is_valid_synthetic_id
 from app.services.audit import record_audit
 from app.services.deception import deception_orchestrator
 from app.services.realtime import publish_event
@@ -15,30 +11,19 @@ from app.services.security import security_repository
 from app.services.watermark import create_watermark, poison_synthetic_payload, watermark_repository
 
 breach_repository = BreachRepository()
-patient_repository = PatientRepository()
 synthetic_repository = SyntheticRepository()
-twin_generator_proxy = TwinGeneratorProxy()
 
 
-def _format_synthetic_id(real_patient_id: str) -> str:
-    pid = real_patient_id.strip()
-    h = sha256(pid.encode("utf-8")).hexdigest()
-    id_num = (int(h[:6], 16) % 89999) + 10001
-    return f"PID-{id_num}"
-
-
-def _get_or_create_synthetic_twin(real_patient_id: str, session_id: str = "hacker-session", is_attractive: bool = True) -> tuple[dict, str]:
-    target_syn_id = _format_synthetic_id(real_patient_id)
-    real_p = patient_repository.find_by_id(real_patient_id)
-    
+def _get_existing_synthetic_twin(real_patient_id: str) -> tuple[dict, str] | None:
     existing_twin = synthetic_repository.find_by_real_patient_id(real_patient_id)
     if existing_twin is None:
-        existing_twin = synthetic_repository.find_by_synthetic_id(target_syn_id)
-
+        existing_twin = synthetic_repository.find_by_synthetic_id(real_patient_id)
+    if existing_twin is not None and not is_valid_synthetic_id(existing_twin.synthetic_patient_id):
+        return None
     if existing_twin is not None:
         wm = watermark_repository.find_by_source_id(existing_twin.synthetic_patient_id, source_type="synthetic")
         if wm is None:
-            wm_rec = create_watermark(existing_twin.synthetic_patient_id, "synthetic", "HOSPITAL-001", session_id)
+            wm_rec = create_watermark(existing_twin.synthetic_patient_id, "synthetic", "HOSPITAL-001", "hacker-session")
             wm_id = wm_rec.watermark_id
         else:
             wm_rec = wm
@@ -61,7 +46,7 @@ def _get_or_create_synthetic_twin(real_patient_id: str, session_id: str = "hacke
             "diagnosis": existing_twin.diagnosis,
             "symptoms": getattr(existing_twin, "symptoms", ["Fatigue", "Exertional dyspnea"]),
             "allergies": getattr(existing_twin, "allergies", ["No Known Drug Allergies (NKDA)"]),
-            "medicines": getattr(existing_twin, "medicines", []) or twin_generator_proxy._medicines_from_disease(existing_twin.disease),
+            "medicines": getattr(existing_twin, "medicines", []) or [],
             "dosages": getattr(existing_twin, "dosages", ["1 tablet twice daily after meals"]),
             "treatment_pattern": existing_twin.treatment_pattern or "Standard Clinical Care Protocol",
             "lab_reports": getattr(existing_twin, "lab_reports", ["Complete Blood Count (CBC): Normal"]),
@@ -80,67 +65,7 @@ def _get_or_create_synthetic_twin(real_patient_id: str, session_id: str = "hacke
         }
         poisoned_payload = poison_synthetic_payload(synthetic_payload, wm_rec)
         return poisoned_payload, wm_id
-
-    # Generate twin from real patient pattern
-    if real_p is not None:
-        p_dict = real_p.model_dump()
-    else:
-        p_dict = {
-            "id": real_patient_id,
-            "name": "Clinical Patient",
-            "age": 42,
-            "disease": "Acute Viral Pyrexia with Dehydration",
-            "diagnosis": "Stable Symptomatic Presentation with Routine Follow-up",
-            "medicines": ["Tab. Paracetamol 650mg BD", "Tab. Pantoprazole 40mg OD"],
-            "treatment_pattern": "Standard Clinical Protocol",
-            "department": "General Medicine",
-        }
-
-    raw_gen = twin_generator_proxy.generate(p_dict, context={"session_id": session_id, "hospital_id": "HOSPITAL-001", "attractive": is_attractive})
-    raw_gen["synthetic_patient_id"] = target_syn_id
-    raw_gen["real_patient_id"] = real_patient_id
-
-    twin_rec = TwinRecord(**raw_gen)
-    synthetic_repository.upsert(twin_rec, session_id=session_id, hospital_id="HOSPITAL-001")
-
-    wm_rec = create_watermark(target_syn_id, "synthetic", "HOSPITAL-001", session_id, twin_rec.model_dump())
-    
-    synthetic_payload = {
-        "synthetic_patient_id": target_syn_id,
-        "patient_id": target_syn_id,
-        "name": twin_rec.name,
-        "age": twin_rec.age_range or "38-43 yrs",
-        "gender": twin_rec.gender or "Male",
-        "date_of_birth": twin_rec.date_of_birth or "",
-        "blood_group": twin_rec.blood_group or "O+",
-        "doctor_assigned": twin_rec.doctor_assigned or "Dr. Priya Nair (Cardiology)",
-        "department": twin_rec.department or "Cardiology",
-        "ward": twin_rec.ward or "General Ward (W-1)",
-        "admission_date": twin_rec.admission_date or "",
-        "discharge_date": twin_rec.discharge_date or "",
-        "disease": twin_rec.disease,
-        "diagnosis": twin_rec.diagnosis,
-        "symptoms": twin_rec.symptoms or ["Fatigue"],
-        "allergies": twin_rec.allergies or ["No Known Drug Allergies (NKDA)"],
-        "medicines": twin_rec.medicines or twin_generator_proxy._medicines_from_disease(twin_rec.disease),
-        "dosages": twin_rec.dosages or ["1 tab daily"],
-        "treatment_pattern": twin_rec.treatment_pattern,
-        "lab_reports": twin_rec.lab_reports or ["CBC: Normal"],
-        "aadhaar_number": twin_rec.aadhaar_number,
-        "phone_number": twin_rec.phone_number,
-        "email": twin_rec.email,
-        "address": twin_rec.address,
-        "insurance_details": twin_rec.insurance_details,
-        "emergency_contact": twin_rec.emergency_contact,
-        "source_type": "synthetic",
-        "watermark_id": wm_rec.watermark_id,
-        "watermark": "Verified",
-        "is_attractive_lure": twin_rec.is_attractive_lure,
-        "lure_type": twin_rec.lure_type,
-        "notes": "Patient clinical record verified. Electronic Health Record active.",
-    }
-    poisoned_payload = poison_synthetic_payload(synthetic_payload, wm_rec)
-    return poisoned_payload, wm_rec.watermark_id
+    return None
 
 
 def handle_hacker_breach_request(session_id: str, hacker_id: str, query: str, target_patient_id: str, requested_payload: dict) -> dict:
@@ -172,13 +97,7 @@ def handle_hacker_breach_request(session_id: str, hacker_id: str, query: str, ta
         target_patient_id = f"P-{int(target_patient_id.strip()):02d}"
 
     if is_bulk:
-        all_real = patient_repository.list_all()
-        target_ids = [str(getattr(p, 'id', getattr(p, 'patient_id', ''))) for p in all_real if getattr(p, 'id', getattr(p, 'patient_id', ''))]
-        if not target_ids:
-            all_syn = synthetic_repository.list_all()
-            target_ids = [s.synthetic_patient_id for s in all_syn]
-        if not target_ids:
-            target_ids = ["P-01"]
+        target_ids = [t.real_patient_id for t in synthetic_repository.list_all() if t.real_patient_id]
         target_name_summary = f"ALL {len(target_ids)} Patient Records (Bulk Dump Attempt)"
     elif "," in target_patient_id:
         target_ids = [t.strip() for t in target_patient_id.split(",") if t.strip()]
@@ -196,7 +115,10 @@ def handle_hacker_breach_request(session_id: str, hacker_id: str, query: str, ta
     requested_fields = [str(field) for field in requested_fields[:25]]
 
     for pid in target_ids:
-        syn_payload, wm_id = _get_or_create_synthetic_twin(pid, session_id=session_id, is_attractive=True)
+        result = _get_existing_synthetic_twin(pid)
+        if result is None:
+            continue
+        syn_payload, wm_id = result
         watermark_ids.append(wm_id)
         syn_patient_ids.append(syn_payload["synthetic_patient_id"])
         decoy_records.append(syn_payload)
@@ -224,8 +146,8 @@ def handle_hacker_breach_request(session_id: str, hacker_id: str, query: str, ta
 
     original_payload = json.dumps(requested_payload, sort_keys=True)
     response_payload = json.dumps(response_data, default=str)
-    primary_wm = watermark_ids[0] if watermark_ids else "WM-DEFAULT"
-    primary_syn_id = syn_patient_ids[0] if syn_patient_ids else "SYN-01"
+    primary_wm = watermark_ids[0] if watermark_ids else None
+    primary_syn_id = syn_patient_ids[0] if syn_patient_ids else None
 
     audit_text = f"hacker_request={query}; target={target_patient_id}; threat_score={threat_score}; ado_state={ado_session.state.value}; redirected=synthetic({primary_syn_id}); watermark={primary_wm}"
 

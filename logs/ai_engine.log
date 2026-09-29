@@ -208,3 +208,143 @@ INFO:     127.0.0.1:61324 - "GET /twins/profile HTTP/1.1" 200 OK
 INFO:     127.0.0.1:24958 - "GET /twins/profile HTTP/1.1" 200 OK
 INFO:     127.0.0.1:40462 - "GET /twins/profile HTTP/1.1" 200 OK
 INFO:     127.0.0.1:55221 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     Started server process [13524]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:1340 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [26516]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:65212 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65271 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65287 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65308 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65322 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65331 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65344 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65353 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65367 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65379 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65392 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65402 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     Started server process [34268]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:19097 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60175 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8466 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8476 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:8484 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2780 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53340 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53351 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53361 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53372 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6070 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25885 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48769 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33861 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33883 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33892 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33907 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51832 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51842 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57580 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57597 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57614 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57631 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39013 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39020 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:19361 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:24393 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:24403 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53289 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36967 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58622 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58638 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58650 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58662 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58676 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58693 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58708 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56593 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56597 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56599 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34375 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34385 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10437 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29587 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17228 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17232 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17252 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17254 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17256 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17285 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17288 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17291 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17293 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17299 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14288 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60092 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50432 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50434 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50436 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50446 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50449 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50451 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50455 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64824 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64826 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64828 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64830 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64832 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64834 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64836 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64837 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64839 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64842 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64843 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64845 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64847 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17779 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     Started server process [31284]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:48901 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [20744]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:47569 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64313 - "POST /twins/evolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64315 - "GET /twins/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64317 - "POST /twins/generate HTTP/1.1" 200 OK
+INFO:     Started server process [36568]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:32476 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [30776]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57180 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [24164]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:5271 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [1700]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:22151 - "GET /health HTTP/1.1" 200 OK
+INFO:     Started server process [31152]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:41041 - "GET /health HTTP/1.1" 200 OK

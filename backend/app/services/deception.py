@@ -7,6 +7,7 @@ from enum import Enum
 from uuid import uuid4
 
 from app.repositories.honeytoken_repository import HoneytokenRecord
+from app.repositories.synthetic_repository import is_valid_synthetic_id
 from app.services.registries import honeytoken_repository, patient_repository, synthetic_repository
 from app.schemas import PatientRecord, TwinRecord
 from app.services.watermark import create_watermark, poison_synthetic_payload
@@ -43,7 +44,7 @@ class DecoySession:
 
 class AutonomousDeceptionOrchestrator:
     """Autonomous Deception Orchestrator (ADO).
-    
+
     Autonomously detects adversaries, deploys adaptive fake environments,
     enhances decoys with high-value attractive lures, intercepts data theft,
     and removes all ephemeral deception traces autonomously after attack ends.
@@ -93,7 +94,7 @@ class AutonomousDeceptionOrchestrator:
                 return self._enhance_lures(existing, threat_score=threat_score, reason=reason, lure_type=lure_type)
             return existing
 
-        existing_twins = synthetic_repository.list_all()
+        existing_twins = synthetic_repository.valid_catalog()
         if existing_twins:
             decoy_ids = [t.synthetic_patient_id for t in existing_twins]
             honeytokens = self._create_honeytokens(session_id, decoy_ids[0])
@@ -119,42 +120,6 @@ class AutonomousDeceptionOrchestrator:
             )
             return session
 
-        real_patients = patient_repository.list_all()
-        if not real_patients:
-            initial_state = ADOState.LURE_ENHANCED if threat_score >= 80 else ADOState.DECOY_DEPLOYED
-            session = DecoySession(
-                session_id=session_id,
-                reason=reason,
-                threat_score=threat_score,
-                activated_at=now_str,
-                last_activity_at=now_str,
-                state=initial_state,
-                active=True,
-                decoy_ids=[],
-                honeytoken_ids=[],
-                lure_type=lure_type,
-                interactions_count=1,
-            )
-            self._active_sessions[session_id] = session
-            return session
-
-        seed_patient = self._select_seed_patient()
-        context = self._build_context(session_id=session_id, threat_score=threat_score, reason=reason, lure_type=lure_type)
-        twin_payload = self._twin_generator.generate(seed_patient.model_dump(), context=context)
-        twin_record = TwinRecord(**twin_payload)
-        synthetic_repository.upsert(twin_record, session_id=session_id, hospital_id=str(context["hospital_id"]))
-
-        wm_rec = create_watermark(
-            twin_record.synthetic_patient_id,
-            source_type="synthetic",
-            hospital_id=str(context["hospital_id"]),
-            session_id=session_id,
-            source_data=twin_record.model_dump(),
-        )
-
-        honeytokens = self._create_honeytokens(session_id, twin_record.synthetic_patient_id)
-        ht_ids = [ht.value for ht in honeytokens]
-
         initial_state = ADOState.LURE_ENHANCED if threat_score >= 80 else ADOState.DECOY_DEPLOYED
 
         session = DecoySession(
@@ -165,8 +130,8 @@ class AutonomousDeceptionOrchestrator:
             last_activity_at=now_str,
             state=initial_state,
             active=True,
-            decoy_ids=[twin_record.synthetic_patient_id],
-            honeytoken_ids=ht_ids,
+            decoy_ids=[],
+            honeytoken_ids=[],
             lure_type=lure_type,
             interactions_count=1,
         )
@@ -174,7 +139,7 @@ class AutonomousDeceptionOrchestrator:
 
         security_repository.append(
             "ado_activation",
-            f"session={session_id}; state={initial_state.value}; score={threat_score}; reason={reason}; decoy={twin_record.synthetic_patient_id}; lures={len(ht_ids)}",
+            f"session={session_id}; state={initial_state.value}; score={threat_score}; reason={reason}; decoys=0; lures=0",
         )
 
         publish_event("ado_state_change", {
@@ -182,7 +147,7 @@ class AutonomousDeceptionOrchestrator:
             "state": initial_state.value,
             "threat_score": threat_score,
             "reason": reason,
-            "decoy_id": twin_record.synthetic_patient_id,
+            "decoy_id": None,
             "timestamp": now_str,
         })
 
@@ -190,45 +155,23 @@ class AutonomousDeceptionOrchestrator:
 
     def _enhance_lures(self, session: DecoySession, threat_score: int, reason: str, lure_type: str) -> DecoySession:
         now_str = datetime.now(timezone.utc).isoformat()
-        context = self._build_context(session_id=session.session_id, threat_score=threat_score, reason=reason, lure_type=lure_type)
-        
-        # Deploy high-value VIP decoy lure
-        seed_patient = self._generate_vip_seed_patient()
-        twin_payload = self._twin_generator.generate(seed_patient.model_dump(), context=context)
-        twin_record = TwinRecord(**twin_payload)
-        synthetic_repository.upsert(twin_record, session_id=session.session_id, hospital_id=str(context["hospital_id"]))
-
-        wm_rec = create_watermark(
-            twin_record.synthetic_patient_id,
-            source_type="synthetic",
-            hospital_id=str(context["hospital_id"]),
-            session_id=session.session_id,
-            source_data=twin_record.model_dump(),
-        )
-
-        honeytokens = self._create_honeytokens(session.session_id, twin_record.synthetic_patient_id)
-        new_ht_ids = [ht.value for ht in honeytokens]
-        self._total_lures_deployed += 1
-
         session.threat_score = max(session.threat_score, threat_score)
         session.reason = f"{session.reason}; {reason}"
         session.state = ADOState.LURE_ENHANCED
         session.lure_type = lure_type
-        session.decoy_ids.append(twin_record.synthetic_patient_id)
-        session.honeytoken_ids.extend(new_ht_ids)
         session.last_activity_at = now_str
 
         security_repository.append(
             "ado_lure_enhancement",
-            f"session={session.session_id}; state={ADOState.LURE_ENHANCED.value}; score={threat_score}; added_vip_decoy={twin_record.synthetic_patient_id}; honeytokens={len(new_ht_ids)}",
+            f"session={session.session_id}; state={ADOState.LURE_ENHANCED.value}; score={threat_score}; added_vip_decoy=none; honeytokens=0",
         )
 
         publish_event("ado_state_change", {
             "session_id": session.session_id,
             "state": ADOState.LURE_ENHANCED.value,
             "threat_score": threat_score,
-            "reason": f"High-Threat Escalation ({reason}) -> Deployed VIP Decoy {twin_record.synthetic_patient_id}",
-            "decoy_id": twin_record.synthetic_patient_id,
+            "reason": f"High-Threat Escalation ({reason}) -> Existing persisted decoys retained",
+            "decoy_id": session.decoy_ids[-1] if session.decoy_ids else None,
             "timestamp": now_str,
         })
 
@@ -467,4 +410,4 @@ class AutonomousDeceptionOrchestrator:
 
 
 deception_orchestrator = AutonomousDeceptionOrchestrator()
-autonomous_deception_orchestrator = deception_orchestrator
+autonomous_deception_orchestrator = deception_orchestrator

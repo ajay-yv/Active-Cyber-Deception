@@ -110,13 +110,20 @@ def record_forensic_attack(
     records_requested: int = 0,
     synthetic_patient_ids: list[str] | None = None,
 ) -> dict:
+    from app.repositories.synthetic_repository import is_valid_synthetic_id
+
     now_str = datetime.now(timezone.utc).isoformat()
     attack_id = f"atk_{uuid4().hex[:12]}"
+    resolved_synthetic_id = (
+        synthetic_patient_id
+        if is_valid_synthetic_id(synthetic_patient_id)
+        else "UNRESOLVED_ATTACK_TARGET"
+    )
     payload = {
         "attack_id": attack_id,
         "attack_type": attack_type,
         "patient_id": patient_id,
-        "synthetic_patient_id": synthetic_patient_id,
+        "synthetic_patient_id": resolved_synthetic_id,
         "session_id": session_id,
         "username": username,
         "ip_address": ip_address,
@@ -129,7 +136,10 @@ def record_forensic_attack(
         "records_returned": int(records_returned),
         "records_requested": int(records_requested or records_returned),
         "requested_fields": list(requested_fields or []),
-        "synthetic_patient_ids": list(synthetic_patient_ids or ([synthetic_patient_id] if synthetic_patient_id else [])),
+        "synthetic_patient_ids": [
+            value if is_valid_synthetic_id(value) else "UNRESOLVED_ATTACK_TARGET"
+            for value in (synthetic_patient_ids or ([synthetic_patient_id] if synthetic_patient_id else []))
+        ] or ["UNRESOLVED_ATTACK_TARGET"],
         "blocked_status": bool(blocked_status),
     }
 
@@ -152,7 +162,23 @@ def record_forensic_attack(
             "timestamp": now_str,
         })
 
-        target_summary = f"Patient {patient_id}" if patient_id else "Hospital Patient Database (All Patients)"
+        real_p_name = None
+        if patient_id:
+            try:
+                from app.repositories.patient_repository import patient_repository
+                p_rec = patient_repository.get_by_id(patient_id)
+                if p_rec:
+                    real_p_name = p_rec.name
+            except Exception:
+                pass
+
+        if real_p_name:
+            target_summary = f"{real_p_name} ({patient_id})"
+        elif patient_id:
+            target_summary = f"Patient {patient_id}"
+        else:
+            target_summary = "Hospital Patient Database (All Patients)"
+
         hacker_alert_payload = {
             "session_id": session_id,
             "hacker_id": username or "simulated_hacker",
@@ -160,7 +186,7 @@ def record_forensic_attack(
             "details": f"Attacker probe attempting to extract data from {target_summary}",
             "target_patient_id": patient_id or "ALL_PATIENTS",
             "target_patient_name": target_summary,
-            "synthetic_patient_id": synthetic_patient_id or "SYN-01",
+            "synthetic_patient_id": resolved_synthetic_id,
             "data_type": "Patient PII (Aadhaar Number, Mobile Phone, Residential Address, Clinical Diagnosis & Prescriptions)",
             "stolen_categories": [
                 "🆔 Patient Aadhaar Number & Government Identification",
@@ -170,7 +196,7 @@ def record_forensic_attack(
                 "🏥 Attending Doctor & Department Allocation",
                 "🏦 Insurance Policy Account & Emergency Family Contacts",
             ],
-            "watermark_id": watermark_id or "WM-AI-SECURITY-ACTIVE",
+            "watermark_id": watermark_id or "UNRESOLVED_ATTACK_TARGET",
             "timestamp": now_str,
             "threat_score": int(risk_score),
             "attack_type": attack_type,
@@ -187,7 +213,7 @@ def record_forensic_attack(
             publish_event("DECEPTION_STARTED", {
                 "session_id": session_id,
                 "target_patient_id": patient_id,
-                "synthetic_patient_id": synthetic_patient_id,
+                "synthetic_patient_id": resolved_synthetic_id,
                 "timestamp": now_str,
             })
         if records_returned > 0 or synthetic_patient_id:
@@ -201,7 +227,7 @@ def record_forensic_attack(
         if watermark_id:
             publish_event("WATERMARK_CREATED", {
                 "watermark_id": watermark_id,
-                "synthetic_id": synthetic_patient_id,
+                "synthetic_id": resolved_synthetic_id,
                 "session_id": session_id,
                 "timestamp": now_str,
             })

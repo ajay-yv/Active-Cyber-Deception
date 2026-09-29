@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api.security_extra import security_test_marker
 from app.main import app
-from app.services.registries import patient_repository
+from app.services.registries import patient_repository, synthetic_repository
 from app.services.security import reset_security_state, security_repository
 from app.services.gateway import reset_gateway_state
+from app.schemas import TwinRecord
 
 
 client = TestClient(app)
@@ -206,6 +210,163 @@ def test_10_suspicious_requests_receive_synthetic_data() -> None:
     # Every patient received by hacker must have is_synthetic True
     for p in patients:
         assert p.get("is_synthetic") is True
+
+
+def test_hacker_output_matches_existing_admin_synthetic_twins_and_caps_count() -> None:
+    twins = synthetic_repository.list_all()
+    assert twins
+
+    token = login("hacker", "hacker123")
+    target_twin = twins[0]
+    single_response = client.get(
+        f"/api/patients?patient_id={target_twin.real_patient_id}",
+        headers={"Authorization": f"Bearer {token}", "X-Session-Id": "test-exact-twin-session"},
+    )
+    assert single_response.status_code == 200
+    returned_twin = single_response.json()["patient"]
+    assert returned_twin["synthetic_patient_id"] == target_twin.synthetic_patient_id
+    assert returned_twin["name"] == target_twin.name
+    assert returned_twin["disease"] == target_twin.disease
+    assert returned_twin["diagnosis"] == target_twin.diagnosis
+    assert returned_twin["phone"] == target_twin.phone_number
+    assert returned_twin["email"] == target_twin.email
+    assert returned_twin["aadhaar"] == target_twin.aadhaar_number
+
+    bulk_response = client.get(
+        f"/api/patients?limit={len(twins) + 10}",
+        headers={"Authorization": f"Bearer {token}", "X-Session-Id": "test-bounded-twin-session"},
+    )
+    assert bulk_response.status_code == 200
+    returned_records = bulk_response.json()["patients"]
+    assert len(returned_records) == len(twins)
+    assert {record["synthetic_patient_id"] for record in returned_records} == {
+        twin.synthetic_patient_id for twin in twins
+    }
+
+    missing_response = client.get(
+        "/api/patients?patient_id=P-NO-PERSISTED-TWIN",
+        headers={"Authorization": f"Bearer {token}", "X-Session-Id": "test-missing-twin-session"},
+    )
+    assert missing_response.status_code == 200
+    assert missing_response.json()["patient"] is None
+    assert missing_response.json()["patients"] == []
+
+
+def test_malformed_persisted_synthetic_ids_are_excluded_from_catalog(monkeypatch: pytest.MonkeyPatch) -> None:
+    valid = TwinRecord(
+        real_patient_id="P-VALID",
+        synthetic_patient_id="SYN-VALID",
+        name="Persisted Twin",
+        address="Address",
+        phone_number="+1-555-0100",
+        aadhaar_number="0000-0000-0000",
+        email="twin@example.test",
+        insurance_details="Insurance",
+        emergency_contact="+1-555-0101",
+        disease="Condition",
+        diagnosis="Diagnosis",
+    )
+    malformed = valid.model_copy(update={"synthetic_patient_id": "SYN-01' OR 1=1 --"})
+    monkeypatch.setattr(synthetic_repository, "list_all", lambda: [valid, malformed])
+
+    assert [t.synthetic_patient_id for t in synthetic_repository.valid_catalog()] == ["SYN-VALID"]
+    token = login("hacker", "hacker123")
+    response = client.get(
+        "/api/patients?limit=99",
+        headers={"Authorization": f"Bearer {token}", "X-Session-Id": "test-malformed-catalog"},
+    )
+    assert response.status_code == 200
+    records = response.json()["patients"]
+    assert [record["synthetic_patient_id"] for record in records] == ["SYN-VALID"]
+
+
+def test_dashboard_catalog_count_matches_hacker_bulk_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    valid = TwinRecord(
+        real_patient_id="P-CATALOG",
+        synthetic_patient_id="SYN-CATALOG",
+        name="Catalog Twin",
+        address="Address",
+        phone_number="+1-555-0200",
+        aadhaar_number="1111-1111-1111",
+        email="catalog@example.test",
+        insurance_details="Insurance",
+        emergency_contact="+1-555-0201",
+        disease="Condition",
+        diagnosis="Diagnosis",
+    )
+    malformed = valid.model_copy(update={"synthetic_patient_id": "SYN-CATALOG UNION SELECT"})
+    monkeypatch.setattr(synthetic_repository, "list_all", lambda: [valid, malformed])
+
+    admin = client.get("/api/dashboard/admin", headers={"Authorization": f"Bearer {login('admin', 'admin123')}"})
+    hacker = client.get("/api/patients?limit=99", headers={"Authorization": f"Bearer {login('hacker', 'hacker123')}"})
+    assert admin.status_code == 200
+    assert hacker.status_code == 200
+    assert admin.json()["metrics"]["synthetic_twins"] == len(admin.json()["synthetic_records"]) == len(hacker.json()["patients"])
+    assert admin.json()["synthetic_records"][0]["synthetic_patient_id"] == "SYN-CATALOG"
+
+
+def test_sqli_input_does_not_create_twin_or_emit_raw_synthetic_id() -> None:
+    token = login("hacker", "hacker123")
+    before = {t.synthetic_patient_id for t in synthetic_repository.list_all()}
+    response = client.get(
+        "/api/patients",
+        params={"patient_id": "P-01' OR 1=1 --"},
+        headers={"Authorization": f"Bearer {token}", "X-Session-Id": "test-sqli-raw-id"},
+    )
+    assert response.status_code == 200
+    after = {t.synthetic_patient_id for t in synthetic_repository.list_all()}
+    assert after == before
+    recent = security_repository.list_forensic_records(limit=1)[0]
+    assert "P-01' OR 1=1 --" not in str(recent.get("synthetic_patient_id"))
+    assert "SYN-P-01' OR 1=1 --" not in str(recent.get("synthetic_patient_id"))
+
+
+def test_security_marker_uses_valid_catalog_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    valid = TwinRecord(
+        real_patient_id="P-VALID",
+        synthetic_patient_id="SYN-VALID",
+        name="Valid Twin",
+        address="Address",
+        phone_number="+1-555-0100",
+        aadhaar_number="0000-0000-0000",
+        email="valid@example.test",
+        insurance_details="Insurance",
+        emergency_contact="+1-555-0101",
+        disease="Condition",
+        diagnosis="Diagnosis",
+    )
+    malformed = valid.model_copy(update={"synthetic_patient_id": "SYN-01' OR 1=1 --"})
+    monkeypatch.setattr(synthetic_repository, "list_all", lambda: [malformed, valid])
+    monkeypatch.setattr("app.api.security_extra.require_simulation_enabled", lambda: None)
+    monkeypatch.setattr(
+        "app.api.security_extra.evaluate_request",
+        lambda **kwargs: SimpleNamespace(threat_score=90.0, attack_probability=90.0, action="deceive"),
+    )
+    monkeypatch.setattr("app.api.security_extra.record_forensic_attack", lambda **kwargs: {"ok": True})
+    monkeypatch.setattr("app.repositories.watermark_repository.watermark_repository.find_by_source_id", lambda *_args, **_kwargs: None)
+
+    response = security_test_marker(
+        payload=SimpleNamespace(marker="TEST_SQL_INJECTION"),
+        current_user=SimpleNamespace(role="hacker", username="hacker"),
+        context={"session_id": "session-marker", "ip_address": "127.0.0.1", "browser": ""},
+    )
+
+    assert response["deceptive_payload"]["sample_decoy"]["synthetic_patient_id"] == "SYN-VALID"
+    assert "OR 1=1" not in response["deceptive_payload"]["sample_decoy"]["synthetic_patient_id"]
+
+
+def test_dashboard_alert_uses_unresolved_target_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "app.api.dashboard.security_repository.find_by_event_type",
+        lambda _event_type: [SimpleNamespace(details="session=s1; query=SELECT * FROM synthetic; target=Patient Records")],
+    )
+    monkeypatch.setattr("app.api.dashboard.deception_orchestrator.status", lambda: [])
+
+    alerts = __import__("app.api.dashboard", fromlist=["_build_alerts"])._build_alerts()
+
+    assert alerts
+    assert "UNRESOLVED_ATTACK_TARGET" in alerts[0]["message"]
+    assert "SYN-DECOY-TWIN" not in alerts[0]["message"]
 
 
 # Test 11: Real patient data is never returned to attacker sessions

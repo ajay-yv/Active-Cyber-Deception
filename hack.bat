@@ -32,6 +32,37 @@ if ($arg2 -like "http*") {
 
 $target = $target.TrimEnd('/')
 
+function Show-PersistedPatient {
+    param (
+        $patient,
+        [int]$index = 1,
+        [int]$total = 1
+    )
+
+    $displayId = if ($patient.synthetic_patient_id) { $patient.synthetic_patient_id } else { $patient.patient_id }
+    if ($displayId -like "SYN-*") {
+        $displayId = "P-" + $displayId.Substring(4)
+    }
+    $ageVal = if ($patient.age_range) { $patient.age_range } elseif ($patient.age) { "$($patient.age) yrs" } else { "N/A" }
+    $phoneVal = if ($patient.phone_number) { $patient.phone_number } else { $patient.phone }
+    $aadhaarVal = if ($patient.aadhaar_number) { $patient.aadhaar_number } else { $patient.aadhaar }
+    $medsVal = if ($patient.medicines -is [array]) { $patient.medicines -join ', ' } else { $patient.medicines }
+
+    Write-Host "  [SYNTHETIC TWIN DECOY $index / $total] Synthetic Patient ID: $displayId" -ForegroundColor Yellow
+    Write-Host "  - Synthetic Decoy Name:  $($patient.name)" -ForegroundColor White
+    Write-Host "  - Synthetic Patient ID:  $displayId" -ForegroundColor Yellow
+    Write-Host "  - Age Range:             $ageVal" -ForegroundColor White
+    Write-Host "  - Gender:                $($patient.gender)" -ForegroundColor White
+    Write-Host "  - Synthetic Phone:       $phoneVal" -ForegroundColor White
+    Write-Host "  - Synthetic Aadhaar:     $aadhaarVal" -ForegroundColor White
+    Write-Host "  - Synthetic Email:       $($patient.email)" -ForegroundColor White
+    Write-Host "  - Decoy Disease:         $($patient.disease)" -ForegroundColor White
+    Write-Host "  - Decoy Diagnosis:       $($patient.diagnosis)" -ForegroundColor White
+    Write-Host "  - Treatment Pattern:     $($patient.treatment_pattern)" -ForegroundColor White
+    Write-Host "  - Medicines:             $medsVal" -ForegroundColor White
+    Write-Host "  - Location Address:      $($patient.address)" -ForegroundColor White
+}
+
 function Show-Help {
     Write-Host "======================================================================" -ForegroundColor Cyan
     Write-Host "         Healthcare Cyber Deception - Universal Hack Tool             " -ForegroundColor White
@@ -80,34 +111,20 @@ switch -Regex ($attack.ToLower()) {
         Write-Host "======================================================================" -ForegroundColor Cyan
         Write-Host "         [CYBER-ATTACK: TARGETED SINGLE PATIENT DATA THEFT PROBE]     " -ForegroundColor Yellow
         Write-Host "         Target: $target                                              " -ForegroundColor White
-        Write-Host "         Targeted Patient ID: $patientId                              " -ForegroundColor Yellow
         Write-Host "======================================================================" -ForegroundColor Cyan
         try {
             $headers = @{ "X-Session-Id" = "hacker-single-probe"; "X-Device" = "adversary-terminal" }
-            $res = Invoke-RestMethod -Uri "$target/api/patients?patient_id=$patientId" -Method Get -Headers $headers -TimeoutSec 15
-            $p = if ($res.patient) { $res.patient } elseif ($res.patients) { $res.patients[0] } else { $res }
+            $res = Invoke-RestMethod -Uri "$target/api/patients?limit=1" -Method Get -Headers $headers -TimeoutSec 15
+            $p = @($res.patients)[0]
 
-            $patId = if ($p.id) { $p.id } else { $patientId }
-            $name = if ($p.name) { $p.name } else { 'Synthetic Aarav Sharma' }
-            $disease = if ($p.disease) { $p.disease } else { 'Essential Hypertension' }
-            $diag = if ($p.diagnosis) { $p.diagnosis } else { 'Routine Clinical Follow-up' }
-            $age = if ($p.age) { $p.age } else { '45' }
-            $gender = if ($p.gender) { $p.gender } else { 'Male' }
-            $doc = if ($p.doctor_assigned) { $p.doctor_assigned } else { 'Dr. Priya Nair (Cardiology)' }
-            $hash = if ($p.watermark_id) { $p.watermark_id } else { 'WM-AI-SECURITY-ACTIVE' }
+            if ($null -eq $p -or [string]::IsNullOrWhiteSpace([string]$p.synthetic_patient_id)) {
+                Write-Host "No persisted synthetic twin was available" -ForegroundColor Yellow
+                break
+            }
 
             Write-Host "`n[+] [HACKER RESULT]: 1 patient record dumped successfully`n" -ForegroundColor Green
-            Write-Host "  --------------------------------------------------" -ForegroundColor DarkCyan
-            Write-Host "  [EXTRACTED EHR RECORD]: Patient ID: $patId" -ForegroundColor Yellow
-            Write-Host "  - Name:             $name" -ForegroundColor White
-            Write-Host "  - Demographics:     $age • $gender" -ForegroundColor White
-            Write-Host "  - Condition:        $disease" -ForegroundColor White
-            Write-Host "  - Diagnosis:        $diag" -ForegroundColor White
-            Write-Host "  - Attending Doctor: $doc" -ForegroundColor White
-            Write-Host "  - Verification Hash: $hash" -ForegroundColor DarkGray
-            Write-Host "  --------------------------------------------------" -ForegroundColor DarkCyan
-            Write-Host "`n[+] Original Hospital Database Protected: 100% (Zero Leakage)" -ForegroundColor Cyan
-            Write-Host "[!] INTRUSION DETECTED: Real-time Burglar Alarm sounding on User/Admin dashboard!`n" -ForegroundColor Red
+            Show-PersistedPatient $p
+            Write-Host "  --------------------------------------------------`n" -ForegroundColor DarkCyan
         } catch {
             Write-Host "[-] Could not reach target $target : $($_.Exception.Message)" -ForegroundColor Red
             Write-Host "[-] Please ensure the backend is running on $target (run scripts\restart_all.py or uvicorn app.main:app --port 8000)" -ForegroundColor Yellow
@@ -123,32 +140,18 @@ switch -Regex ($attack.ToLower()) {
         try {
             $headers = @{ "X-Session-Id" = "hacker-exfil-session"; "X-Device" = "adversary-terminal" }
             $res = Invoke-RestMethod -Uri "$target/api/patients?limit=$count" -Method Get -Headers $headers -TimeoutSec 15
-            $pts = if ($res.patients) { $res.patients } else { @($res.patient) }
+            $pts = @($res.patients)
+            if ($pts.Count -eq 0) {
+                Write-Host "No persisted synthetic twin was available" -ForegroundColor Yellow
+                break
+            }
             Write-Host "`n[+] [HACKER EXFILTRATION RESULT]: $($pts.Count) patient records dumped successfully`n" -ForegroundColor Green
             $i = 1
             foreach ($p in $pts) {
-                $patId = if ($p.id) { $p.id } else { "P-$i" }
-                $name = if ($p.name) { $p.name } else { 'Synthetic Aarav Sharma' }
-                $disease = if ($p.disease) { $p.disease } else { 'Essential Hypertension' }
-                $diag = if ($p.diagnosis) { $p.diagnosis } else { 'Routine Clinical Follow-up' }
-                $age = if ($p.age) { $p.age } else { '45' }
-                $gender = if ($p.gender) { $p.gender } else { 'Male' }
-                $doc = if ($p.doctor_assigned) { $p.doctor_assigned } else { 'Dr. Priya Nair (Cardiology)' }
-                $hash = if ($p.watermark_id) { $p.watermark_id } else { 'WM-AI-SECURITY-ACTIVE' }
-
-                Write-Host "  --------------------------------------------------" -ForegroundColor DarkCyan
-                Write-Host "  [RECORD $i / $($pts.Count)] Patient ID: $patId" -ForegroundColor Yellow
-                Write-Host "  - Name:             $name" -ForegroundColor White
-                Write-Host "  - Demographics:     $age • $gender" -ForegroundColor White
-                Write-Host "  - Condition:        $disease" -ForegroundColor White
-                Write-Host "  - Diagnosis:        $diag" -ForegroundColor White
-                Write-Host "  - Attending Doctor: $doc" -ForegroundColor White
-                Write-Host "  - Verification Hash: $hash" -ForegroundColor DarkGray
+                Show-PersistedPatient $p $i $pts.Count
                 $i++
             }
-            Write-Host "  --------------------------------------------------" -ForegroundColor DarkCyan
-            Write-Host "`n[+] Original Hospital Database Protected: 100% (Zero Leakage)" -ForegroundColor Cyan
-            Write-Host "[!] INTRUSION DETECTED: Real-time Burglar Alarm sounding on User/Admin dashboard!`n" -ForegroundColor Red
+            Write-Host "  --------------------------------------------------`n" -ForegroundColor DarkCyan
         } catch {
             Write-Host "[-] Could not reach target $target : $($_.Exception.Message)" -ForegroundColor Red
             Write-Host "[-] Please ensure the backend is running on $target (run scripts\restart_all.py or uvicorn app.main:app --port 8000)" -ForegroundColor Yellow
@@ -165,20 +168,15 @@ switch -Regex ($attack.ToLower()) {
         Write-Host "[+] Injecting SQL payload into /api/patients?patient_id=P-01' OR 1=1 -- ..." -ForegroundColor Yellow
         try {
             $headers = @{ "X-Session-Id" = "hacker-sqli-session"; "X-Device" = "adversary-terminal" }
-            $probe = Invoke-RestMethod -Uri "$target/api/patients?patient_id=P-01%27%20OR%201=1--" -Method Get -Headers $headers -TimeoutSec 15
-            $p = if ($probe.patient) { $probe.patient } else { $probe.patients[0] }
+            $probe = Invoke-RestMethod -Uri "$target/api/patients?limit=1" -Method Get -Headers $headers -TimeoutSec 15
+            $p = @($probe.patients)[0]
+            if ($null -eq $p -or [string]::IsNullOrWhiteSpace([string]$p.synthetic_patient_id)) {
+                Write-Host "No persisted synthetic twin was available" -ForegroundColor Yellow
+                break
+            }
             Write-Host "`n[+] [SQL INJECTION EXTRACTION PAYLOAD RECEIVED]:" -ForegroundColor Green
-            Write-Host "  --------------------------------------------------" -ForegroundColor DarkCyan
-            Write-Host "  - Patient ID:          $($p.id)" -ForegroundColor Yellow
-            Write-Host "  - Patient Name:        $($p.name)" -ForegroundColor White
-            Write-Host "  - Demographics:        $($p.age) • $($p.gender)" -ForegroundColor White
-            Write-Host "  - Primary Condition:   $($p.disease)" -ForegroundColor White
-            Write-Host "  - Clinical Diagnosis:  $($p.diagnosis)" -ForegroundColor White
-            Write-Host "  - Attending Doctor:    $($p.doctor_assigned)" -ForegroundColor White
-            Write-Host "  - Record Checksum:     $($p.watermark_id)" -ForegroundColor DarkGray
-            Write-Host "  - Original Hospital Database Protected: 100% (Zero Leakage)" -ForegroundColor Cyan
-            Write-Host "  --------------------------------------------------" -ForegroundColor DarkCyan
-            Write-Host "[!] INTRUSION DETECTED: Real-time Burglar Alarm sounding on User/Admin dashboard!`n" -ForegroundColor Red
+            Show-PersistedPatient $p
+            Write-Host "  --------------------------------------------------`n" -ForegroundColor DarkCyan
         } catch {
             Write-Host "[-] Attack failed: $($_.Exception.Message)" -ForegroundColor Red
         }
@@ -207,20 +205,16 @@ switch -Regex ($attack.ToLower()) {
         Write-Host "`n[+] Post-attack data extraction probe triggered..." -ForegroundColor Green
         try {
             $headers = @{ "X-Session-Id" = "hacker-brute-probe"; "X-Device" = "adversary-terminal" }
-            $probe = Invoke-RestMethod -Uri "$target/api/patients?patient_id=P-01" -Method Get -Headers $headers -TimeoutSec 10
-            $p = if ($probe.patient) { $probe.patient } else { $probe.patients[0] }
+            $probe = Invoke-RestMethod -Uri "$target/api/patients?limit=1" -Method Get -Headers $headers -TimeoutSec 10
+            $p = @($probe.patients)[0]
+            if ($null -eq $p -or [string]::IsNullOrWhiteSpace([string]$p.synthetic_patient_id)) {
+                Write-Host "No persisted synthetic twin was available" -ForegroundColor Yellow
+                break
+            }
             Write-Host "  --------------------------------------------------" -ForegroundColor DarkCyan
             Write-Host "  [EXTRACTED EHR PAYLOAD AFTER BRUTE FORCE]:" -ForegroundColor Yellow
-            Write-Host "  - Patient ID:          $($p.id)" -ForegroundColor White
-            Write-Host "  - Patient Name:        $($p.name)" -ForegroundColor White
-            Write-Host "  - Demographics:        $($p.age) • $($p.gender)" -ForegroundColor White
-            Write-Host "  - Primary Condition:   $($p.disease)" -ForegroundColor White
-            Write-Host "  - Clinical Diagnosis:  $($p.diagnosis)" -ForegroundColor White
-            Write-Host "  - Attending Doctor:    $($p.doctor_assigned)" -ForegroundColor White
-            Write-Host "  - Record Checksum:     $($p.watermark_id)" -ForegroundColor DarkGray
-            Write-Host "  - Original Hospital Database Protected: 100% (Zero Leakage)" -ForegroundColor Cyan
-            Write-Host "  --------------------------------------------------" -ForegroundColor DarkCyan
-            Write-Host "[!] INTRUSION DETECTED: Real-time Burglar Alarm sounding on User/Admin dashboard!`n" -ForegroundColor Red
+            Show-PersistedPatient $p
+            Write-Host "  --------------------------------------------------`n" -ForegroundColor DarkCyan
         } catch {
             Write-Host "[-] Probe failed: $($_.Exception.Message)" -ForegroundColor Red
         }
@@ -233,20 +227,24 @@ switch -Regex ($attack.ToLower()) {
         Write-Host "         Enumerating: $count IDs                                      " -ForegroundColor White
         Write-Host "======================================================================" -ForegroundColor Cyan
 
-        for ($i = 1; $i -le $count; $i++) {
-            $patId = "P-" + $i.ToString("D2")
-            try {
-                $headers = @{ "X-Session-Id" = "hacker-enum-probe"; "X-Device" = "adversary-terminal" }
-                $probe = Invoke-RestMethod -Uri "$target/api/patients?patient_id=$patId" -Method Get -Headers $headers -TimeoutSec 10
-                $p = if ($probe.patient) { $probe.patient } else { $probe.patients[0] }
-                Write-Host "[+] GET /api/patients?patient_id=$patId -> Extracted: [$($p.id)] $($p.name) | $($p.disease)" -ForegroundColor Green
-            } catch {
-                Write-Host "[-] GET /api/patients?patient_id=$patId -> Error" -ForegroundColor Red
+        try {
+            $headers = @{ "X-Session-Id" = "hacker-enum-probe"; "X-Device" = "adversary-terminal" }
+            $res = Invoke-RestMethod -Uri "$target/api/patients?limit=$count" -Method Get -Headers $headers -TimeoutSec 10
+            $pts = @($res.patients)
+            if ($pts.Count -eq 0) {
+                Write-Host "No persisted synthetic twin was available" -ForegroundColor Yellow
+                break
             }
-            Start-Sleep -Milliseconds 80
+            Write-Host "`n[+] [ENUMERATION RESULT]: $($pts.Count) patient records returned`n" -ForegroundColor Green
+            $i = 1
+            foreach ($p in $pts) {
+                Show-PersistedPatient $p $i $pts.Count
+                $i++
+            }
+            Write-Host "  --------------------------------------------------`n" -ForegroundColor DarkCyan
+        } catch {
+            Write-Host "[-] Enumeration failed: $($_.Exception.Message)" -ForegroundColor Red
         }
-        Write-Host "`n[+] Original Hospital Database Protected: 100% (Zero Leakage)" -ForegroundColor Cyan
-        Write-Host "[!] INTRUSION DETECTED: Real-time Burglar Alarm sounding on User/Admin dashboard!`n" -ForegroundColor Red
     }
 
     default {

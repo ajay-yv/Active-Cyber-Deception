@@ -38,7 +38,7 @@ def execute_attack_mode(
         "target_patient_id": effective_target,
         "target_patient_name": f"Target Scope: {effective_target}",
         "data_type": "Aadhaar Card, Phone, Address, Clinical Diagnosis & Medicines",
-        "watermark_id": "WM-AI-SECURITY-ACTIVE",
+        "watermark_id": "UNRESOLVED_ATTACK_TARGET",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "threat_score": score,
         "is_high_risk": True,

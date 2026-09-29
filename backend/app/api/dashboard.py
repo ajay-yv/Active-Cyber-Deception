@@ -8,6 +8,7 @@ from app.models.real import Appointment, RealDoctor
 from app.services.deception import deception_orchestrator
 from app.services.registries import honeytoken_repository, patient_repository, synthetic_repository
 from app.services.security import security_repository
+from app.repositories.synthetic_repository import serialize_catalog_twin
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -26,8 +27,8 @@ def _build_alerts() -> list[dict[str, str]]:
 
         target_hint = parts.get("target") or "Target Patient Records"
         query_hint = parts.get("query") or "Exfiltration Query"
-        syn_hint = parts.get("synthetic_twin") or "SYN-DECOY-TWIN"
-        wm_hint = parts.get("watermark") or "WM-DECEPTION-INJECTED"
+        syn_hint = parts.get("synthetic_twin") or "UNRESOLVED_ATTACK_TARGET"
+        wm_hint = parts.get("watermark") or "UNRESOLVED_ATTACK_TARGET"
         session_hint = parts.get("session") or "Adversary"
         risk_hint = parts.get("risk") or "95%"
 
@@ -54,6 +55,7 @@ def _build_alerts() -> list[dict[str, str]]:
 
 def build_hospital_dashboard(role: str = "admin") -> dict:
     patients = patient_repository.list_all()
+    synthetic_records = synthetic_repository.valid_catalog()
     with RealSessionLocal() as session:
         doctor_count = session.query(func.count(RealDoctor.id)).scalar() or 0
         appointment_count = session.query(func.count(Appointment.id)).scalar() or 0
@@ -73,11 +75,12 @@ def build_hospital_dashboard(role: str = "admin") -> dict:
             "total_patients": len(patients),
             "doctors": doctor_count or 31,
             "appointments": appointment_count or 92,
-            "synthetic_twins": len(synthetic_repository.list_all()),
+            "synthetic_twins": len(synthetic_records),
             "honeytokens": len(honeytoken_repository.list_all()),
             "active_threats": len(deception_orchestrator.status()),
         },
         "recent_patients": recent_patients,
+        "synthetic_records": [serialize_catalog_twin(twin) for twin in synthetic_records],
         "alerts": _build_alerts(),
     }
 
@@ -114,7 +117,7 @@ def admin_dashboard(_: object = Depends(require_roles("administrator", "doctor",
 def hacker_dashboard(_: object = Depends(require_roles("hacker"))) -> dict:
     attack_count = len(security_repository.find_by_event_type("attack"))
     active_sessions = deception_orchestrator.status()
-    synthetic_records = synthetic_repository.list_all()
+    synthetic_records = synthetic_repository.valid_catalog()
 
     return {
         "role": "hacker",
@@ -124,22 +127,7 @@ def hacker_dashboard(_: object = Depends(require_roles("hacker"))) -> dict:
             "active_attacks": attack_count,
             "threat_score": max((session.threat_score for session in active_sessions), default=75),
         },
-        "synthetic_records": [
-            {
-                "synthetic_patient_id": twin.synthetic_patient_id,
-                "name": twin.name,
-                "disease": twin.disease,
-                "diagnosis": twin.diagnosis,
-                "medicines": twin.medicines,
-                "age_range": twin.age_range,
-                "phone_number": twin.phone_number,
-                "email": twin.email,
-                "aadhaar_number": twin.aadhaar_number,
-                "address": twin.address,
-                "insurance_details": twin.insurance_details,
-            }
-            for twin in synthetic_records
-        ],
+        "synthetic_records": [serialize_catalog_twin(twin) for twin in synthetic_records],
         "deception_assets": [
             {"type": "Clinical Record", "label": f"{twin.synthetic_patient_id}"}
             for twin in synthetic_records[-5:]
