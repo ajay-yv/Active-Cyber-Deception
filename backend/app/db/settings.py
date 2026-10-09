@@ -4,7 +4,7 @@ from pathlib import Path
 from pydantic_settings import BaseSettings
 from pydantic import Field
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
+ROOT_DIR = Path(__file__).resolve().parents[3]
 REAL_DB_PATH = (ROOT_DIR / "real_healthcare.db").as_posix()
 SYN_DB_PATH = (ROOT_DIR / "synthetic_healthcare.db").as_posix()
 SEC_DB_PATH = (ROOT_DIR / "security_events.db").as_posix()
@@ -16,7 +16,8 @@ class DatabaseSettings(BaseSettings):
     security_database_url: str = Field(default=f"sqlite:///{SEC_DB_PATH}", env="SECURITY_DATABASE_URL")
 
     class Config:
-        env_file = ".env"
+        env_file = str(ROOT_DIR / ".env")
+        env_file_encoding = "utf-8"
         validate_assignment = True
         extra = "ignore"
 

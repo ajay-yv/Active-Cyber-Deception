@@ -44,9 +44,19 @@ DETACHED_PROCESS = 0x00000008
 CREATE_NEW_PROCESS_GROUP = 0x00000200
 flags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
 
+backend_env = os.environ.copy()
+backend_env["PYTHONPATH"] = str(backend_dir) + os.pathsep + backend_env.get("PYTHONPATH", "")
+
+gateway_env = os.environ.copy()
+gateway_env["PYTHONPATH"] = str(gateway_dir) + os.pathsep + gateway_env.get("PYTHONPATH", "")
+
+ai_engine_env = os.environ.copy()
+ai_engine_env["PYTHONPATH"] = str(ai_engine_dir) + os.pathsep + ai_engine_env.get("PYTHONPATH", "")
+
 backend_proc = subprocess.Popen(
     [str(python_exe), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"],
-    cwd=str(backend_dir),
+    cwd=str(root_dir),
+    env=backend_env,
     stdout=backend_log,
     stderr=subprocess.STDOUT,
     creationflags=flags
@@ -54,7 +64,8 @@ backend_proc = subprocess.Popen(
 
 gateway_proc = subprocess.Popen(
     [str(python_exe), "-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "8001"],
-    cwd=str(gateway_dir),
+    cwd=str(root_dir),
+    env=gateway_env,
     stdout=gateway_log,
     stderr=subprocess.STDOUT,
     creationflags=flags
@@ -62,7 +73,8 @@ gateway_proc = subprocess.Popen(
 
 ai_engine_proc = subprocess.Popen(
     [str(python_exe), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8002"],
-    cwd=str(ai_engine_dir),
+    cwd=str(root_dir),
+    env=ai_engine_env,
     stdout=ai_engine_log,
     stderr=subprocess.STDOUT,
     creationflags=flags

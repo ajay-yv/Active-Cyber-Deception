@@ -482,7 +482,7 @@ def test_14_one_patient_maps_to_one_synthetic_twin() -> None:
 # Test 15: Normal Admin/User requests continue to receive legitimate data
 def test_15_normal_admin_and_user_requests_receive_legitimate_data() -> None:
     admin_token = login("admin", "admin123")
-    doctor_token = login("doctor", "doctor123")
+    doctor_token = login("doctor", "Doctor@1432")
     session_id = "doctor-normal-session"
 
     resp = client.get(

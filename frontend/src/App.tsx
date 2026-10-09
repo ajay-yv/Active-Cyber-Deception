@@ -4,6 +4,8 @@ import { DashboardCard } from './components/DashboardCard'
 import { DashboardList } from './components/DashboardList'
 import { DashboardTable } from './components/DashboardTable'
 import ChangePassword from './components/ChangePassword'
+import { DoctorLoginPage } from './components/DoctorLoginPage'
+import { DoctorDashboardComponent } from './components/DoctorDashboard'
 import type {
   DashboardResponse,
   DeceptionStatusResponse,
@@ -105,15 +107,17 @@ function Layout({ accent, children }: { accent: string; children: React.ReactNod
       <aside className="sidebar">
         <div>
           <p className="eyebrow">Active Cyber Deception</p>
-          <h1>Healthcare Security Command Center</h1>
+          <h1>Healthcare Security Portal</h1>
           <p className="subtitle">
-            Real users and attackers see different systems, with the gateway deciding the route.
+            Admin Authentication & Security Command Center
           </p>
         </div>
         <nav className="nav">
-          <Link to="/hospital">Hospital User Dashboard</Link>
-          <Link to="/hacker">Hacker Dashboard</Link>
+          <Link to="/hospital">Hospital Operations</Link>
+          <Link to="/doctor">Doctor Dashboard</Link>
+          <Link to="/patient">Patient Dashboard</Link>
           <Link to="/admin">Administrator Dashboard</Link>
+          <Link to="/hacker">Hacker Dashboard</Link>
           <Link to="/profile">Profile</Link>
         </nav>
       </aside>
@@ -124,10 +128,31 @@ function Layout({ accent, children }: { accent: string; children: React.ReactNod
 
 function LoginPage({ onLogin }: { onLogin: (response: LoginResponse) => void }) {
   const navigate = useNavigate()
-  const [username, setUsername] = useState('doctor')
-  const [password, setPassword] = useState('doctor123')
+  const [roleSelect, setRoleSelect] = useState<'admin' | 'doctor' | 'patient'>('admin')
+  const [selectedDoctor, setSelectedDoctor] = useState('doctor_priya')
+  const [username, setUsername] = useState('admin')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  function handleRoleChange(selectedRole: 'admin' | 'doctor' | 'patient') {
+    setRoleSelect(selectedRole)
+    setPassword('')
+    if (selectedRole === 'admin') {
+      setUsername('admin')
+    } else if (selectedRole === 'doctor') {
+      setSelectedDoctor('doctor_priya')
+      setUsername('doctor_priya')
+    } else if (selectedRole === 'patient') {
+      setUsername('patient')
+    }
+  }
+
+  function handleDoctorChange(docUsername: string) {
+    setSelectedDoctor(docUsername)
+    setUsername(docUsername)
+    setPassword('')
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -137,9 +162,20 @@ function LoginPage({ onLogin }: { onLogin: (response: LoginResponse) => void }) 
     try {
       const response = await loginRequest(username, password)
       onLogin(response)
-      navigate(response.user.role === 'hacker' ? '/hacker' : '/hospital', { replace: true })
-    } catch {
-      setError('Invalid credentials or service unavailable.')
+      const r = response.user.role
+      if (r === 'hacker') {
+        navigate('/hacker', { replace: true })
+      } else if (r === 'administrator') {
+        navigate('/admin', { replace: true })
+      } else if (r === 'doctor') {
+        navigate('/doctor', { replace: true })
+      } else if (r === 'patient') {
+        navigate('/patient', { replace: true })
+      } else {
+        navigate('/hospital', { replace: true })
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid credentials or service unavailable.')
     } finally {
       setLoading(false)
     }
@@ -148,34 +184,60 @@ function LoginPage({ onLogin }: { onLogin: (response: LoginResponse) => void }) 
   return (
     <Layout accent="#0f766e">
       <section className="hero login-panel">
-        <span className="badge">Authentication</span>
-        <h2>Sign in to the healthcare deception platform.</h2>
-        <p>
-          Use a hospital role to view real data, or a hacker role to enter the deception layer.
+        <span className="badge">Login</span>
+        <h2>Healthcare Security Portal</h2>
+        <p className="subtitle" style={{ color: '#64748b', marginTop: '0.25rem' }}>
+          Admin Authentication & Security Command Center
         </p>
         <form className="login-form" onSubmit={submit}>
           <label>
-            Username
-            <input value={username} onChange={(event) => setUsername(event.target.value)} />
+            Account Role
+            <select
+              value={roleSelect}
+              onChange={(e) => handleRoleChange(e.target.value as 'admin' | 'doctor' | 'patient')}
+            >
+              <option value="admin">Administrator (admin)</option>
+              <option value="doctor">Doctor (doctor)</option>
+              <option value="patient">Patient (patient)</option>
+            </select>
+          </label>
+          {roleSelect === 'doctor' ? (
+            <label>
+              Select Doctor / Specialist
+              <select
+                value={selectedDoctor}
+                onChange={(e) => handleDoctorChange(e.target.value)}
+              >
+                <option value="doctor_priya">Dr. Priya Nair (Cardiology)</option>
+                <option value="doctor_ramesh">Dr. Ramesh Kumar (Neurology)</option>
+                <option value="doctor_sarah">Dr. Sarah Jenkins (Pediatrics)</option>
+                <option value="doctor_rajesh">Dr. Rajesh Patel (Orthopedics)</option>
+                <option value="doctor_anita">Dr. Anita Sharma (General Medicine)</option>
+              </select>
+            </label>
+          ) : null}
+          <label>
+            Username / Patient ID
+            <input value={username} onChange={(event) => setUsername(event.target.value)} required />
           </label>
           <label>
             Password
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
           </label>
           {error ? <p className="error-text">{error}</p> : null}
           <button type="submit" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Logging in…' : 'Login'}
           </button>
         </form>
-        <div className="quick-logins">
-          <button type="button" onClick={() => setUsername('doctor')}>
-            Doctor
-          </button>
-          <button type="button" onClick={() => setUsername('admin')}>
+        <div className="quick-logins" style={{ marginTop: '1.25rem' }}>
+          <button type="button" onClick={() => handleRoleChange('admin')}>
             Admin
           </button>
-          <button type="button" onClick={() => setUsername('hacker')}>
-            Hacker
+          <button type="button" onClick={() => handleRoleChange('doctor')}>
+            Doctor
+          </button>
+          <button type="button" onClick={() => handleRoleChange('patient')}>
+            Patient
           </button>
         </div>
       </section>
@@ -340,10 +402,7 @@ function HospitalDashboard({ token }: { token: string }) {
                   watermark_text: (patient.watermark_text ?? '').slice(0, 36),
                   watermark_fingerprint: (patient.watermark_fingerprint ?? '').slice(0, 12),
                 }))
-              : [
-                  { id: 'P-01', name: 'Aarav Mehta', disease: 'Cardiology', diagnosis: 'Admitted', watermark_id: '', watermark_text: '', watermark_fingerprint: '' },
-                  { id: 'P-02', name: 'Nisha Patel', disease: 'Neurology', diagnosis: 'Discharged', watermark_id: '', watermark_text: '', watermark_fingerprint: '' },
-                ]
+              : []
           }
         />
         <section className="panel">
@@ -477,8 +536,17 @@ function HospitalDashboard({ token }: { token: string }) {
               />
             </label>
             <label>
-              Doctor Assigned
-              <input value={form.doctor_assigned ?? ''} onChange={(event) => setForm({ ...form, doctor_assigned: event.target.value })} />
+              Doctor Assigned *
+              <select
+                value={form.doctor_assigned ?? 'Dr. Priya Nair'}
+                onChange={(event) => setForm({ ...form, doctor_assigned: event.target.value })}
+                required
+              >
+                <option value="Dr. Priya Nair">Dr. Priya Nair (Cardiology & General)</option>
+                <option value="Dr. Ananya Sharma">Dr. Ananya Sharma (Neurology)</option>
+                <option value="Dr. Rajesh Kumar">Dr. Rajesh Kumar (Oncology)</option>
+                <option value="Dr. Vikram Patel">Dr. Vikram Patel (Orthopedics)</option>
+              </select>
             </label>
             <label>
               Department
@@ -1229,6 +1297,114 @@ function ProfilePage({
   )
 }
 
+function DoctorDashboard({ token, user, onLogout, onSwitchDoctor }: { token: string; user?: LoginResponse['user']; onLogout?: () => void; onSwitchDoctor?: () => void }) {
+  return <DoctorDashboardComponent token={token} user={user} onLogout={onLogout || (() => {})} onSwitchDoctor={onSwitchDoctor} />
+}
+
+function PatientDashboard({ token, user }: { token: string; user?: LoginResponse['user'] }) {
+  const [patients, setPatients] = useState<PatientRecord[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
+
+  async function loadData() {
+    try {
+      const res = await fetchPatients(token)
+      setPatients(res.patients)
+    } catch {
+      // keep existing
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [token])
+
+  useRealtimeNotifications(setNotifications, async (type) => {
+    if (type === 'patient_created' || type === 'patient_updated' || type === 'patient_deleted') {
+      await loadData()
+    }
+  })
+
+  const myRecord = patients.find((p) => {
+    if (user?.username && p.id && p.id.toLowerCase() === user.username.toLowerCase()) return true
+    if (user?.username && p.name && p.name.toLowerCase().includes(user.username.toLowerCase())) return true
+    return false
+  }) || patients[0] || null
+
+  return (
+    <Layout accent="#0f766e">
+      <section className="hero">
+        <span className="badge">Patient Portal</span>
+        <h2>My Healthcare Profile & Medical History</h2>
+        <p>
+          Welcome to your secure patient portal. View your medical diagnoses, prescribed treatments, lab reports, and assigned physician information.
+        </p>
+      </section>
+
+      {myRecord ? (
+        <div className="grid two-up" style={{ marginTop: '1.5rem' }}>
+          <section className="panel">
+            <h3>Personal Information</h3>
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              <div><strong>Full Name:</strong> {myRecord.name}</div>
+              <div><strong>Patient ID:</strong> {myRecord.id || `P-${myRecord.patient_id}`}</div>
+              <div><strong>Age / Gender:</strong> {myRecord.age} yrs | {myRecord.gender || 'Not specified'}</div>
+              <div><strong>Blood Group:</strong> {myRecord.blood_group || 'O+'}</div>
+              <div><strong>Aadhaar Number:</strong> {myRecord.aadhaar || 'Available'}</div>
+              <div><strong>Phone:</strong> {myRecord.phone || 'Available'}</div>
+              <div><strong>Email:</strong> {myRecord.email || 'Available'}</div>
+              <div><strong>Address:</strong> {myRecord.address || 'Registered Address'}</div>
+              <div><strong>Emergency Contact:</strong> {myRecord.emergency_contact || 'Registered Contact'}</div>
+            </div>
+          </section>
+
+          <section className="panel">
+            <h3>Assigned Doctor & Clinical Status</h3>
+            <div style={{ padding: '16px', background: '#f0fdf4', borderRadius: '10px', border: '1px solid #bbf7d0', marginBottom: '1rem' }}>
+              <h4 style={{ color: '#166534' }}>Doctor Assigned</h4>
+              <p style={{ fontSize: '1.1rem', fontWeight: 600, color: '#15803d', margin: '4px 0' }}>
+                {myRecord.doctor_assigned || 'Dr. Priya Nair'}
+              </p>
+              <p style={{ fontSize: '0.9rem', color: '#166534' }}>Department: {myRecord.department || 'General Cardiology'}</p>
+            </div>
+
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              <div><strong>Current Disease:</strong> {myRecord.disease}</div>
+              <div><strong>Diagnosis:</strong> {myRecord.diagnosis}</div>
+              <div><strong>Prescribed Medicines:</strong> {myRecord.medicines?.join(', ') || 'None'}</div>
+              {myRecord.dosages?.length ? <div><strong>Dosage Schedule:</strong> {myRecord.dosages.join(', ')}</div> : null}
+              <div><strong>Treatment Pattern:</strong> {myRecord.treatment_pattern || 'Standard Care'}</div>
+              <div><strong>Admission Date:</strong> {myRecord.admission_date || 'N/A'}</div>
+              <div><strong>Discharge Date:</strong> {myRecord.discharge_date || 'In Progress'}</div>
+            </div>
+          </section>
+        </div>
+      ) : (
+        <section className="panel" style={{ marginTop: '1.5rem' }}>
+          <h3>No Active Patient Record Found</h3>
+          <p style={{ color: '#64748b' }}>
+            When Hospital Administration registers or updates your patient details, your medical profile will automatically populate here in real-time.
+          </p>
+        </section>
+      )}
+
+      {notifications.length > 0 ? (
+        <section className="panel" style={{ marginTop: '1.5rem' }}>
+          <h3>Realtime Portal Alerts</h3>
+          <ul className="list">
+            {notifications.map((notification) => (
+              <li key={notification.id}>
+                <span>{notification.type}</span>
+                <strong>{notification.message}</strong>
+                <small>{new Date(notification.timestamp).toLocaleTimeString()}</small>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </Layout>
+  )
+}
+
 export default function App() {
   const [session, setSession] = useState<LoginResponse | null>(() => {
     const stored = localStorage.getItem('ehr-session')
@@ -1250,7 +1426,17 @@ export default function App() {
         element={
           session ? (
             <Navigate
-              to={session.user.role === 'hacker' ? '/hacker' : session.user.role === 'administrator' ? '/admin' : '/hospital'}
+              to={
+                session.user.role === 'hacker'
+                  ? '/hacker'
+                  : session.user.role === 'administrator'
+                  ? '/admin'
+                  : session.user.role === 'doctor'
+                  ? '/doctor'
+                  : session.user.role === 'patient'
+                  ? '/patient'
+                  : '/hospital'
+              }
               replace
             />
           ) : (
@@ -1259,6 +1445,17 @@ export default function App() {
         }
       />
       <Route path="/hospital" element={session ? <HospitalDashboard token={session.access_token} /> : <Navigate to="/" replace />} />
+      <Route
+        path="/doctor"
+        element={
+          session && session.user.role === 'doctor' && session.user.username !== 'doctor' ? (
+            <DoctorDashboard token={session.access_token} user={session.user} onLogout={() => setSession(null)} onSwitchDoctor={() => setSession(null)} />
+          ) : (
+            <DoctorLoginPage onLogin={setSession} />
+          )
+        }
+      />
+      <Route path="/patient" element={session ? <PatientDashboard token={session.access_token} user={session.user} /> : <Navigate to="/" replace />} />
       <Route path="/hacker" element={session ? <HackerDashboard token={session.access_token} /> : <Navigate to="/" replace />} />
       <Route path="/admin" element={session ? <AdminDashboard token={session.access_token} /> : <Navigate to="/" replace />} />
       <Route path="/profile" element={session ? <ProfilePage session={session} onSessionUpdate={setSession} /> : <Navigate to="/" replace />} />

@@ -12,6 +12,13 @@ coverage/
 .vscode/
 *.db
 *.sqlite
+*.db-shm
+*.db-wal
+logs/
+*.log
+*.tsbuildinfo
+test_out.txt
+test_results.txt
 
 .vercel
 .env*.local

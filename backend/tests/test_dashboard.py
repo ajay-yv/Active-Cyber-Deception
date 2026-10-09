@@ -12,7 +12,7 @@ def login(username: str, password: str) -> str:
 
 
 def test_hospital_dashboard_route_returns_metrics() -> None:
-    token = login("doctor", "doctor123")
+    token = login("doctor", "Doctor@1432")
     response = client.get("/api/dashboard/hospital", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 200

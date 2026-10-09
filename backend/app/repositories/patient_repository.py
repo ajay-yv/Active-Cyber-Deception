@@ -152,6 +152,16 @@ class PatientRepository:
             return None
         return _to_record(row)
 
+    def find_by_email(self, email: str) -> list[PatientRecord]:
+        normalized_email = email.strip().lower()
+        if not normalized_email:
+            return []
+        with RealSessionLocal() as session:
+            rows = session.query(RealPatient).filter(
+                func.lower(func.trim(RealPatient.email)) == normalized_email
+            ).all()
+        return [_to_record(row) for row in rows]
+
     def list_all(self) -> list[PatientRecord]:
         with RealSessionLocal() as session:
             rows = session.query(RealPatient).order_by(RealPatient.created_at.asc()).all()

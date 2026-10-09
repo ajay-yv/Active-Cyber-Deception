@@ -16,6 +16,7 @@ def create_all_tables() -> None:
     SecurityBase.metadata.create_all(bind=get_security_engine())
     _ensure_users_block_column()
     _ensure_users_email_column()
+    _ensure_users_patient_record_column()
     _ensure_default_users()
     _ensure_real_patient_watermark_columns()
     _ensure_synthetic_watermark_column()
@@ -367,15 +368,36 @@ def _ensure_users_email_column() -> None:
             pass
 
 
+def _ensure_users_patient_record_column() -> None:
+    engine = get_security_engine()
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+    columns = {column["name"] for column in inspector.get_columns("users")}
+    with engine.begin() as connection:
+        if "patient_record_id" not in columns:
+            connection.execute(text("ALTER TABLE users ADD COLUMN patient_record_id VARCHAR(36) NULL"))
+        connection.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_patient_record_id "
+            "ON users(patient_record_id)"
+        ))
+
+
 def _ensure_default_users() -> None:
     # Seed default users in the security database if they don't exist
     from app.db.engines import SecuritySessionLocal
-    from app.core.users import hash_password
+    from app.core.users import hash_password, verify_password
     from app.models.security import UserAccount
 
     defaults = [
-        ("admin", "admin123", "administrator", "System Administrator", "admin@stjude.org"),
-        ("doctor", "doctor123", "doctor", "Dr. Priya Nair", "doctor@stjude.org"),
+        ("admin", "Admin@8431", "administrator", "System Administrator", "admin@stjude.org"),
+        ("doctor", "Doctor@1432", "doctor", "Dr. Priya Nair (Cardiology)", "doctor@stjude.org"),
+        ("doctor_priya", "Priya@1432", "doctor", "Dr. Priya Nair (Cardiology)", "priya@stjude.org"),
+        ("doctor_ramesh", "Ramesh@1432", "doctor", "Dr. Ramesh Kumar (Neurology)", "ramesh@stjude.org"),
+        ("doctor_sarah", "Sarah@1432", "doctor", "Dr. Sarah Jenkins (Pediatrics)", "sarah@stjude.org"),
+        ("doctor_rajesh", "Rajesh@1432", "doctor", "Dr. Rajesh Patel (Orthopedics)", "rajesh@stjude.org"),
+        ("doctor_anita", "Anita@1432", "doctor", "Dr. Anita Sharma (General Medicine)", "anita@stjude.org"),
+        ("patient", "Patient@1432", "patient", "Patient User", "patient@stjude.org"),
         ("reception", "reception123", "receptionist", "Reception Desk", "reception@stjude.org"),
         ("hacker", "hacker123", "hacker", "Simulated Attacker", "hacker@stjude.org"),
     ]
@@ -386,7 +408,11 @@ def _ensure_default_users() -> None:
             if existing is None:
                 session.add(UserAccount(username=username, password_hash=hash_password(pwd), role=role, full_name=full_name, email=email, is_blocked=False))
             else:
-                existing.password_hash = hash_password(pwd)
+                if not existing.password_hash or not verify_password(pwd, existing.password_hash):
+                    if username == "admin":
+                        existing.password_hash = hash_password(pwd)
+                    elif username == "doctor" and not verify_password("doctor123", existing.password_hash):
+                        existing.password_hash = hash_password(pwd)
                 existing.email = existing.email or email
                 existing.is_blocked = False
                 session.add(existing)
@@ -419,37 +445,11 @@ def _ensure_default_patients() -> None:
         from app.services.patients import PatientService
         from app.services.twin import twin_generator_proxy
 
-        with RealSessionLocal() as session:
-            count = session.query(RealPatient).count()
-            if count == 0:
-                service = PatientService(twin_generator_proxy)
-                sample_patient = PatientCreate(
-                    name="Aarav Sharma",
-                    age=45,
-                    gender="Male",
-                    date_of_birth="1979-05-14",
-                    blood_group="O+",
-                    phone="+91-98765-43210",
-                    email="aarav.sharma@stjude-hospital.org",
-                    address="Flat 402, Lotus Towers, Pune, MH",
-                    aadhaar="5544-3322-1100",
-                    emergency_contact="+91-98765-00000",
-                    doctor_assigned="Dr. Priya Nair (Cardiology)",
-                    department="Cardiology",
-                    admission_date="2026-03-01",
-                    discharge_date="",
-                    disease="Essential Hypertension",
-                    diagnosis="Stage 2 Primary Essential Hypertension with mild LVH",
-                    symptoms=["Occasional Headache", "Fatigue", "Exertional Dyspnea"],
-                    allergies=["No Known Drug Allergies (NKDA)"],
-                    medicines=["Telmisartan 40mg", "Amlodipine 5mg"],
-                    dosages=["1 tab OD morning", "1 tab OD evening"],
-                    treatment_pattern="Standard Cardiology Protocol",
-                )
-                service.create_patient(sample_patient, session_id="bootstrap-init", hospital_id="HOSPITAL-001", route="real")
+        # Default patients are not pre-seeded; created dynamically by Admin
+        pass
     except Exception as exc:
         import logging
-        logging.getLogger(__name__).warning("Could not seed default patient: %s", exc)
+        logging.getLogger(__name__).warning("Bootstrap patient check error: %s", exc)
 
 
 

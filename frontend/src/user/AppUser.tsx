@@ -11,6 +11,16 @@ import { AlertBanner } from '../components/AlertBanner'
 import { AIPredictionCard } from '../components/AIPredictionCard'
 import { ChartCard } from '../components/ChartCard'
 import { OverviewDashboardGraphs } from '../components/OverviewGraphs'
+import { DoctorDashboardComponent } from '../components/DoctorDashboard'
+import { DoctorLoginPage } from '../components/DoctorLoginPage'
+import { PatientDashboardComponent } from '../components/PatientDashboard'
+import {
+  getGoogleRedirectUser,
+  signInWithGoogle,
+  signOutFromGoogle,
+  startGoogleRedirectSignIn,
+  type RealGoogleUser,
+} from '../firebase'
 import type {
   AnalyticsSummaryResponse,
   AttackAlert,
@@ -28,6 +38,7 @@ import {
   createPatient,
   deletePatient,
   deletePatientHistory,
+  exchangeGoogleToken,
   exportAuditLogs,
   fetchAIDecisions,
   fetchAnalyticsSummary,
@@ -41,6 +52,7 @@ import {
   fetchSentEmails,
   fetchWatermarks,
   login,
+  registerPatient,
   purgeAllPatients,
   requestEmailVerification,
   requestPasswordReset,
@@ -353,87 +365,39 @@ export function generateSyntheticTwinName(realName: string, id: string | number)
 
 
 
-const DEFAULT_SECURITY_EVENTS: AuditEvent[] = [
-  {
-    id: 'SEC-EVT-101',
-    event_type: 'DECEPTION_GATEWAY_INTERCEPT',
-    severity: 'CRITICAL',
-    actor: 'Adversary (Port 8001)',
-    details: 'AI Security Gateway on Port 8001 intercepted SQL injection probe (UNION SELECT / OR 1=1). Request dynamically diverted to synthetic decoy twin SYN-01 (Devansh Desai). 0 bytes of real patient EHR touched.',
-    created_at: new Date(Date.now() - 2 * 60000).toISOString(),
-    status: '100% BLOCKED & DEFLECTED',
-  },
-  {
-    id: 'SEC-EVT-102',
-    event_type: 'IDOR_THEFT_CONTAINED',
-    severity: 'HIGH',
-    actor: 'Adversary (Terminal)',
-    details: 'Unauthorized targeted probe attempted against active patient P-02 (Suddha Sen). ADO State Machine deployed Poisoned Decoy Twin SYN-02 (Tarun Saxena) with zero-width tracking watermark.',
-    created_at: new Date(Date.now() - 8 * 60000).toISOString(),
-    status: 'DECOY SERVED',
-  },
-  {
-    id: 'SEC-EVT-103',
-    event_type: 'BULK_EXFILTRATION_DEFLECTED',
-    severity: 'CRITICAL',
-    actor: 'Adversary Script (hack.bat)',
-    details: 'Mass exfiltration script attempted bulk dump of all hospital patient records. Deception layer answered with 3 realistic watermarked AI decoys. Real healthcare vault 100% isolated.',
-    created_at: new Date(Date.now() - 17 * 60000).toISOString(),
-    status: 'ISOLATED (100% PROTECTED)',
-  },
-  {
-    id: 'SEC-EVT-104',
-    event_type: 'WATERMARK_INJECTION',
-    severity: 'INFO',
-    actor: 'AI Twin Engine (Port 8002)',
-    details: 'Zero-Width Unicode Steganography watermark (WM-AI-SECURITY-ACTIVE) embedded into synthetic medical twin SYN-03 (Rajesh Kapoor) for forensic breach attribution.',
-    created_at: new Date(Date.now() - 25 * 60000).toISOString(),
-    status: 'WATERMARK ACTIVE',
-  },
-  {
-    id: 'SEC-EVT-105',
-    event_type: 'BURGLAR_ALARM_ENGAGED',
-    severity: 'WARNING',
-    actor: 'Burglar Siren System',
-    details: 'Web Audio burglar siren triggered on User/Admin console. Targeted data categories logged: Aadhaar, Clinical Diagnoses, Prescriptions, Contact Numbers.',
-    created_at: new Date(Date.now() - 42 * 60000).toISOString(),
-    status: 'ALARM ARMED',
-  },
-  {
-    id: 'SEC-EVT-106',
-    event_type: 'ADO_EPHEMERAL_TEARDOWN',
-    severity: 'SUCCESS',
-    actor: 'ADO State Machine',
-    details: 'Autonomous Deception Orchestrator (ADO) completed attack lifecycle. Purged ephemeral deception traces and issued tamper-proof forensic certificate CERT-CYBER-DECEPTION-VALID.',
-    created_at: new Date(Date.now() - 55 * 60000).toISOString(),
-    status: 'PURGED & CERTIFIED',
-  },
-  {
-    id: 'SEC-EVT-107',
-    event_type: 'STAFF_ACCESS_GRANTED',
-    severity: 'SUCCESS',
-    actor: 'Doctor Session (doctor)',
-    details: 'Physician authenticated with verified hospital credentials. AI Gateway inspected session risk (Risk Score: 0%) and granted direct access to Real Healthcare Vault.',
-    created_at: new Date(Date.now() - 72 * 60000).toISOString(),
-    status: 'LEGITIMATE ACCESS',
-  },
-  {
-    id: 'SEC-EVT-108',
-    event_type: 'AI_RISK_EVALUATION',
-    severity: 'INFO',
-    actor: 'AI Gateway Router',
-    details: 'AI Gateway evaluated incoming API probe on Port 8001. Calculated Anomaly Risk Score: 96%. Dynamic route assigned: Route to Synthetic Honey Decoys.',
-    created_at: new Date(Date.now() - 95 * 60000).toISOString(),
-    status: 'EVALUATED',
-  },
-]
+
+
+function GoogleIconSvg() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+      <path fill="none" d="M0 0h48v48H0z" />
+    </svg>
+  )
+}
 
 export default function AppUser() {
-  const [username, setUsername] = useState('admin')
+  const googleSignInRequested = new URLSearchParams(window.location.search).get('signin') === 'google'
+  const [username, setUsername] = useState(googleSignInRequested ? 'patient' : 'admin')
   const [password, setPassword] = useState('')
-  const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(false)
+  const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(googleSignInRequested)
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<LoginResponse['user'] | null>(null)
+  const [isDoctorVerified, setIsDoctorVerified] = useState(false)
+
+  // Patient Registration State
+  const [isPatientRegisterModalOpen, setIsPatientRegisterModalOpen] = useState(false)
+  const [patientRegMobile, setPatientRegMobile] = useState('')
+  const [patientRegFullName, setPatientRegFullName] = useState('')
+  const [patientRegPassword, setPatientRegPassword] = useState('')
+  const [patientRegConfirmPassword, setPatientRegConfirmPassword] = useState('')
+  const [patientRegError, setPatientRegError] = useState('')
+  const [patientRegLoading, setPatientRegLoading] = useState(false)
+  const [showGoogleRedirectFallback, setShowGoogleRedirectFallback] = useState(false)
+  const googleRedirectHandledRef = useRef(false)
 
   // Forgot Password & Dynamic OTP State
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false)
@@ -462,8 +426,6 @@ export default function AppUser() {
 
   const [analytics, setAnalytics] = useState<AnalyticsSummaryResponse | null>(null)
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([])
-  const [eventFilter, setEventFilter] = useState<'all' | 'critical' | 'decoy' | 'staff'>('all')
-  const [simulatedEvents, setSimulatedEvents] = useState<AuditEvent[]>([])
   const [watermarks, setWatermarks] = useState<any[]>([])
   const [labResult, setLabResult] = useState<LabResultResponse | null>(null)
   const [patientForm, setPatientForm] = useState<PatientCreate>(defaultPatient)
@@ -473,7 +435,47 @@ export default function AppUser() {
 
   
   // Tab State - Core Navigation Pages
-  const [activeTab, setActiveTab] = useState<'overview' | 'patients' | 'twins' | 'gateway' | 'analytics' | 'watermarks' | 'events' | 'reports' | 'settings' | 'profile' | 'register' | 'lab' | 'history'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'patients' | 'twins' | 'gateway' | 'analytics' | 'watermarks' | 'reports' | 'settings' | 'profile' | 'register' | 'lab' | 'history'>('overview')
+
+  // Automated 1:1 Synthetic Decoy Twins derived dynamically from hospital vault patients or dashboard
+  const activeSyntheticRecords = useMemo(() => {
+    if (dashboard?.synthetic_records && dashboard.synthetic_records.length > 0) {
+      return dashboard.synthetic_records
+    }
+    return patients.map((p) => {
+      if (p.forensic_record?.synthetic_patient_id) {
+        return {
+          id: String(p.id || p.patient_id),
+          patient_id: String(p.id || p.patient_id),
+          synthetic_patient_id: p.forensic_record.synthetic_patient_id,
+          name: p.forensic_record.name || `Synthetic ${p.name}`,
+          disease: p.forensic_record.disease || p.disease,
+          diagnosis: p.forensic_record.diagnosis || p.diagnosis,
+          treatment_pattern: p.forensic_record.treatment_pattern || 'Standard Deception Protocol',
+          age_range: p.forensic_record.age_range || `${p.age || 30} yrs`,
+          aadhaar_number: p.forensic_record.aadhaar_number || 'Anonymized Decoy',
+          phone_number: p.forensic_record.phone_number || '+91 98888 00000',
+          email: p.forensic_record.email || 'decoy@decoy-health.org',
+          watermark_fingerprint: p.forensic_record.watermark_fingerprint || p.watermark_id || `WM-${p.id}`,
+        }
+      }
+      const syn = generateSyntheticTwinDetails(p.name, p.id || p.patient_id || '1', p.age)
+      return {
+        id: String(p.id || p.patient_id),
+        patient_id: String(p.id || p.patient_id),
+        synthetic_patient_id: syn.decoyId,
+        name: syn.decoyName,
+        disease: syn.disease,
+        diagnosis: syn.diagnosis,
+        treatment_pattern: syn.treatmentPattern,
+        age_range: syn.ageRange,
+        aadhaar_number: syn.aadhaar,
+        phone_number: syn.phone,
+        email: syn.email,
+        watermark_fingerprint: syn.fingerprint,
+      }
+    })
+  }, [dashboard?.synthetic_records, patients])
 
   // AI Telemetry & Security Defense State
   const [aiDecisions, setAiDecisions] = useState<any[]>([])
@@ -685,11 +687,10 @@ export default function AppUser() {
   const [verificationStatus, setVerificationStatus] = useState('')
   const [verificationError, setVerificationError] = useState('')
 
-  // Automatically sync password when username selection changes for testing convenience
+  // Reset password state when username selection changes
   function handleUsernameChange(selectedUser: string) {
     setUsername(selectedUser)
-    if (selectedUser === 'doctor') setPassword('doctor123')
-    else if (selectedUser === 'admin') setPassword('admin123')
+    setPassword('')
   }
 
   const [sentLogs, setSentLogs] = useState<string[]>([])
@@ -736,7 +737,7 @@ export default function AppUser() {
     if (serverResult && serverResult.matched) {
       setForensicScanResult(serverResult)
     } else if (isSynthetic && !isClean) {
-      const firstPatient = patients[0] || { name: 'sonu', id: 'P-01', patient_id: 'P-01' }
+      const firstPatient = patients[0] || { name: 'Active Patient', id: 'P-01', patient_id: 'P-01' }
       const syn = generateSyntheticTwinDetails(firstPatient.name, firstPatient.patient_id || firstPatient.id)
 
       let decoyName = syn.decoyName
@@ -856,17 +857,26 @@ export default function AppUser() {
       fetchForensicRecords(token, 25),
     ])
 
-    if (dashboardRes.status === 'fulfilled') setDashboard(dashboardRes.value)
-    else setError(String((dashboardRes as PromiseRejectedResult).reason))
+    if (dashboardRes.status === 'fulfilled') {
+      const incoming = dashboardRes.value
+      const synList = incoming.synthetic_records || []
+      setDashboard({
+        ...incoming,
+        synthetic_records: synList,
+        metrics: {
+          ...incoming.metrics,
+          synthetic_twins: synList.length,
+          watermarked_records: synList.length,
+          total_patients: incoming.metrics?.total_patients ?? 0,
+        },
+      })
+    } else {
+      setError(String((dashboardRes as PromiseRejectedResult).reason))
+    }
 
     if (patientsRes.status === 'fulfilled') {
       const fetched = patientsRes.value.patients || []
-      setPatients((prev) => {
-        if (fetched.length === 0) return prev
-        const fetchedIds = new Set(fetched.map((p) => String(p.id)))
-        const localOnly = prev.filter((p) => !fetchedIds.has(String(p.id)))
-        return [...fetched, ...localOnly]
-      })
+      setPatients(fetched)
     }
     if (historyRes.status === 'fulfilled') setPatientHistory(historyRes.value.history || [])
     if (analyticsRes.status === 'fulfilled') setAnalytics(analyticsRes.value)
@@ -1026,19 +1036,172 @@ export default function AppUser() {
     setError('')
     setMessage('')
 
-    login(username, password)
+    const trimmedPassword = password.trim()
+    if (!trimmedPassword) {
+      setError('Please enter the password.')
+      return
+    }
+
+    login(username, trimmedPassword)
       .then((result) => {
-        if (!['administrator', 'admin'].includes(result.user.role)) {
-          setError('Please sign in with an Administrator account.')
-          return
-        }
         setToken(result.access_token)
         setUser(result.user)
         setIsAdminLoginModalOpen(false)
-        setMessage(`Signed in successfully as Administrator (${result.user.full_name}).`)
+        if (result.user.role === 'doctor') {
+          setIsDoctorVerified(false)
+        }
+        setMessage(`Signed in successfully as ${result.user.full_name} (${result.user.role}).`)
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Login failed. Invalid Administrator password.'))
+      .catch((err) => {
+        setToken(null)
+        setUser(null)
+        setIsDoctorVerified(false)
+        setError(err instanceof Error ? err.message : 'Login failed. Invalid username or password.')
+      })
   }
+
+  async function handlePatientRegister(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setPatientRegError('')
+
+    const cleanMobile = patientRegMobile.trim()
+    const cleanPwd = patientRegPassword.trim()
+    const cleanConfirm = patientRegConfirmPassword.trim()
+
+    if (!cleanMobile) {
+      setPatientRegError('Please enter your mobile number.')
+      return
+    }
+
+    const digitsOnly = cleanMobile.replace(/\D/g, '')
+    if (digitsOnly.length < 4 && cleanMobile.length < 4) {
+      setPatientRegError('Please enter a valid mobile number (at least 4-10 digits).')
+      return
+    }
+
+    if (!cleanPwd) {
+      setPatientRegError('Please enter a new password.')
+      return
+    }
+
+    if (cleanPwd.length < 3) {
+      setPatientRegError('Password must be at least 3 characters long.')
+      return
+    }
+
+    if (cleanPwd !== cleanConfirm) {
+      setPatientRegError('New password and confirm password do not match.')
+      return
+    }
+
+    setPatientRegLoading(true)
+    try {
+      const res = await registerPatient({
+        mobile_number: cleanMobile,
+        password: cleanPwd,
+        full_name: patientRegFullName.trim() || undefined,
+      })
+
+      setToken(res.access_token)
+      setUser(res.user)
+      setIsPatientRegisterModalOpen(false)
+      setIsAdminLoginModalOpen(false)
+      setPassword('')
+      setUsername('patient')
+      setMessage(`Patient registered & authenticated! Welcome, ${res.user.full_name}.`)
+      window.dispatchEvent(new Event('patient_data_changed'))
+    } catch (err) {
+      setPatientRegError(err instanceof Error ? err.message : 'Registration failed. Please try again.')
+    } finally {
+      setPatientRegLoading(false)
+    }
+  }
+
+  async function completeGoogleSignIn(googleUser: RealGoogleUser) {
+    const session = await exchangeGoogleToken(googleUser.idToken)
+    setToken(session.access_token)
+    setUser(session.user)
+    setIsAdminLoginModalOpen(false)
+    setIsPatientRegisterModalOpen(false)
+    setShowGoogleRedirectFallback(false)
+    setMessage(`Signed in with Google successfully as ${session.user.email}.`)
+    window.dispatchEvent(new Event('patient_data_changed'))
+  }
+
+  async function handleGoogleSignIn() {
+    setError('')
+    setMessage('')
+    setShowGoogleRedirectFallback(false)
+    setPatientRegLoading(true)
+    let firebaseSignInCompleted = false
+
+    try {
+      const googleUser = await signInWithGoogle()
+      firebaseSignInCompleted = true
+      await completeGoogleSignIn(googleUser)
+    } catch (err) {
+      const errorCode = typeof err === 'object' && err !== null && 'code' in err
+        ? String(err.code)
+        : ''
+
+      if (errorCode === 'auth/popup-closed-by-user') {
+        setMessage('Google sign-in did not finish. Try the popup again or use redirect sign-in.')
+        setShowGoogleRedirectFallback(true)
+        return
+      }
+      if (errorCode === 'auth/popup-blocked') {
+        setError('Google sign-in was blocked. Allow pop-ups or use redirect sign-in instead.')
+        setShowGoogleRedirectFallback(true)
+        return
+      }
+
+      console.warn('Google Sign-In cancelled or failed:', err)
+      if (firebaseSignInCompleted) await signOutFromGoogle().catch(() => {})
+      setError(err instanceof Error ? err.message : 'Google Sign-In failed or was cancelled.')
+    } finally {
+      setPatientRegLoading(false)
+    }
+  }
+
+  async function handleGoogleRedirectSignIn() {
+    setError('')
+    setMessage('')
+    setPatientRegLoading(true)
+    window.sessionStorage.setItem('ehr-google-redirect-pending', '1')
+
+    try {
+      await startGoogleRedirectSignIn()
+    } catch (err) {
+      window.sessionStorage.removeItem('ehr-google-redirect-pending')
+      setError(err instanceof Error ? err.message : 'Google redirect sign-in could not be started.')
+      setPatientRegLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (googleRedirectHandledRef.current || window.sessionStorage.getItem('ehr-google-redirect-pending') !== '1') return
+
+    googleRedirectHandledRef.current = true
+    window.sessionStorage.removeItem('ehr-google-redirect-pending')
+    setUsername('patient')
+    setIsAdminLoginModalOpen(true)
+    setPatientRegLoading(true)
+
+    void (async () => {
+      let firebaseSignInCompleted = false
+      try {
+        const googleUser = await getGoogleRedirectUser()
+        if (!googleUser) throw new Error('Google did not return a sign-in result. Please try again.')
+        firebaseSignInCompleted = true
+        await completeGoogleSignIn(googleUser)
+      } catch (err) {
+        if (firebaseSignInCompleted) await signOutFromGoogle().catch(() => {})
+        setError(err instanceof Error ? err.message : 'Google redirect sign-in failed.')
+      } finally {
+        setPatientRegLoading(false)
+      }
+    })()
+  }, [])
 
 
   async function handleSendOtp(event: React.FormEvent<HTMLFormElement>) {
@@ -1144,19 +1307,68 @@ export default function AppUser() {
     setIsSubmittingPatient(true)
 
     try {
+      let createdOrUpdatedPatient: PatientRecord | null = null
+      let createdTwinName = ''
+      let createdTwinId = ''
+
       if (editingPatientId) {
         const result = await updatePatient(editingPatientId, patientForm, token, `session-${Date.now()}`)
-        setMessage(`Patient record for ${result.patient.name} successfully updated and re-watermarked!`)
+        createdOrUpdatedPatient = result.patient
+        createdTwinName = result.synthetic_twin?.name || result.patient.forensic_record?.name || ''
+        createdTwinId = result.synthetic_twin?.synthetic_patient_id || result.patient.forensic_record?.synthetic_patient_id || ''
+        setMessage(`Patient record for "${result.patient.name}" updated successfully.`)
         setPatients((prev) => prev.map((p) => (p.id === editingPatientId ? result.patient : p)))
       } else {
         const result = await createPatient(patientForm, token, `session-${Date.now()}`)
-        setMessage(`Patient record for ${result.patient.name} successfully registered and added to Active Clinical Records!`)
-        setPatients((prev) => [result.patient, ...prev])
+        createdOrUpdatedPatient = result.patient
+        createdTwinName = result.synthetic_twin?.name || result.patient.forensic_record?.name || ''
+        createdTwinId = result.synthetic_twin?.synthetic_patient_id || result.patient.forensic_record?.synthetic_patient_id || ''
+        setMessage(`Patient record for "${result.patient.name}" saved successfully.`)
+        setPatients((prev) => [result.patient, ...prev.filter((p) => String(p.id) !== String(result.patient.id))])
       }
+
+      if (createdOrUpdatedPatient) {
+        const patientRec = createdOrUpdatedPatient
+        const synRecord = {
+          id: String(patientRec.id || patientRec.patient_id),
+          patient_id: String(patientRec.id || patientRec.patient_id),
+          synthetic_patient_id: createdTwinId || patientRec.forensic_record?.synthetic_patient_id || `SYN-${patientRec.id}`,
+          name: createdTwinName || patientRec.forensic_record?.name || `Synthetic ${patientRec.name}`,
+          disease: patientRec.forensic_record?.disease || patientRec.disease,
+          diagnosis: patientRec.forensic_record?.diagnosis || patientRec.diagnosis,
+          treatment_pattern: patientRec.forensic_record?.treatment_pattern || 'Standard Deception Protocol',
+          age_range: patientRec.forensic_record?.age_range || `${patientRec.age || 30} yrs`,
+          aadhaar_number: patientRec.forensic_record?.aadhaar_number || 'Anonymized',
+          phone_number: patientRec.forensic_record?.phone_number || '+91 98888 00000',
+          email: patientRec.forensic_record?.email || 'decoy@decoy-health.org',
+          watermark_fingerprint: patientRec.forensic_record?.watermark_fingerprint || patientRec.watermark_id || 'WM-SEC',
+        }
+
+        setDashboard((prev) => {
+          if (!prev) return prev
+          const prevSyn = prev.synthetic_records || []
+          const updatedSyn = editingPatientId
+            ? prevSyn.map((s) => (String(s.id) === String(editingPatientId) || String(s.patient_id) === String(editingPatientId)) ? synRecord : s)
+            : [synRecord, ...prevSyn.filter((s) => String(s.id) !== String(synRecord.id))]
+
+          return {
+            ...prev,
+            metrics: {
+              ...prev.metrics,
+              total_patients: editingPatientId ? prev.metrics.total_patients : ((prev.metrics.total_patients || 0) + 1),
+              synthetic_twins: updatedSyn.length,
+              watermarked_records: updatedSyn.length,
+            },
+            synthetic_records: updatedSyn,
+          }
+        })
+      }
+
       setPatientForm(defaultPatient)
       setEditingPatientId(null)
-      setPatientSubTab('active')
+      // Navigate to Active Patients tab so Admin immediately views the active patient record!
       setActiveTab('patients')
+      setPatientSubTab('active')
       // Non-blocking background data refresh
       loadDashboardData().catch((err) => console.warn('Background refresh error:', err))
     } catch (err) {
@@ -1222,14 +1434,20 @@ export default function AppUser() {
   }
 
   function handleLogout() {
+    const wasPatient = user?.role === 'patient'
+    void signOutFromGoogle().catch(() => {})
     setToken(null)
     setUser(null)
+    setIsDoctorVerified(false)
     setDashboard(null)
     setPatients([])
     setNotifications([])
     setSecurityAlerts([])
     setRealtimeConnected(false)
     setPassword('')
+    if (wasPatient) {
+      setUsername('patient')
+    }
     setMessage('Logged out successfully.')
     setError('')
     setActiveTab('overview')
@@ -1265,11 +1483,11 @@ export default function AppUser() {
               }}
               style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4)' }}
             >
-              🔐 Admin Portal Access →
+              🔐 Login
             </button>
           </div>
 
-          {/* ADMIN PASSWORD AUTHENTICATION MODAL */}
+          {/* ADMIN & ROLE AUTHENTICATION MODAL */}
           {isAdminLoginModalOpen ? (
             <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(10px)', display: 'grid', placeItems: 'center', padding: 20 }}>
               <div style={{ width: '100%', maxWidth: 440, background: 'rgba(15, 23, 42, 0.98)', borderRadius: 24, padding: 32, border: '1px solid rgba(56, 189, 248, 0.3)', boxShadow: '0 25px 60px rgba(0,0,0,0.9)', position: 'relative' }}>
@@ -1291,10 +1509,10 @@ export default function AppUser() {
                     🔐
                   </div>
                   <h3 style={{ margin: '0 0 4px', fontSize: '1.4rem', fontWeight: 800, color: '#f8fafc' }}>
-                    Admin Portal Authentication
+                    Healthcare Security Portal
                   </h3>
                   <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.82rem' }}>
-                    Enter your administrator credentials to access the security command center.
+                    Admin Authentication & Security Command Center
                   </p>
                 </div>
 
@@ -1313,18 +1531,21 @@ export default function AppUser() {
                 <form onSubmit={handleLogin} style={{ display: 'grid', gap: 16 }}>
                   <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
                     Account Role
-                    <input
-                      readOnly
-                      type="text"
-                      value="Administrator (admin)"
-                      style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#38bdf8', fontSize: '0.9rem', fontWeight: 700 }}
-                    />
+                    <select
+                      value={username}
+                      onChange={(e) => handleUsernameChange(e.target.value)}
+                      style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(56, 189, 248, 0.3)', background: '#1e293b', color: '#38bdf8', fontSize: '0.9rem', fontWeight: 700 }}
+                    >
+                      <option value="admin">Administrator (admin)</option>
+                      <option value="doctor">Doctor (doctor)</option>
+                      <option value="patient">Patient (patient)</option>
+                    </select>
                   </label>
 
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                       <label style={{ fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
-                        Admin Password
+                        Password
                       </label>
                       <button
                         type="button"
@@ -1347,7 +1568,7 @@ export default function AppUser() {
                       autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter administrator password"
+                      placeholder="Enter account password"
                       style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(56, 189, 248, 0.3)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.95rem' }}
                     />
                   </div>
@@ -1356,7 +1577,221 @@ export default function AppUser() {
                     type="submit"
                     style={{ padding: 14, borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '0.98rem', fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4)' }}
                   >
-                    Authenticate & Enter Admin Console →
+                    Authenticate & Enter Portal →
+                  </button>
+                </form>
+
+                {username === 'patient' ? (
+                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)', display: 'grid', gap: 10 }}>
+                    {/* 1. SEPARATE SIGN IN WITH GOOGLE BUTTON */}
+                    <button
+                      type="button"
+                      onClick={handleGoogleSignIn}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: 12,
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: '#ffffff',
+                        color: '#1f2937',
+                        fontSize: '0.92rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 12,
+                        boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <GoogleIconSvg />
+                      <span>Sign in with Google</span>
+                    </button>
+                    {showGoogleRedirectFallback ? (
+                      <button
+                        type="button"
+                        onClick={handleGoogleRedirectSignIn}
+                        disabled={patientRegLoading}
+                        style={{
+                          width: '100%',
+                          padding: '11px 16px',
+                          borderRadius: 10,
+                          border: '1px solid rgba(255,255,255,0.2)',
+                          background: 'rgba(255,255,255,0.06)',
+                          color: '#e2e8f0',
+                          fontSize: '0.86rem',
+                          fontWeight: 600,
+                          cursor: patientRegLoading ? 'wait' : 'pointer',
+                        }}
+                      >
+                        Continue with Google using redirect
+                      </button>
+                    ) : null}
+
+                    {/* DIVIDER */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '2px 0', fontSize: '0.75rem', color: '#94a3b8' }}>
+                      <span style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.1)' }} />
+                      <span style={{ fontWeight: 600 }}>OR</span>
+                      <span style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.1)' }} />
+                    </div>
+
+                    {/* 2. SEPARATE REGISTER BUTTON */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPatientRegError('')
+                        setPatientRegMobile('')
+                        setPatientRegFullName('')
+                        setPatientRegPassword('')
+                        setPatientRegConfirmPassword('')
+                        setIsAdminLoginModalOpen(false)
+                        setIsPatientRegisterModalOpen(true)
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '14px 18px',
+                        borderRadius: 12,
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: '#ffffff',
+                        fontSize: '0.96rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 10,
+                        boxShadow: '0 4px 18px rgba(16, 185, 129, 0.45)',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <span style={{ fontSize: '1.1rem' }}>📝</span>
+                      <span>Register</span>
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          {/* PATIENT REGISTRATION MODAL */}
+          {isPatientRegisterModalOpen ? (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.90)', backdropFilter: 'blur(10px)', display: 'grid', placeItems: 'center', zIndex: 9999, padding: 16 }}>
+              <div style={{ width: '100%', maxWidth: 440, background: '#0f172a', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: 20, padding: 32, boxShadow: '0 20px 50px rgba(0,0,0,0.6)', color: '#fff', position: 'relative' }}>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #059669, #10b981)', display: 'grid', placeItems: 'center', fontSize: 20 }}>
+                      🏥
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#f8fafc' }}>
+                        Patient Registration
+                      </h3>
+                      <span style={{ fontSize: '0.75rem', color: '#34d399', fontWeight: 600 }}>
+                        Create Account to Access Clinical EHR
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPatientRegisterModalOpen(false)
+                      setIsAdminLoginModalOpen(true)
+                      setUsername('patient')
+                    }}
+                    style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1 }}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {patientRegError ? (
+                  <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', marginBottom: 16, fontSize: '0.82rem' }}>
+                    ⚠ {patientRegError}
+                  </div>
+                ) : null}
+
+                <form onSubmit={handlePatientRegister} style={{ display: 'grid', gap: 14 }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                    Full Name
+                    <input
+                      type="text"
+                      value={patientRegFullName}
+                      onChange={(e) => setPatientRegFullName(e.target.value)}
+                      placeholder="e.g. Ajay Y V"
+                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.9rem' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                    Mobile Number *
+                    <input
+                      required
+                      type="tel"
+                      value={patientRegMobile}
+                      onChange={(e) => setPatientRegMobile(e.target.value)}
+                      placeholder="e.g. 9876543210"
+                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.9rem' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                    New Password *
+                    <input
+                      required
+                      type="password"
+                      autoComplete="new-password"
+                      value={patientRegPassword}
+                      onChange={(e) => setPatientRegPassword(e.target.value)}
+                      placeholder="Create new password"
+                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.9rem' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                    Confirm Password *
+                    <input
+                      required
+                      type="password"
+                      autoComplete="new-password"
+                      value={patientRegConfirmPassword}
+                      onChange={(e) => setPatientRegConfirmPassword(e.target.value)}
+                      placeholder="Confirm password"
+                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.9rem' }}
+                    />
+                  </label>
+
+                  <button
+                    type="submit"
+                    disabled={patientRegLoading}
+                    style={{
+                      padding: 13,
+                      borderRadius: 10,
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #059669, #10b981)',
+                      color: '#fff',
+                      fontSize: '0.95rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      marginTop: 4,
+                      boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)',
+                    }}
+                  >
+                    {patientRegLoading ? 'Registering Account...' : 'Register & Access Patient Dashboard →'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPatientRegisterModalOpen(false)
+                      setIsAdminLoginModalOpen(true)
+                      setUsername('patient')
+                    }}
+                    style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '0.8rem', cursor: 'pointer', textAlign: 'center', marginTop: 4, textDecoration: 'underline' }}
+                  >
+                    Already have an account? Login with password
                   </button>
                 </form>
               </div>
@@ -1364,8 +1799,28 @@ export default function AppUser() {
           ) : null}
 
         </div>
+      ) : user?.role === 'doctor' ? (
+        !isDoctorVerified ? (
+          <DoctorLoginPage
+            onLogin={(doctorSession) => {
+              setToken(doctorSession.access_token)
+              setUser(doctorSession.user)
+              setIsDoctorVerified(true)
+            }}
+            onCancel={handleLogout}
+          />
+        ) : (
+          <DoctorDashboardComponent
+            token={token}
+            user={user}
+            onLogout={handleLogout}
+            onSwitchDoctor={() => setIsDoctorVerified(false)}
+          />
+        )
+      ) : user?.role === 'patient' ? (
+        <PatientDashboardComponent token={token} user={user} onLogout={handleLogout} />
       ) : (
-        /* AUTHENTICATED COMMAND CENTER LAYOUT */
+        /* AUTHENTICATED COMMAND CENTER LAYOUT FOR ADMIN */
         <div style={{ display: 'flex', minHeight: '100vh', background: '#020617' }}>
           
           {/* STICKY LEFT SIDEBAR WITH 11 NAVIGATION LINKS */}
@@ -1412,10 +1867,6 @@ export default function AppUser() {
                 🕵️ <span>Decoy Leak Verifier</span>
               </button>
 
-              <button onClick={() => setActiveTab('events')} className={activeTab === 'events' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'events' ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.05)', background: activeTab === 'events' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255,255,255,0.02)', color: activeTab === 'events' ? '#fca5a5' : '#cbd5e1', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
-                🛡️ <span>Security Events</span>
-              </button>
-
               <button onClick={() => setActiveTab('reports')} className={activeTab === 'reports' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'reports' ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.05)', background: activeTab === 'reports' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.02)', color: activeTab === 'reports' ? '#38bdf8' : '#cbd5e1', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
                 📋 <span>Reports</span>
               </button>
@@ -1456,7 +1907,6 @@ export default function AppUser() {
                   {activeTab === 'gateway' && '🤖 AI Security Gateway & Threat Intelligence'}
                   {activeTab === 'analytics' && '📈 Cyber Threat Analytics'}
                   {activeTab === 'watermarks' && '🕵️ Decoy Leak Attribution & Provenance Tracer'}
-                  {activeTab === 'events' && '🛡️ Security Event Repository'}
                   {activeTab === 'reports' && '📋 Forensic Compliance Reports'}
                   {activeTab === 'settings' && '⚙️ Security Settings'}
                   {activeTab === 'profile' && '👤 Account Profile'}
@@ -1648,6 +2098,10 @@ export default function AppUser() {
             {activeTab === 'overview' ? (
               <OverviewDashboardGraphs
                 totalPatients={patients.length}
+                patients={patients}
+                securityAlerts={securityAlerts}
+                dashboard={dashboard}
+                analytics={analytics}
                 simulatedInterceptions={simulatedInterceptions}
                 onSimulateIntercept={() => {
                   playAlertBeep()
@@ -1720,77 +2174,107 @@ export default function AppUser() {
 
                 {patientSubTab === 'active' ? (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
-                    {patients.map((p) => (
-                      <PatientCard
-                        key={p.id}
-                        patient={p}
-                        onViewDetails={() => {
-                          setSelectedPatientDetails(p)
-                          setIsDetailsModalOpen(true)
-                        }}
-                        onEdit={() => {
-                          setEditingPatientId(p.id)
-                          setPatientForm({
-                            patient_id: p.patient_id ? Number(p.patient_id) : undefined,
-                            name: p.name,
-                            age: p.age,
-                            gender: p.gender || 'Male',
-                            aadhaar: p.aadhaar || '',
-                            phone: p.phone || '',
-                            email: p.email || '',
-                            disease: p.disease,
-                            diagnosis: p.diagnosis || '',
-                            doctor_assigned: p.doctor_assigned || '',
-                            department: p.department || '',
-                            admission_date: p.admission_date || '',
-                            medicines: p.medicines || [],
-                            treatment_pattern: p.treatment_pattern || 'Standard Deception Protocol',
-                          })
-                          setActiveTab('register')
-                        }}
-                        onDelete={async () => {
-                          if (!token || !window.confirm(`Are you sure you want to delete patient record for ${p.name}? This record will be archived into Patient History.`)) return
-                          const targetId = p.id
-                          const targetName = p.name
-                          const targetPatient = p
-                          // Optimistic update: remove from active patients and add to archived history immediately
-                          setPatients((prev) => prev.filter((item) => item.id !== targetId))
-                          setPatientHistory((prev) => [
-                            {
-                              id: targetPatient.id,
-                              patient_id: targetPatient.patient_id,
-                              name: targetPatient.name,
-                              age: targetPatient.age,
-                              disease: targetPatient.disease,
-                              diagnosis: targetPatient.diagnosis,
-                              gender: targetPatient.gender,
-                              phone: targetPatient.phone,
-                              email: targetPatient.email,
-                              aadhaar: targetPatient.aadhaar,
-                              doctor_assigned: targetPatient.doctor_assigned,
-                              department: targetPatient.department,
-                              admission_date: targetPatient.admission_date,
-                              medicines: targetPatient.medicines,
-                              status: 'Discharged / Archived',
-                              archived_at: new Date().toISOString(),
-                            },
-                            ...prev,
-                          ])
-                          setDeletingId(targetId)
-                          try {
-                            await deletePatient(targetId, token)
-                            setMessage(`Successfully moved patient record for ${targetName} to Archived Patient History.`)
-                            loadDashboardData().catch(() => {})
-                          } catch (err) {
-                            setError(String(err))
-                            loadDashboardData().catch(() => {})
-                          } finally {
-                            setDeletingId(null)
-                          }
-                        }}
-                        isDeleting={deletingId === p.id}
-                      />
-                    ))}
+                    {patients.length === 0 ? (
+                      <div style={{ gridColumn: '1 / -1', padding: '48px 24px', textAlign: 'center', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 16, border: '1px dashed rgba(255, 255, 255, 0.12)' }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📋</div>
+                        <h3 style={{ color: '#f8fafc', fontSize: '1.25rem', fontWeight: 700, margin: '0 0 8px' }}>No Active Patients in Vault</h3>
+                        <p style={{ color: '#94a3b8', fontSize: '0.9rem', maxWidth: 480, margin: '0 auto 20px', lineHeight: 1.5 }}>
+                          No patient records are currently stored. Register a patient to securely protect their clinical data and automatically generate a corresponding 1:1 AI synthetic decoy twin.
+                        </p>
+                        <button
+                          onClick={() => {
+                            setEditingPatientId(null)
+                            setPatientForm(defaultPatient)
+                            setActiveTab('register')
+                          }}
+                          style={{
+                            padding: '12px 24px',
+                            borderRadius: 12,
+                            border: 'none',
+                            background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                            color: '#fff',
+                            fontSize: '0.92rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          ➕ Register First Patient
+                        </button>
+                      </div>
+                    ) : (
+                      patients.map((p) => (
+                        <PatientCard
+                          key={p.id}
+                          patient={p}
+                          onViewDetails={() => {
+                            setSelectedPatientDetails(p)
+                            setIsDetailsModalOpen(true)
+                          }}
+                          onEdit={() => {
+                            setEditingPatientId(p.id)
+                            setPatientForm({
+                              patient_id: p.patient_id ? Number(p.patient_id) : undefined,
+                              name: p.name,
+                              age: p.age,
+                              gender: p.gender || 'Male',
+                              aadhaar: p.aadhaar || '',
+                              phone: p.phone || '',
+                              email: p.email || '',
+                              disease: p.disease,
+                              diagnosis: p.diagnosis || '',
+                              doctor_assigned: p.doctor_assigned || '',
+                              department: p.department || '',
+                              admission_date: p.admission_date || '',
+                              medicines: p.medicines || [],
+                              treatment_pattern: p.treatment_pattern || 'Standard Deception Protocol',
+                            })
+                            setActiveTab('register')
+                          }}
+                          onDelete={async () => {
+                            if (!token || !window.confirm(`Are you sure you want to delete patient record for ${p.name}? This record will be archived into Patient History.`)) return
+                            const targetId = p.id
+                            const targetName = p.name
+                            const targetPatient = p
+                            // Optimistic update: remove from active patients and add to archived history immediately
+                            setPatients((prev) => prev.filter((item) => item.id !== targetId))
+                            setPatientHistory((prev) => [
+                              {
+                                id: targetPatient.id,
+                                patient_id: targetPatient.patient_id,
+                                name: targetPatient.name,
+                                age: targetPatient.age,
+                                disease: targetPatient.disease,
+                                diagnosis: targetPatient.diagnosis,
+                                gender: targetPatient.gender,
+                                phone: targetPatient.phone,
+                                email: targetPatient.email,
+                                aadhaar: targetPatient.aadhaar,
+                                doctor_assigned: targetPatient.doctor_assigned,
+                                department: targetPatient.department,
+                                admission_date: targetPatient.admission_date,
+                                medicines: targetPatient.medicines,
+                                status: 'Discharged / Archived',
+                                archived_at: new Date().toISOString(),
+                              },
+                              ...prev,
+                            ])
+                            setDeletingId(targetId)
+                            try {
+                              await deletePatient(targetId, token)
+                              window.dispatchEvent(new Event('patient_data_changed'))
+                              setMessage(`Patient record for "${targetName}" moved to Archived Patient History.`)
+                              loadDashboardData().catch(() => {})
+                            } catch (err) {
+                              setError(String(err))
+                              loadDashboardData().catch(() => {})
+                            } finally {
+                              setDeletingId(null)
+                            }
+                          }}
+                          isDeleting={deletingId === p.id}
+                        />
+                      ))
+                    )}
                   </div>
                 ) : (
                   /* ARCHIVED PATIENT HISTORY VIEW */
@@ -2246,11 +2730,6 @@ export default function AppUser() {
                     </div>
                   </div>
 
-                  {/* Summary Banner */}
-                  <div style={{ marginTop: 20, padding: 14, borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', fontSize: '0.82rem', color: '#cbd5e1' }}>
-                    💡 <strong>Security Architecture Note:</strong> Original patient data is encrypted and stored securely in the core clinical database. When unauthorized or hostile sessions access patient data, the Cyber Deception Gateway automatically intercepts requests and serves these generated **Synthetic Twins**, protecting patient privacy and identifying threats.
-                  </div>
-
                   {/* Footer Navigation */}
                   <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                     <button
@@ -2499,7 +2978,18 @@ export default function AppUser() {
                         Doctor Assigned *
                         <select
                           value={patientForm.doctor_assigned || 'Dr. Priya Nair (Cardiology)'}
-                          onChange={(e) => setPatientForm({ ...patientForm, doctor_assigned: e.target.value })}
+                          onChange={(e) => {
+                            const doc = e.target.value
+                            const docToDeptMap: Record<string, string> = {
+                              'Dr. Priya Nair (Cardiology)': 'Cardiology',
+                              'Dr. Ramesh Kumar (Neurology)': 'Neurology',
+                              'Dr. Sarah Jenkins (Pediatrics)': 'Pediatrics',
+                              'Dr. Rajesh Patel (Orthopedics)': 'Orthopedics',
+                              'Dr. Anita Sharma (General Medicine)': 'General Medicine',
+                            }
+                            const dept = docToDeptMap[doc] || patientForm.department || 'Cardiology'
+                            setPatientForm({ ...patientForm, doctor_assigned: doc, department: dept })
+                          }}
                           style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#1e293b', color: '#fff', fontSize: '0.85rem' }}
                         >
                           <option value="Dr. Priya Nair (Cardiology)">Dr. Priya Nair (Cardiology)</option>
@@ -2514,7 +3004,19 @@ export default function AppUser() {
                         Department *
                         <select
                           value={patientForm.department || 'Cardiology'}
-                          onChange={(e) => setPatientForm({ ...patientForm, department: e.target.value })}
+                          onChange={(e) => {
+                            const dept = e.target.value
+                            const deptToDocMap: Record<string, string> = {
+                              Cardiology: 'Dr. Priya Nair (Cardiology)',
+                              Neurology: 'Dr. Ramesh Kumar (Neurology)',
+                              Pediatrics: 'Dr. Sarah Jenkins (Pediatrics)',
+                              Orthopedics: 'Dr. Rajesh Patel (Orthopedics)',
+                              'General Medicine': 'Dr. Anita Sharma (General Medicine)',
+                              'Emergency Services': 'Dr. Anita Sharma (General Medicine)',
+                            }
+                            const doc = deptToDocMap[dept] || patientForm.doctor_assigned || 'Dr. Priya Nair (Cardiology)'
+                            setPatientForm({ ...patientForm, department: dept, doctor_assigned: doc })
+                          }}
                           style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#1e293b', color: '#fff', fontSize: '0.85rem' }}
                         >
                           <option value="Cardiology">Cardiology</option>
@@ -2555,6 +3057,7 @@ export default function AppUser() {
                         Cancel Edit
                       </button>
                     ) : null}
+
                     <button
                       type="submit"
                       disabled={isSubmittingPatient}
@@ -2579,11 +3082,11 @@ export default function AppUser() {
                       }}
                     >
                       {isSubmittingPatient ? (
-                        <>⏳ Registering & Generating Watermark...</>
+                        <>⏳ Saving Patient Record...</>
                       ) : editingPatientId ? (
-                        'Update Patient Record & Refresh Decoy'
+                        'Update Patient Record'
                       ) : (
-                        'Save Patient Admission & Apply Forensic Watermarking →'
+                        'Save Patient Record'
                       )}
                     </button>
                   </div>
@@ -2635,30 +3138,37 @@ export default function AppUser() {
                       <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#f8fafc', fontWeight: 800 }}>
                         🧬 AI Synthetic Patient Decoy Catalog
                       </h3>
-                      <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.85rem' }}>
-                        Every active real patient record in the hospital vault is linked 1:1 to a synthetic decoy twin. When an adversary attacks or queries the system, only these watermarked decoys are served.
-                      </p>
                     </div>
-                    <span style={{ background: 'rgba(168, 85, 247, 0.15)', border: '1px solid #c084fc', color: '#e9d5ff', padding: '6px 14px', borderRadius: 999, fontSize: '0.82rem', fontWeight: 700 }}>
-                      {(dashboard?.synthetic_records ?? []).length} Active Synthetic Decoys
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ background: 'rgba(168, 85, 247, 0.15)', border: '1px solid #c084fc', color: '#e9d5ff', padding: '6px 14px', borderRadius: 999, fontSize: '0.82rem', fontWeight: 700 }}>
+                        {activeSyntheticRecords.length} Active Synthetic Decoys
+                      </span>
+                    </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
-                    {(dashboard?.synthetic_records ?? []).length === 0 ? (
-                      <div style={{ gridColumn: '1 / -1', padding: '32px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.1)' }}>
-                        <div style={{ fontSize: '1.2rem', color: '#cbd5e1', fontWeight: 700, marginBottom: 6 }}>📋 No Active Patient Records</div>
-                        <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Register a real patient in the Clinical Register tab. The system will automatically generate a dynamic synthetic decoy twin.</div>
+                    {activeSyntheticRecords.length === 0 ? (
+                      <div style={{ gridColumn: '1 / -1', padding: '36px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.1)' }}>
+                        <div style={{ fontSize: '1.25rem', color: '#cbd5e1', fontWeight: 700, marginBottom: 8 }}>📋 No Active Patient Records in Vault</div>
+                        <div style={{ fontSize: '0.88rem', color: '#94a3b8', maxWidth: 500, margin: '0 auto 18px' }}>
+                          Whenever an Administrator registers a genuine patient record into the clinical database, our AI engine automatically generates a corresponding 1:1 synthetic decoy twin.
+                        </div>
+                        <button
+                          onClick={() => { setEditingPatientId(null); setPatientForm(defaultPatient); setActiveTab('register') }}
+                          style={{ padding: '12px 24px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '0.92rem', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          ➕ Register First Patient Record
+                        </button>
                       </div>
                     ) : (
-                      (dashboard?.synthetic_records ?? []).map((syn) => {
-                        const linkedPatient = patients.find((patient) => String(patient.id) === String(syn.id || syn.patient_id))
+                      activeSyntheticRecords.map((syn) => {
+                        const linkedPatient = patients.find((patient) => String(patient.id) === String(syn.id || syn.patient_id) || String(patient.patient_id) === String(syn.id || syn.patient_id))
                         const synName = syn.name || 'Unavailable'
                         const synId = syn.synthetic_patient_id || 'Unavailable'
                         const synDisease = syn.disease || 'Unavailable'
                         const synDiagnosis = syn.diagnosis || 'Unavailable'
                         const synTreatment = syn.treatment_pattern || 'Unavailable'
-                        const synAgeRange = syn.age_range || syn.age || 'Unavailable'
+                        const synAgeRange = syn.age_range || (syn as any).age || 'Unavailable'
                         const synAadhaar = syn.aadhaar_number || 'Unavailable'
                         const synPhone = syn.phone_number || 'Unavailable'
                         const synEmail = syn.email || 'Unavailable'
@@ -2690,11 +3200,33 @@ export default function AppUser() {
                             </div>
 
                             <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Linked to Real: {syn.id || syn.patient_id || 'Unavailable'} ({linkedPatient?.name || 'Unavailable'})</span>
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Linked to Real: {syn.id || syn.patient_id || 'Vault'} ({linkedPatient?.name || 'Protected Inpatient'})</span>
                               <button
                                 onClick={() => {
-                                  if (!linkedPatient) return
-                                  setSelectedTwinComparison(linkedPatient)
+                                  const compTarget = linkedPatient || {
+                                    id: syn.id || syn.patient_id,
+                                    patient_id: syn.id || syn.patient_id,
+                                    name: syn.name.replace(/^Synthetic\s+/, ''),
+                                    age: 42,
+                                    gender: 'Male',
+                                    blood_group: 'B+',
+                                    disease: syn.disease,
+                                    diagnosis: syn.diagnosis,
+                                    watermark_id: syn.watermark_fingerprint,
+                                    forensic_record: {
+                                      synthetic_patient_id: syn.synthetic_patient_id,
+                                      name: syn.name,
+                                      disease: syn.disease,
+                                      diagnosis: syn.diagnosis,
+                                      treatment_pattern: syn.treatment_pattern,
+                                      age_range: syn.age_range,
+                                      aadhaar_number: syn.aadhaar_number,
+                                      phone_number: syn.phone_number,
+                                      email: syn.email,
+                                      watermark_fingerprint: syn.watermark_fingerprint,
+                                    }
+                                  }
+                                  setSelectedTwinComparison(compTarget)
                                   setIsCompareModalOpen(true)
                                 }}
                                 style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #c084fc', background: 'rgba(168, 85, 247, 0.15)', color: '#e9d5ff', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
@@ -2904,7 +3436,7 @@ export default function AppUser() {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       <button
                         onClick={() => {
-                          const syn1 = generateSyntheticTwinDetails(patients[0]?.name || 'sonu', patients[0]?.id || 'P-01')
+                          const syn1 = generateSyntheticTwinDetails(patients[0]?.name || 'Clinical Patient', patients[0]?.id || 'P-01')
                           const testText = `LEAKED DUMP: Patient ${syn1.decoyName} | ID: ${syn1.decoyId} | Condition: ${syn1.disease} | Verification Hash: ${syn1.fingerprint}`
                           setForensicScanInput(testText)
                           handleRealtimeScan(testText)
@@ -3121,10 +3653,26 @@ export default function AppUser() {
                     subtitle="Breakdown of Intercepted Exploitation Attempts (% of Total Attacks)"
                     percentageBasis="total"
                     data={[
-                      { label: 'SQL Injection Probes (UNION SELECT / OR 1=1)', value: 48, color: '#ef4444' },
-                      { label: 'Targeted Single Patient Theft Probes', value: 42, color: '#f59e0b' },
-                      { label: 'Bulk Database Dump Probes (All Records)', value: 34, color: '#c084fc' },
-                      { label: 'Unauthorized Reconnaissance & API Scans', value: 18, color: '#38bdf8' },
+                      {
+                        label: 'SQL Injection Probes (UNION SELECT / OR 1=1)',
+                        value: 48 + securityAlerts.filter((a) => (a.attack_type || '').toLowerCase().includes('sql')).length + Math.floor(simulatedInterceptions * 0.35),
+                        color: '#ef4444',
+                      },
+                      {
+                        label: 'Targeted Single Patient Theft Probes',
+                        value: 42 + securityAlerts.filter((a) => (a.attack_type || '').toLowerCase().includes('patient') || (a.attack_type || '').toLowerCase().includes('single')).length + Math.floor(simulatedInterceptions * 0.3),
+                        color: '#f59e0b',
+                      },
+                      {
+                        label: 'Bulk Database Dump Probes (All Records)',
+                        value: 34 + securityAlerts.filter((a) => (a.attack_type || '').toLowerCase().includes('exfiltration') || (a.attack_type || '').toLowerCase().includes('bulk') || (a.attack_type || '').toLowerCase().includes('dump')).length + Math.floor(simulatedInterceptions * 0.23),
+                        color: '#c084fc',
+                      },
+                      {
+                        label: 'Unauthorized Reconnaissance & API Scans',
+                        value: 18 + securityAlerts.filter((a) => (a.attack_type || '').toLowerCase().includes('recon') || (a.attack_type || '').toLowerCase().includes('api')).length + Math.max(0, simulatedInterceptions - (Math.floor(simulatedInterceptions * 0.35) + Math.floor(simulatedInterceptions * 0.3) + Math.floor(simulatedInterceptions * 0.23))),
+                        color: '#38bdf8',
+                      },
                     ]}
                   />
                   <ChartCard
@@ -3174,9 +3722,12 @@ export default function AppUser() {
                       <button
                         onClick={() => {
                           setActiveTab('watermarks')
-                          const syn1 = generateSyntheticTwinDetails(patients[0]?.name || 'sonu', patients[0]?.id || 'P-01')
-                          const syn2 = generateSyntheticTwinDetails(patients[1]?.name || 'Suddha Sen', patients[1]?.id || 'P-02')
-                          const syn3 = generateSyntheticTwinDetails(patients[2]?.name || 'Vijay', patients[2]?.id || 'P-03')
+                          const p1 = patients[0]
+                          const p2 = patients[1]
+                          const p3 = patients[2]
+                          const syn1 = generateSyntheticTwinDetails(p1?.name || 'Active Patient', p1?.id || 'P-01')
+                          const syn2 = generateSyntheticTwinDetails(p2?.name || 'Secondary Patient', p2?.id || 'P-02')
+                          const syn3 = generateSyntheticTwinDetails(p3?.name || 'Clinical Patient', p3?.id || 'P-03')
                           const sampleText = liveDeflectionToast.id === 'suddha' 
                             ? `EXFILTRATED RECORD: Patient ${syn2.decoyName} | ID: ${syn2.decoyId} | Condition: ${syn2.disease} | Verification Hash: ${syn2.fingerprint}`
                             : liveDeflectionToast.id === 'vijay'
@@ -3289,149 +3840,6 @@ export default function AppUser() {
                 </div>
               </div>
             ) : null}
-
-            {/* TAB 7: SECURITY EVENTS */}
-            {activeTab === 'events' ? (() => {
-              const combinedEvents: AuditEvent[] = [
-                ...simulatedEvents,
-                ...(auditEvents && auditEvents.length > 0 ? auditEvents : []),
-                ...DEFAULT_SECURITY_EVENTS.filter((def) => !auditEvents?.some((a) => a.id === def.id)),
-              ]
-
-              const filteredEvents = combinedEvents.filter((ev) => {
-                const combinedText = `${ev.event_type} ${ev.details || ''} ${ev.severity || ''} ${ev.actor || ''}`.toLowerCase()
-                if (eventFilter === 'critical') {
-                  return ev.severity === 'CRITICAL' || combinedText.includes('sql') || combinedText.includes('intercept') || combinedText.includes('exfiltration')
-                }
-                if (eventFilter === 'decoy') {
-                  return combinedText.includes('decoy') || combinedText.includes('watermark') || combinedText.includes('twin') || combinedText.includes('lure')
-                }
-                if (eventFilter === 'staff') {
-                  return combinedText.includes('staff') || combinedText.includes('doctor') || combinedText.includes('login') || combinedText.includes('vault')
-                }
-                return true
-              })
-
-              return (
-                <div style={{ display: 'grid', gap: 20 }}>
-                  {/* Filter Toolbar */}
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600 }}>Filter Telemetry:</span>
-                    {[
-                      { key: 'all', label: `All Events (${combinedEvents.length})` },
-                      { key: 'critical', label: '🚨 Critical Deflections' },
-                      { key: 'decoy', label: '🧬 Decoys & Watermarks' },
-                      { key: 'staff', label: '👨‍⚕️ Verified Access' },
-                    ].map((f) => (
-                      <button
-                        key={f.key}
-                        onClick={() => setEventFilter(f.key as any)}
-                        style={{
-                          padding: '6px 14px',
-                          borderRadius: 8,
-                          border: eventFilter === f.key ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.08)',
-                          background: eventFilter === f.key ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.03)',
-                          color: eventFilter === f.key ? '#38bdf8' : '#cbd5e1',
-                          fontSize: '0.8rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Main Event Cards Feed */}
-                  <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: 24 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                      <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#f8fafc', fontWeight: 700 }}>
-                        📡 Live Telemetry & Interception Log Feed ({filteredEvents.length} Displayed)
-                      </h4>
-                      <span style={{ fontSize: '0.75rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '3px 10px', borderRadius: 999, fontWeight: 700 }}>
-                        ● Live Deception Active
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'grid', gap: 12 }}>
-                      {filteredEvents.map((ev) => {
-                        const sev = (ev.severity || (ev.event_type.includes('ATTACK') || ev.event_type.includes('INTERCEPT') || ev.event_type.includes('DEFLECT') ? 'CRITICAL' : ev.event_type.includes('THEFT') || ev.event_type.includes('BLOCK') ? 'HIGH' : ev.event_type.includes('ALARM') ? 'WARNING' : ev.event_type.includes('STAFF') || ev.event_type.includes('TEARDOWN') ? 'SUCCESS' : 'INFO')).toUpperCase()
-                        
-                        const borderCol = sev === 'CRITICAL' ? '#ef4444' : sev === 'HIGH' ? '#f59e0b' : sev === 'WARNING' ? '#eab308' : sev === 'SUCCESS' ? '#10b981' : '#38bdf8'
-                        const bgBadge = sev === 'CRITICAL' ? 'rgba(239, 68, 68, 0.15)' : sev === 'HIGH' ? 'rgba(245, 158, 11, 0.15)' : sev === 'WARNING' ? 'rgba(234, 179, 8, 0.15)' : sev === 'SUCCESS' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(56, 189, 248, 0.15)'
-
-                        return (
-                          <div
-                            key={ev.id}
-                            style={{
-                              padding: '16px 20px',
-                              borderRadius: 14,
-                              background: 'rgba(255, 255, 255, 0.025)',
-                              border: '1px solid rgba(255, 255, 255, 0.07)',
-                              borderLeft: `5px solid ${borderCol}`,
-                              display: 'grid',
-                              gap: 10,
-                              transition: 'all 0.2s ease',
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <span style={{
-                                  fontSize: '0.74rem',
-                                  fontWeight: 800,
-                                  color: borderCol,
-                                  background: bgBadge,
-                                  border: `1px solid ${borderCol}44`,
-                                  padding: '4px 10px',
-                                  borderRadius: 6,
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.04em'
-                                }}>
-                                  {sev === 'CRITICAL' ? '🚨 ATTACK DEFLECTED' : sev === 'HIGH' ? '⚠️ DECOY DISPATCHED' : sev === 'WARNING' ? '⚡ ALARM ENGAGED' : sev === 'SUCCESS' ? '✓ ENCLAVE ISOLATED' : 'ℹ️ GATEWAY INSPECTION'}
-                                </span>
-                                <strong style={{ color: '#f8fafc', fontSize: '0.92rem', fontFamily: 'monospace' }}>
-                                  {ev.event_type}
-                                </strong>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                                  {ev.created_at ? new Date(ev.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Just now'}
-                                </span>
-                                <code style={{ fontSize: '0.72rem', color: '#64748b', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: 4 }}>
-                                  {ev.id}
-                                </code>
-                              </div>
-                            </div>
-
-                            <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.86rem', lineHeight: 1.5 }}>
-                              {ev.details}
-                            </p>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '0.76rem', color: '#94a3b8', flexWrap: 'wrap', paddingTop: 4 }}>
-                              <span style={{ color: '#34d399', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                🛡️ Real EHR Database 100% Untouched
-                              </span>
-                              <span>•</span>
-                              <span style={{ color: '#a78bfa', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                🧬 AI Synthetic Twin Layer Active
-                              </span>
-                              {ev.actor ? (
-                                <>
-                                  <span>•</span>
-                                  <span style={{ color: '#38bdf8' }}>
-                                    Source: {ev.actor}
-                                  </span>
-                                </>
-                              ) : null}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )
-            })() : null}
 
             {/* TAB 8: REPORTS */}
             {activeTab === 'reports' ? (() => {

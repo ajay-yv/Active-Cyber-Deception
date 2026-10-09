@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.core.dependencies import require_roles
+from app.core.dependencies import User, require_roles
 from app.services.audit import record_audit
 from app.services.integration import fetch_lab_results
+from app.services.registries import patient_repository
 from fastapi import File, UploadFile
 import os
 from uuid import uuid4
@@ -14,11 +15,18 @@ router = APIRouter(prefix="/integration", tags=["integration"])
 
 
 @router.get("/lab-results/{patient_id}")
-def get_lab_results(patient_id: str, _: object = Depends(require_roles("administrator", "doctor", "receptionist"))) -> dict:
+def get_lab_results(
+    patient_id: str,
+    current_user: User = Depends(require_roles("administrator", "doctor", "receptionist", "patient")),
+) -> dict:
+    if current_user.role == "patient":
+        patient = patient_repository.find_by_id(patient_id)
+        if patient is None or patient.id != current_user.patient_record_id:
+            raise HTTPException(status_code=404, detail="Lab results not found")
     lab_result = fetch_lab_results(patient_id)
     if lab_result is None:
         raise HTTPException(status_code=404, detail="Lab results not found")
-    record_audit("system", "fetch_lab_results", f"patient_id={patient_id}")
+    record_audit(current_user.username, "fetch_lab_results", f"patient_id={patient_id}")
     return lab_result
 
 

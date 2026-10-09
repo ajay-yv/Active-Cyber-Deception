@@ -1,7 +1,15 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings
 from pydantic import Field
+
+WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
+SETTINGS_ENV_FILES = (
+    WORKSPACE_ROOT / ".env",
+    WORKSPACE_ROOT / "backend" / ".env",
+    WORKSPACE_ROOT / ".env.local",
+)
 
 
 class Settings(BaseSettings):
@@ -9,12 +17,14 @@ class Settings(BaseSettings):
     algorithm: str = Field(default="HS256", env="ALGORITHM")
     access_token_expire_minutes: int = Field(default=1440, env="ACCESS_TOKEN_EXPIRE_MINUTES")
     app_env: str = Field(default="development", env="APP_ENV")
+    firebase_project_id: str | None = Field(default=None, env="FIREBASE_PROJECT_ID")
     simulator_max_requests: int = Field(default=100, env="SIMULATOR_MAX_REQUESTS")
     simulator_max_records: int = Field(default=25, env="SIMULATOR_MAX_RECORDS")
     simulator_min_interval_ms: int = Field(default=50, env="SIMULATOR_MIN_INTERVAL_MS")
 
     class Config:
-        env_file = ".env"
+        env_file = SETTINGS_ENV_FILES
+        env_file_encoding = "utf-8"
         validate_assignment = True
         extra = "ignore"
 

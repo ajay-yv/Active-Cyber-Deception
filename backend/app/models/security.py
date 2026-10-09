@@ -21,6 +21,7 @@ class UserAccount(SecurityBase):
     role: Mapped[str] = mapped_column(String(64), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=True)
+    patient_record_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     is_blocked: Mapped[bool] = mapped_column(nullable=False, server_default="0")
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

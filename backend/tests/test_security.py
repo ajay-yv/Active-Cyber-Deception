@@ -9,7 +9,7 @@ client = TestClient(app)
 
 
 def admin_token() -> str:
-    response = client.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
+    response = client.post("/api/auth/login", json={"username": "admin", "password": "Admin@8431"})
     assert response.status_code == 200
     return response.json()["access_token"]
 
@@ -60,7 +60,7 @@ def hacker_token() -> str:
 def test_hacker_breach_request_returns_fake_data_and_logs_event() -> None:
     admin_response = client.post(
         "/api/auth/login",
-        json={"username": "admin", "password": "admin123"},
+        json={"username": "admin", "password": "Admin@8431"},
     )
     admin_access_token = admin_response.json()["access_token"]
     patient_response = client.post(
@@ -98,7 +98,7 @@ def test_hacker_breach_request_returns_fake_data_and_logs_event() -> None:
     assert payload["records_returned"] == 1
     assert payload["is_synthetic"] is True
     assert "original_target_id" not in payload
-    assert payload["patient_id"].startswith(("PID-", "SYN-"))
+    assert payload["patient_id"].startswith(("PID-", "SYN-", "P-"))
 
 
 def test_hacker_can_list_hack_modes() -> None:

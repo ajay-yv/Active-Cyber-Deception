@@ -36,7 +36,7 @@ def admin_token(client):
 
 @pytest.fixture
 def doctor_token(client):
-    res = client.post("/api/auth/login", json={"username": "doctor", "password": "doctor123"})
+    res = client.post("/api/auth/login", json={"username": "doctor", "password": "Doctor@1432"})
     assert res.status_code == 200, res.text
     return res.json()["access_token"]
 

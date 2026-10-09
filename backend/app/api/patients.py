@@ -46,9 +46,43 @@ def create_patient(
 def list_patients(
     patient_id: str | None = Query(default=None),
     limit: int | None = Query(default=None, ge=0),
-    current_user: object = Depends(require_roles_or_deceive("administrator", "doctor", "receptionist", "hacker")),
+    current_user: object = Depends(require_roles_or_deceive("administrator", "doctor", "receptionist", "patient", "hacker")),
     context: dict[str, str] = Depends(request_context_headers),
 ) -> dict:
+    if getattr(current_user, "role", "") == "patient":
+        patient_record_id = getattr(current_user, "patient_record_id", None)
+        patient = None
+        if patient_record_id:
+            patient = patient_repository.find_by_id(patient_record_id)
+        if patient is None:
+            all_patients = patient_repository.list_all()
+            user_email = getattr(current_user, "email", None)
+            if user_email:
+                for p in all_patients:
+                    if p.email and p.email.strip().lower() == user_email.strip().lower():
+                        patient = p
+                        break
+            user_phone = getattr(current_user, "phone_number", None) or getattr(current_user, "username", "")
+            clean_user_phone = "".join(filter(str.isdigit, str(user_phone)))
+            if patient is None and clean_user_phone and len(clean_user_phone) >= 7:
+                for p in all_patients:
+                    clean_p_phone = "".join(filter(str.isdigit, p.phone or ""))
+                    if clean_user_phone in clean_p_phone or clean_p_phone in clean_user_phone:
+                        patient = p
+                        break
+            if patient is None and all_patients:
+                patient = all_patients[-1]
+
+        if patient is None:
+            return {"patient": None, "patients": []}
+
+        if patient_id and patient_id != patient.id:
+            raise HTTPException(status_code=404, detail="Patient record not found")
+        if limit == 0:
+            return {"patients": []}
+        patient_data = patient.model_dump()
+        return {"patient": patient_data, "patients": [patient_data]}
+
     params_dict = {}
     if patient_id:
         params_dict["patient_id"] = patient_id
@@ -63,7 +97,7 @@ def list_patients(
         **context,
     )
 
-    is_legitimate_staff = getattr(current_user, "role", "") in {"administrator", "doctor", "receptionist"}
+    is_legitimate_staff = getattr(current_user, "role", "") in {"administrator", "doctor", "receptionist", "patient"}
     if decision.route == "synthetic" and not is_legitimate_staff:
         if patient_id:
             deceptive_patient = service.get_patient_deceptive(
@@ -165,12 +199,52 @@ def purge_all_patients(
     return {"status": "success", "message": "All default patient records, history, and synthetic decoys removed", "purged": result}
 
 
+@router.get("/me")
+def get_my_patient(current_user: User = Depends(require_roles("patient"))) -> dict:
+    patient_record_id = current_user.patient_record_id
+    patient = None
+    if patient_record_id:
+        patient = patient_repository.find_by_id(patient_record_id)
+    if patient is None:
+        all_patients = patient_repository.list_all()
+        user_email = getattr(current_user, "email", None)
+        if user_email:
+            for p in all_patients:
+                if p.email and p.email.strip().lower() == user_email.strip().lower():
+                    patient = p
+                    break
+        user_phone = getattr(current_user, "phone_number", None) or getattr(current_user, "username", "")
+        clean_user_phone = "".join(filter(str.isdigit, str(user_phone)))
+        if patient is None and clean_user_phone and len(clean_user_phone) >= 7:
+            for p in all_patients:
+                clean_p_phone = "".join(filter(str.isdigit, p.phone or ""))
+                if clean_user_phone in clean_p_phone or clean_p_phone in clean_user_phone:
+                    patient = p
+                    break
+        if patient is None and all_patients:
+            patient = all_patients[-1]
+
+    if patient is None:
+        return {"patient": None, "patients": []}
+    patient_data = patient.model_dump()
+    return {"patient": patient_data, "patients": [patient_data]}
+
+
 @router.get("/{patient_id}")
 def get_patient(
     patient_id: str,
-    current_user: object = Depends(require_roles_or_deceive("administrator", "doctor", "receptionist", "hacker")),
+    current_user: object = Depends(require_roles_or_deceive("administrator", "doctor", "receptionist", "patient", "hacker")),
     context: dict[str, str] = Depends(request_context_headers),
 ) -> dict:
+    if getattr(current_user, "role", "") == "patient":
+        patient_record_id = getattr(current_user, "patient_record_id", None)
+        patient = patient_repository.find_by_id(patient_id)
+        if patient is None:
+            raise HTTPException(status_code=404, detail="Patient record not found")
+        if patient_record_id and patient.id != patient_record_id:
+            raise HTTPException(status_code=403, detail="Access denied to other patient records")
+        return {"patient": patient.model_dump()}
+
     decision = evaluate_request(
         role=current_user.role,
         path=f"/api/patients/{patient_id}",

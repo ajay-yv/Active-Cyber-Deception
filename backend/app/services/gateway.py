@@ -150,8 +150,8 @@ def evaluate_request(
 
     text_source = " ".join(filter(None, [path, str(params or ""), body or ""]))
 
-    TRUSTED_STAFF_SESSIONS = {"active-user-session", "doc-user-session", "admin-user-session", "hospital-user-session"}
-    is_trusted_user = (role in {"administrator", "doctor", "receptionist"} or session_id in TRUSTED_STAFF_SESSIONS) and not session_id.startswith("sim-")
+    TRUSTED_STAFF_SESSIONS = {"active-user-session", "doc-user-session", "admin-user-session", "hospital-user-session", "patient-user-session"}
+    is_trusted_user = (role in {"administrator", "doctor", "receptionist", "patient"} or session_id in TRUSTED_STAFF_SESSIONS) and not session_id.startswith("sim-")
 
     # 1. API Abuse (abnormal request frequency) - only applies to untrusted or simulated attacker sessions
     if not is_trusted_user:
@@ -235,7 +235,7 @@ def evaluate_request(
     final_score = min(int(score + ai_predictions.get("attack_probability", 0) * 0.2), 100)
 
     # Safe default: legitimate hospital roles always get real patient data unless an explicit injection attack occurred
-    is_legitimate_role = role in {"administrator", "doctor", "receptionist"} and not session_id.startswith("sim-")
+    is_legitimate_role = role in {"administrator", "doctor", "receptionist", "patient"} and not session_id.startswith("sim-")
     has_explicit_attack = bool(detected_attack_type in {"SQL_INJECTION", "DIRECTORY_TRAVERSAL"})
     route = "synthetic" if (not is_legitimate_role or has_explicit_attack) else "real"
 

@@ -20,6 +20,7 @@ class User:
     role: str
     full_name: str
     email: str | None = None
+    patient_record_id: str | None = None
 
 
 # NOTE: User persistence is now handled via `user_repository` backed by the security database.

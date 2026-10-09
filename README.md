@@ -20,6 +20,12 @@ This workspace currently contains the first implementation scaffold. The next st
 
 See [backend/DB_RUNBOOK.md](backend/DB_RUNBOOK.md) for local database initialization and Alembic upgrade steps.
 
+## Google Patient Sign-In
+
+Enable the Google provider in Firebase Authentication and add the local and production frontend domains to Firebase's authorized domains. Set `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, and `VITE_FIREBASE_APP_ID` for the frontend build (Vercel environment variables for Vercel, or build arguments for Docker Compose). The frontend prompts Google to select an account and sends its Firebase ID token to the backend; the backend accepts any Google-verified address only when it matches exactly one existing patient email.
+
+The backend verifies Firebase ID token signatures, project audience, issuer, and expiry against `FIREBASE_PROJECT_ID` using Google's public signing certificates; Admin credentials are not required. For Docker Compose, put frontend build variables and backend settings in an untracked root `.env` file; local backend settings also read the root `.env.local`. Sign-in fails closed if Firebase configuration is missing or the verified email has no unique patient match.
+
 ## Local Cyber-Range Simulator
 
 The terminal simulator is development-only. For another laptop on the same private development LAN, start the backend bound to the LAN interface and use the host laptop's private IP. The seeded simulator account is `hacker` / `hacker123`; all other credentials used by the simulator are dummy values.
