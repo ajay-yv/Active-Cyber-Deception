@@ -19,17 +19,13 @@ export interface RealGoogleUser {
 }
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyA27G3pbkjiYXHNxnP0lMrteYXTQ9Q6fAY',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'patient-1d860.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'patient-1d860',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:381526778497:web:fa4028bd4ffd843a3ea380',
 }
 
 function getFirebaseAuth(): Auth {
-  if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId || !firebaseConfig.appId) {
-    throw new Error('Google sign-in is not configured for this deployment.')
-  }
-
   const app = getApps()[0] ?? initializeApp(firebaseConfig)
   return getAuth(app)
 }
