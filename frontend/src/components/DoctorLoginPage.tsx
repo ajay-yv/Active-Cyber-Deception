@@ -330,39 +330,6 @@ export const DoctorLoginPage: React.FC<DoctorLoginPageProps> = ({ onLogin, onCan
                 transition: 'border-color 0.2s',
               }}
             />
-            {activeDoc.defaultPassword && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  fontSize: '0.78rem',
-                  color: '#94a3b8',
-                  marginTop: 6,
-                  padding: '4px 2px',
-                }}
-              >
-                <span>
-                  Doctor Key: <code style={{ color: activeDoc.accent, background: `${activeDoc.accent}20`, padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>{activeDoc.defaultPassword}</code>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setPassword(activeDoc.defaultPassword || '')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#38bdf8',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    fontSize: '0.78rem',
-                    fontWeight: 600,
-                    padding: 0,
-                  }}
-                >
-                  ⚡ Auto-fill Password
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Error Message */}

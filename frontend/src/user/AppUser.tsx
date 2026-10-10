@@ -387,6 +387,7 @@ export default function AppUser() {
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<LoginResponse['user'] | null>(null)
   const [isDoctorVerified, setIsDoctorVerified] = useState(false)
+  const [showDoctorPortal, setShowDoctorPortal] = useState(false)
 
   // Patient Registration State
   const [isPatientRegisterModalOpen, setIsPatientRegisterModalOpen] = useState(false)
@@ -691,6 +692,10 @@ export default function AppUser() {
   function handleUsernameChange(selectedUser: string) {
     setUsername(selectedUser)
     setPassword('')
+    if (selectedUser === 'doctor') {
+      setIsAdminLoginModalOpen(false)
+      setShowDoctorPortal(true)
+    }
   }
 
   const [sentLogs, setSentLogs] = useState<string[]>([])
@@ -1439,6 +1444,7 @@ export default function AppUser() {
     setToken(null)
     setUser(null)
     setIsDoctorVerified(false)
+    setShowDoctorPortal(false)
     setDashboard(null)
     setPatients([])
     setNotifications([])
@@ -1453,10 +1459,36 @@ export default function AppUser() {
     setActiveTab('overview')
   }
 
+  function handleDoctorLogout() {
+    void signOutFromGoogle().catch(() => {})
+    setToken(null)
+    setUser(null)
+    setIsDoctorVerified(false)
+    setShowDoctorPortal(true)
+    setDashboard(null)
+    setPatients([])
+    setPassword('')
+    setError('')
+    setMessage('')
+  }
+
   return (
     <div style={{ fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100vh', background: '#020617', color: '#f1f5f9' }}>
 
-      {!token ? (
+      {showDoctorPortal || (user?.role === 'doctor' && !isDoctorVerified) ? (
+        <DoctorLoginPage
+          onLogin={(doctorSession) => {
+            setToken(doctorSession.access_token)
+            setUser(doctorSession.user)
+            setIsDoctorVerified(true)
+            setShowDoctorPortal(false)
+          }}
+          onCancel={() => {
+            setShowDoctorPortal(false)
+            handleLogout()
+          }}
+        />
+      ) : !token ? (
         /* CLEAN FRONT PAGE */
         <div style={{ minHeight: '100vh', background: 'radial-gradient(circle at 50% 0%, #0f172a 0%, #020617 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', position: 'relative', overflow: 'hidden' }}>
           
@@ -1484,6 +1516,34 @@ export default function AppUser() {
               style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4)' }}
             >
               🔐 Login
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setPassword('')
+                setError('')
+                setShowDoctorPortal(true)
+              }}
+              style={{
+                width: '100%',
+                marginTop: 12,
+                padding: '13px',
+                borderRadius: 12,
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                background: 'rgba(30, 41, 59, 0.7)',
+                color: '#38bdf8',
+                fontSize: '0.95rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              <span>🩺</span>
+              <span>Doctor Clinical Portal →</span>
             </button>
           </div>
 
@@ -1806,15 +1866,22 @@ export default function AppUser() {
               setToken(doctorSession.access_token)
               setUser(doctorSession.user)
               setIsDoctorVerified(true)
+              setShowDoctorPortal(false)
             }}
-            onCancel={handleLogout}
+            onCancel={() => {
+              setShowDoctorPortal(false)
+              handleLogout()
+            }}
           />
         ) : (
           <DoctorDashboardComponent
             token={token}
             user={user}
-            onLogout={handleLogout}
-            onSwitchDoctor={() => setIsDoctorVerified(false)}
+            onLogout={handleDoctorLogout}
+            onSwitchDoctor={() => {
+              setIsDoctorVerified(false)
+              setShowDoctorPortal(true)
+            }}
           />
         )
       ) : user?.role === 'patient' ? (
