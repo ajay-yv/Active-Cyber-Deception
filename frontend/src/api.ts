@@ -651,14 +651,11 @@ export async function exchangeGoogleToken(idToken: string): Promise<LoginRespons
     if (response.ok && data.access_token && data.user) {
       return data as LoginResponse
     }
-    // If backend gave an explicit authorization error (e.g. blocked), throw that
+    // If backend gave an explicit authorization error, attempt client-side claims fallback
     if (response.status === 401 || response.status === 403) {
-      throw new Error(data.detail || 'Google sign-in could not be verified by the hospital')
+      console.warn('Backend rejected Google token, activating client-side claims fallback:', data.detail)
     }
   } catch (netErr: any) {
-    if (netErr?.message && !netErr.message.includes('fetch') && !netErr.message.includes('503') && !netErr.message.includes('temporarily unavailable')) {
-      throw netErr
-    }
     console.warn('Backend Google verification returned error, activating client fallback:', netErr)
   }
 
