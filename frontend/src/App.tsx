@@ -126,6 +126,15 @@ function Layout({ accent, children }: { accent: string; children: React.ReactNod
   )
 }
 
+const DOCTOR_PASSWORDS: Record<string, string> = {
+  doctor_priya: 'Priya@10',
+  doctor_ramesh: 'Ramesh@29',
+  doctor_sarah: 'Sarah@38',
+  doctor_rajesh: 'Rajesh@47',
+  doctor_anita: 'Anita@56',
+  doctor: 'Priya@10',
+}
+
 function LoginPage({ onLogin }: { onLogin: (response: LoginResponse) => void }) {
   const navigate = useNavigate()
   const [roleSelect, setRoleSelect] = useState<'admin' | 'doctor' | 'patient'>('admin')
@@ -224,6 +233,18 @@ function LoginPage({ onLogin }: { onLogin: (response: LoginResponse) => void }) 
             Password
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
           </label>
+          {roleSelect === 'doctor' ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#94a3b8', marginTop: '-0.25rem', marginBottom: '0.75rem' }}>
+              <span>Doctor Key: <code style={{ color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 6px', borderRadius: 4 }}>{DOCTOR_PASSWORDS[selectedDoctor] || 'Priya@10'}</code></span>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', textDecoration: 'underline', fontSize: '0.8rem', padding: 0 }}
+                onClick={() => setPassword(DOCTOR_PASSWORDS[selectedDoctor] || 'Priya@10')}
+              >
+                ⚡ Auto-fill
+              </button>
+            </div>
+          ) : null}
           {error ? <p className="error-text">{error}</p> : null}
           <button type="submit" disabled={loading}>
             {loading ? 'Logging in…' : 'Login'}

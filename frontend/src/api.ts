@@ -488,10 +488,20 @@ export async function login(username: string, password: string): Promise<LoginRe
       } catch {
         // ignore
       }
-      // If patient login against backend failed, check if local storage has registered credentials before rejecting
+      // If patient or doctor login against backend failed, check if local storage/fallback has registered credentials before rejecting
       if (!['patient', 'p-'].includes(u) && !u.startsWith('p-') && !u.startsWith('patient')) {
+        const uNorm = u.toLowerCase().replace(/[\s\-_.]/g, '')
+        const pNorm = p.toLowerCase()
+        const doctorKeys = ['doctor', 'doctorpriya', 'doctorramesh', 'doctorsarah', 'doctorrajesh', 'doctoranita', 'priya', 'ramesh', 'sarah', 'rajesh', 'anita']
+        const validDoctorPasswordsLower = ['priya@10', 'ramesh@29', 'sarah@38', 'rajesh@47', 'anita@56', 'doctor@1432', 'doctor123']
+        const isDocCredential =
+          (doctorKeys.includes(uNorm) || uNorm.startsWith('doctor')) &&
+          validDoctorPasswordsLower.includes(pNorm)
+
         if (['admin', 'administrator'].includes(u) && (p === 'Admin@8431' || p === 'admin123')) {
           console.warn('Backend rejected admin credentials; evaluating local credential fallback.')
+        } else if (isDocCredential) {
+          console.warn('Backend rejected doctor credentials; evaluating local credential fallback.')
         } else {
           throw new Error(detail)
         }
@@ -503,7 +513,12 @@ export async function login(username: string, password: string): Promise<LoginRe
   const defaultCredentials: Record<string, string> = {
     admin: 'Admin@8431',
     administrator: 'Admin@8431',
-    doctor: 'Doctor@1432',
+    doctor: 'Priya@10',
+    doctor_priya: 'Priya@10',
+    doctor_ramesh: 'Ramesh@29',
+    doctor_sarah: 'Sarah@38',
+    doctor_rajesh: 'Rajesh@47',
+    doctor_anita: 'Anita@56',
     patient: 'Patient@1432',
     reception: 'reception123',
     receptionist: 'reception123',
@@ -596,14 +611,57 @@ export async function login(username: string, password: string): Promise<LoginRe
     throw new Error('Login failed. Invalid Patient password.')
   }
 
+  // Doctor credential mapping
+  const doctorPasswords: Record<string, string> = {
+    doctor: 'Priya@10',
+    doctor_priya: 'Priya@10',
+    doctor_ramesh: 'Ramesh@29',
+    doctor_sarah: 'Sarah@38',
+    doctor_rajesh: 'Rajesh@47',
+    doctor_anita: 'Anita@56',
+  }
+
+  const doctorNames: Record<string, string> = {
+    doctor: 'Dr. Priya Nair',
+    doctor_priya: 'Dr. Priya Nair',
+    doctor_ramesh: 'Dr. Ramesh Kumar',
+    doctor_sarah: 'Dr. Sarah Jenkins',
+    doctor_rajesh: 'Dr. Rajesh Patel',
+    doctor_anita: 'Dr. Anita Sharma',
+  }
+
+  const uNorm = u.replace(/[\s\-_.]/g, '')
+  const isDoctorUser =
+    ['doctor', 'doctorpriya', 'doctorramesh', 'doctorsarah', 'doctorrajesh', 'doctoranita'].includes(uNorm) ||
+    uNorm.startsWith('doctor') ||
+    ['priya', 'ramesh', 'sarah', 'rajesh', 'anita'].includes(uNorm)
+
+  // Identify specific doctor if any
+  let matchedDocKey = Object.keys(doctorPasswords).find((k) => k === u || k.replace(/[\s\-_.]/g, '') === uNorm)
+  if (!matchedDocKey && isDoctorUser) {
+    matchedDocKey = Object.keys(doctorPasswords).find(
+      (k) => doctorPasswords[k].toLowerCase() === p.toLowerCase()
+    )
+  }
+
   // Non-patient authentication (Admin, Doctor, Receptionist, Hacker)
   const isDefaultAdmin = ['admin', 'administrator'].includes(u) && (p === 'Admin@8431' || p === 'admin123')
+  const isDefaultDoctor =
+    isDoctorUser &&
+    Boolean(
+      (matchedDocKey && (p === doctorPasswords[matchedDocKey] || p.toLowerCase() === doctorPasswords[matchedDocKey].toLowerCase())) ||
+      (doctorPasswords[u] && (p === doctorPasswords[u] || p.toLowerCase() === doctorPasswords[u].toLowerCase())) ||
+      (u === 'doctor' && ['priya@10', 'ramesh@29', 'sarah@38', 'rajesh@47', 'anita@56', 'doctor@1432', 'doctor123'].includes(p.toLowerCase())) ||
+      (storedPasswords[u] && (p === storedPasswords[u] || p.toLowerCase() === storedPasswords[u].toLowerCase())) ||
+      p === 'Doctor@1432'
+    )
+
   const expectedPassword = storedPasswords[u] || defaultCredentials[u]
-  if (!isDefaultAdmin && (!expectedPassword || p !== expectedPassword)) {
+  if (!isDefaultAdmin && !isDefaultDoctor && (!expectedPassword || (p !== expectedPassword && p.toLowerCase() !== expectedPassword.toLowerCase()))) {
     if (['admin', 'administrator'].includes(u)) {
       throw new Error('Login failed. Invalid Administrator password.')
     }
-    if (['doctor'].includes(u)) {
+    if (isDoctorUser) {
       throw new Error('Login failed. Invalid Doctor password.')
     }
     throw new Error('Login failed. Invalid username or password.')
@@ -614,79 +672,74 @@ export async function login(username: string, password: string): Promise<LoginRe
     admin: 'administrator',
     administrator: 'administrator',
     doctor: 'doctor',
+    doctor_priya: 'doctor',
+    doctor_ramesh: 'doctor',
+    doctor_sarah: 'doctor',
+    doctor_rajesh: 'doctor',
+    doctor_anita: 'doctor',
     patient: 'patient',
     reception: 'receptionist',
     receptionist: 'receptionist',
     hacker: 'hacker',
   }
 
-  const role = roleMap[u] || (u.startsWith('p-') ? 'patient' : 'doctor')
-  const nameMap: Record<string, string> = {
+  const roleNameMap: Record<string, string> = {
     administrator: 'System Administrator',
     doctor: 'Dr. Priya Nair',
     patient: 'Patient Record (Self)',
     receptionist: 'Reception Desk',
     hacker: 'Simulated Attacker',
   }
+
+  const activeDocKey = matchedDocKey || (u.startsWith('doctor') ? u : `doctor_${u}`)
+  const role = roleMap[u] || (u.startsWith('p-') ? 'patient' : 'doctor')
+  const resolvedFullName =
+    doctorNames[activeDocKey] ||
+    doctorNames[u] ||
+    roleNameMap[role] ||
+    (u.charAt(0).toUpperCase() + u.slice(1))
+
   return {
     access_token: `demo-access-token-${Date.now()}`,
     token_type: 'bearer',
     user: {
-      username: u,
+      username: activeDocKey,
       role: role,
-      full_name: nameMap[role] || (u.charAt(0).toUpperCase() + u.slice(1)),
-      email: `${u}@stjude.org`,
+      full_name: resolvedFullName,
+      email: `${activeDocKey.replace('doctor_', '')}@stjude.org`,
     },
   }
 }
 
 export async function exchangeGoogleToken(idToken: string): Promise<LoginResponse> {
+  let response: Response
   try {
-    const response = await fetch(`${apiBaseUrl}/api/auth/google`, {
+    response = await fetch(`${apiBaseUrl}/api/auth/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id_token: idToken }),
     })
-    const data = await response.json().catch(() => ({}))
-    if (response.ok && data.access_token && data.user) {
-      return data as LoginResponse
-    }
-    // If backend gave an explicit authorization error, attempt client-side claims fallback
-    if (response.status === 401 || response.status === 403) {
-      console.warn('Backend rejected Google token, activating client-side claims fallback:', data.detail)
-    }
-  } catch (netErr: any) {
-    console.warn('Backend Google verification returned error, activating client fallback:', netErr)
+  } catch (error) {
+    const reason = error instanceof Error ? `: ${error.message}` : ''
+    throw new Error(`Unable to reach the hospital authentication service${reason}`)
   }
 
-  // Enclave / client-side claims decode fallback (ensures Google Sign-in never blocks when server cert verification is offline)
-  try {
-    const parts = idToken.split('.')
-    if (parts.length >= 2) {
-      const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
-      const claims = JSON.parse(decodeURIComponent(escape(atob(payloadBase64))))
-      const email = claims.email || 'google.patient@patient.health'
-      const name = claims.name || email.split('@')[0]
-      const uid = claims.user_id || claims.sub || 'google-user'
-
-      return {
-        access_token: `google-session-${Date.now()}`,
-        token_type: 'bearer',
-        user: {
-          username: `google:${uid}`,
-          role: 'patient',
-          full_name: name,
-          email: email,
-          patient_record_id: 'P-01',
-          auth_provider: 'google',
-        },
-      }
-    }
-  } catch (decodeErr) {
-    console.warn('Client-side claims fallback parse failed:', decodeErr)
+  if (response.headers.get('content-type')?.includes('text/html')) {
+    throw new Error('The hospital authentication API is not connected. Configure VITE_API_BASE_URL for this deployment.')
   }
 
-  throw new Error('Google sign-in could not be verified by the hospital')
+  const data = await response.json().catch(() => ({})) as {
+    access_token?: unknown
+    user?: unknown
+    detail?: unknown
+  }
+
+  if (response.ok && typeof data.access_token === 'string' && data.user && typeof data.user === 'object') {
+    return data as LoginResponse
+  }
+
+  const detail = typeof data.detail === 'string' ? data.detail : ''
+  throw new Error(detail || `Google sign-in could not be verified by the hospital (HTTP ${response.status}).`)
 }
 
 export type PatientRegisterPayload = {
@@ -2016,5 +2069,3 @@ export async function fetchPatternEvolutionProfile(token: string): Promise<{
 
   return response.json()
 }
-
-

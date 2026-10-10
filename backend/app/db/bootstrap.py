@@ -391,12 +391,12 @@ def _ensure_default_users() -> None:
 
     defaults = [
         ("admin", "Admin@8431", "administrator", "System Administrator", "admin@stjude.org"),
-        ("doctor", "Doctor@1432", "doctor", "Dr. Priya Nair (Cardiology)", "doctor@stjude.org"),
-        ("doctor_priya", "Priya@1432", "doctor", "Dr. Priya Nair (Cardiology)", "priya@stjude.org"),
-        ("doctor_ramesh", "Ramesh@1432", "doctor", "Dr. Ramesh Kumar (Neurology)", "ramesh@stjude.org"),
-        ("doctor_sarah", "Sarah@1432", "doctor", "Dr. Sarah Jenkins (Pediatrics)", "sarah@stjude.org"),
-        ("doctor_rajesh", "Rajesh@1432", "doctor", "Dr. Rajesh Patel (Orthopedics)", "rajesh@stjude.org"),
-        ("doctor_anita", "Anita@1432", "doctor", "Dr. Anita Sharma (General Medicine)", "anita@stjude.org"),
+        ("doctor", "Priya@10", "doctor", "Dr. Priya Nair (Cardiology)", "doctor@stjude.org"),
+        ("doctor_priya", "Priya@10", "doctor", "Dr. Priya Nair (Cardiology)", "priya@stjude.org"),
+        ("doctor_ramesh", "Ramesh@29", "doctor", "Dr. Ramesh Kumar (Neurology)", "ramesh@stjude.org"),
+        ("doctor_sarah", "Sarah@38", "doctor", "Dr. Sarah Jenkins (Pediatrics)", "sarah@stjude.org"),
+        ("doctor_rajesh", "Rajesh@47", "doctor", "Dr. Rajesh Patel (Orthopedics)", "rajesh@stjude.org"),
+        ("doctor_anita", "Anita@56", "doctor", "Dr. Anita Sharma (General Medicine)", "anita@stjude.org"),
         ("patient", "Patient@1432", "patient", "Patient User", "patient@stjude.org"),
         ("reception", "reception123", "receptionist", "Reception Desk", "reception@stjude.org"),
         ("hacker", "hacker123", "hacker", "Simulated Attacker", "hacker@stjude.org"),
@@ -411,7 +411,7 @@ def _ensure_default_users() -> None:
                 if not existing.password_hash or not verify_password(pwd, existing.password_hash):
                     if username == "admin":
                         existing.password_hash = hash_password(pwd)
-                    elif username == "doctor" and not verify_password("doctor123", existing.password_hash):
+                    elif username in ("doctor", "doctor_priya", "doctor_ramesh", "doctor_sarah", "doctor_rajesh", "doctor_anita"):
                         existing.password_hash = hash_password(pwd)
                 existing.email = existing.email or email
                 existing.is_blocked = False

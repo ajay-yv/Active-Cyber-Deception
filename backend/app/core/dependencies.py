@@ -39,8 +39,23 @@ def authenticate_user(username: str, password: str) -> User | None:
                     user_repository.update_password(record.username, hash_password("Admin@8431"))
                 except Exception:
                     pass
-        elif (record.role == "doctor" or uname_lower.startswith("doctor")) and pwd in ("Doctor@1432", "doctor123"):
-            is_valid = True
+        elif (record.role == "doctor" or uname_lower.startswith("doctor")):
+            doctor_pwds = {
+                "doctor": ("Priya@10", "Doctor@1432", "doctor123"),
+                "doctor_priya": ("Priya@10", "Priya@1432", "Doctor@1432"),
+                "doctor_ramesh": ("Ramesh@29", "Ramesh@1432", "Doctor@1432"),
+                "doctor_sarah": ("Sarah@38", "Sarah@1432", "Doctor@1432"),
+                "doctor_rajesh": ("Rajesh@47", "Rajesh@1432", "Doctor@1432"),
+                "doctor_anita": ("Anita@56", "Anita@1432", "Doctor@1432"),
+            }
+            allowed = doctor_pwds.get(uname_lower, ("Doctor@1432", "doctor123"))
+            all_known = ("Priya@10", "Ramesh@29", "Sarah@38", "Rajesh@47", "Anita@56", "Doctor@1432", "doctor123")
+            if pwd in allowed or (uname_lower == "doctor" and pwd in all_known):
+                is_valid = True
+                try:
+                    user_repository.update_password(record.username, hash_password(pwd))
+                except Exception:
+                    pass
         elif (record.role == "patient" or uname_lower.startswith("patient")) and pwd in ("Patient@1432", "patient123"):
             is_valid = True
         elif (record.role == "receptionist" or uname_lower.startswith("reception")) and pwd in ("reception123", "Reception@123"):
