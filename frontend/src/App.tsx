@@ -126,15 +126,6 @@ function Layout({ accent, children }: { accent: string; children: React.ReactNod
   )
 }
 
-const DOCTOR_PASSWORDS: Record<string, string> = {
-  doctor_priya: 'Priya@10',
-  doctor_ramesh: 'Ramesh@29',
-  doctor_sarah: 'Sarah@38',
-  doctor_rajesh: 'Rajesh@47',
-  doctor_anita: 'Anita@56',
-  doctor: 'Priya@10',
-}
-
 function LoginPage({ onLogin }: { onLogin: (response: LoginResponse) => void }) {
   const navigate = useNavigate()
   const [roleSelect, setRoleSelect] = useState<'admin' | 'doctor' | 'patient'>('admin')
