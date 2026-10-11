@@ -250,8 +250,16 @@ def register_patient(payload: PatientRegisterRequest, context: dict[str, str] = 
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 4 characters")
 
     clean_digits = "".join(ch for ch in mobile if ch.isdigit())
-    username = clean_digits if clean_digits else mobile
-    full_name = payload.full_name.strip() if payload.full_name else f"Patient ({mobile})"
+    if len(clean_digits) == 12 and clean_digits.startswith("91"):
+        clean_digits = clean_digits[2:]
+    elif len(clean_digits) == 11 and clean_digits.startswith("0"):
+        clean_digits = clean_digits[1:]
+
+    if len(clean_digits) != 10:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mobile number must be exactly 10 digits")
+
+    username = clean_digits
+    full_name = payload.full_name.strip() if payload.full_name else f"Patient ({clean_digits})"
     email = payload.email.strip() if payload.email else f"{username}@patient.health"
 
     hashed = hash_password(pwd)

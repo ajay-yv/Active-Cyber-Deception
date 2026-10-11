@@ -752,8 +752,14 @@ export type PatientRegisterPayload = {
 export async function registerPatient(payload: PatientRegisterPayload): Promise<LoginResponse> {
   const mobile = payload.mobile_number.trim()
   const password = payload.password.trim()
-  const cleanDigits = mobile.replace(/\D/g, '') || mobile
-  const fullName = payload.full_name?.trim() || `Patient (${mobile})`
+  let cleanDigits = mobile.replace(/\D/g, '')
+  if (cleanDigits.length === 12 && cleanDigits.startsWith('91')) {
+    cleanDigits = cleanDigits.slice(2)
+  } else if (cleanDigits.length === 11 && cleanDigits.startsWith('0')) {
+    cleanDigits = cleanDigits.slice(1)
+  }
+  cleanDigits = cleanDigits.slice(0, 10) || mobile
+  const fullName = payload.full_name?.trim() || `Patient (${cleanDigits})`
   const email = payload.email?.trim() || `${cleanDigits}@patient.health`
 
   // Store password locally in fallback storage so offline login works seamlessly

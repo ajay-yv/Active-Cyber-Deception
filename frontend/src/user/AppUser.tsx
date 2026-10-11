@@ -1069,18 +1069,17 @@ export default function AppUser() {
     event.preventDefault()
     setPatientRegError('')
 
-    const cleanMobile = patientRegMobile.trim()
+    const cleanMobile = patientRegMobile.replace(/\D/g, '').trim()
     const cleanPwd = patientRegPassword.trim()
     const cleanConfirm = patientRegConfirmPassword.trim()
 
     if (!cleanMobile) {
-      setPatientRegError('Please enter your mobile number.')
+      setPatientRegError('Please enter your 10-digit mobile number.')
       return
     }
 
-    const digitsOnly = cleanMobile.replace(/\D/g, '')
-    if (digitsOnly.length < 4 && cleanMobile.length < 4) {
-      setPatientRegError('Please enter a valid mobile number (at least 4-10 digits).')
+    if (cleanMobile.length !== 10) {
+      setPatientRegError('Mobile number must be exactly 10 digits.')
       return
     }
 
@@ -1758,13 +1757,41 @@ export default function AppUser() {
                   </label>
 
                   <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
-                    Mobile Number *
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Mobile Number *</span>
+                      <span style={{ fontSize: '0.74rem', color: patientRegMobile.length === 10 ? '#34d399' : '#94a3b8', fontWeight: 600 }}>
+                        {patientRegMobile.length}/10 digits
+                      </span>
+                    </div>
                     <input
                       required
                       type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      pattern="[0-9]{10}"
                       value={patientRegMobile}
-                      onChange={(e) => setPatientRegMobile(e.target.value)}
+                      onChange={(e) => {
+                        let val = e.target.value.replace(/\D/g, '')
+                        if (val.length === 12 && val.startsWith('91')) {
+                          val = val.slice(2)
+                        } else if (val.length === 11 && val.startsWith('0')) {
+                          val = val.slice(1)
+                        }
+                        setPatientRegMobile(val.slice(0, 10))
+                      }}
+                      onKeyDown={(e) => {
+                        if (
+                          ['Backspace', 'Tab', 'Enter', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key) ||
+                          e.ctrlKey || e.metaKey
+                        ) {
+                          return
+                        }
+                        if (!/^[0-9]$/.test(e.key)) {
+                          e.preventDefault()
+                        }
+                      }}
                       placeholder="e.g. 9876543210"
+                      title="Mobile number must be exactly 10 digits"
                       style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.9rem' }}
                     />
                   </label>
