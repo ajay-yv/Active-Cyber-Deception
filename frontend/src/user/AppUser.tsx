@@ -1517,34 +1517,6 @@ export default function AppUser() {
             >
               🔐 Login
             </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setPassword('')
-                setError('')
-                setShowDoctorPortal(true)
-              }}
-              style={{
-                width: '100%',
-                marginTop: 12,
-                padding: '13px',
-                borderRadius: 12,
-                border: '1px solid rgba(56, 189, 248, 0.35)',
-                background: 'rgba(30, 41, 59, 0.7)',
-                color: '#38bdf8',
-                fontSize: '0.95rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              <span>🩺</span>
-              <span>Doctor Clinical Portal →</span>
-            </button>
           </div>
 
           {/* ADMIN & ROLE AUTHENTICATION MODAL */}
