@@ -259,7 +259,7 @@ def register_patient(payload: PatientRegisterRequest, context: dict[str, str] = 
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mobile number must be exactly 10 digits")
 
     username = clean_digits
-    full_name = payload.full_name.strip() if payload.full_name else f"Patient ({clean_digits})"
+    full_name = payload.full_name.strip() if payload.full_name else "Patient"
     email = payload.email.strip() if payload.email else f"{username}@patient.health"
 
     hashed = hash_password(pwd)

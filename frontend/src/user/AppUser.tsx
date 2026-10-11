@@ -1106,13 +1106,12 @@ export default function AppUser() {
         full_name: patientRegFullName.trim() || undefined,
       })
 
-      setToken(res.access_token)
-      setUser(res.user)
       setIsPatientRegisterModalOpen(false)
-      setIsAdminLoginModalOpen(false)
-      setPassword('')
+      setIsAdminLoginModalOpen(true)
       setUsername('patient')
-      setMessage(`Patient registered & authenticated! Welcome, ${res.user.full_name}.`)
+      setPassword('')
+      setError('')
+      setMessage(`✓ Registration completed successfully for ${res.user.full_name || patientRegFullName.trim() || cleanMobile}! Please enter your password to login.`)
       window.dispatchEvent(new Event('patient_data_changed'))
     } catch (err) {
       setPatientRegError(err instanceof Error ? err.message : 'Registration failed. Please try again.')
@@ -1124,11 +1123,16 @@ export default function AppUser() {
   async function completeGoogleSignIn(googleUser: RealGoogleUser) {
     const session = await exchangeGoogleToken(googleUser.idToken)
     setToken(session.access_token)
-    setUser(session.user)
+    setUser({
+      ...session.user,
+      auth_provider: 'google',
+      email: session.user?.email || googleUser.email,
+      full_name: session.user?.full_name || googleUser.displayName || 'Google Patient',
+    })
     setIsAdminLoginModalOpen(false)
     setIsPatientRegisterModalOpen(false)
     setShowGoogleRedirectFallback(false)
-    setMessage(`Signed in with Google successfully as ${session.user.email}.`)
+    setMessage(`Signed in with Google successfully as ${session.user.email || googleUser.email}.`)
     window.dispatchEvent(new Event('patient_data_changed'))
   }
 
@@ -1838,7 +1842,7 @@ export default function AppUser() {
                       boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)',
                     }}
                   >
-                    {patientRegLoading ? 'Registering Account...' : 'Register & Access Patient Dashboard →'}
+                    {patientRegLoading ? 'Registering Account...' : 'Complete Registration & Proceed to Login →'}
                   </button>
 
                   <button

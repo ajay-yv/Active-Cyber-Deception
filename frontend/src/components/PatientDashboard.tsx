@@ -132,6 +132,36 @@ export const PatientDashboardComponent: React.FC<PatientDashboardProps> = ({ tok
     return patients[0] || null
   })()
 
+  // Determine if the current session was authenticated via Google
+  const isGoogleAuth = Boolean(
+    user?.auth_provider === 'google' ||
+    (user?.email &&
+      (user.email.endsWith('@gmail.com') || user.email.includes('@')) &&
+      !user.email.endsWith('@patient.health') &&
+      !user.email.includes('+') &&
+      !user.email.includes('mobile') &&
+      !/^\d+@/.test(user.email))
+  )
+
+  // Compute patient display name: strictly show patient name, never email or mobile phone
+  const patientDisplayName = (() => {
+    const recName = activeRecord?.name?.trim()
+    if (recName && !recName.includes('@') && !/^\+?\d+$/.test(recName.replace(/\s+/g, '')) && !recName.toLowerCase().startsWith('patient (')) {
+      return recName
+    }
+    const uName = user?.full_name?.trim()
+    if (uName && !uName.includes('@') && !/^\+?\d+$/.test(uName.replace(/\s+/g, '')) && !uName.toLowerCase().startsWith('patient (')) {
+      return uName
+    }
+    if (recName && !recName.includes('@') && !/^\+?\d+$/.test(recName.replace(/\s+/g, ''))) {
+      return recName
+    }
+    if (uName && !uName.includes('@') && !/^\+?\d+$/.test(uName.replace(/\s+/g, ''))) {
+      return uName
+    }
+    return 'Patient Account'
+  })()
+
   // Update default lab lookup ID when active record changes
   useEffect(() => {
     if (activeRecord && activeRecord.id) {
@@ -206,34 +236,36 @@ export const PatientDashboardComponent: React.FC<PatientDashboardProps> = ({ tok
 
           <div style={{ textAlign: 'right' }}>
             <strong style={{ display: 'block', fontSize: '0.86rem', color: '#f8fafc' }}>
-              {activeRecord?.name || user?.full_name || user?.username || 'Patient Account'}
+              {patientDisplayName}
             </strong>
             <span style={{ fontSize: '0.7rem', color: '#34d399', fontWeight: 700 }}>
               PATIENT ACCOUNT
             </span>
           </div>
 
-          {/* Email ID Display Badge beside Logout Button */}
-          <div
-            style={{
-              padding: '6px 14px',
-              borderRadius: 20,
-              background: 'rgba(56, 189, 248, 0.15)',
-              border: '1px solid rgba(56, 189, 248, 0.4)',
-              color: '#38bdf8',
-              fontSize: '0.82rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              boxShadow: '0 2px 10px rgba(56, 189, 248, 0.2)',
-            }}
-          >
-            <span>📧</span>
-            <span>
-              {user?.email || 'No email on file'}
-            </span>
-          </div>
+          {/* Email ID Display Badge: ONLY shown when signed in with Google */}
+          {isGoogleAuth && user?.email ? (
+            <div
+              style={{
+                padding: '6px 14px',
+                borderRadius: 20,
+                background: 'rgba(56, 189, 248, 0.15)',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                color: '#38bdf8',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                boxShadow: '0 2px 10px rgba(56, 189, 248, 0.2)',
+              }}
+            >
+              <span>📧</span>
+              <span>
+                {user.email}
+              </span>
+            </div>
+          ) : null}
 
           <button
             onClick={onLogout}
@@ -499,7 +531,17 @@ export const PatientDashboardComponent: React.FC<PatientDashboardProps> = ({ tok
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <span style={{ color: '#94a3b8' }}>Email Address:</span>
-                  <span style={{ color: '#f8fafc' }}>{activeRecord.email || 'patient@healthcare-deception.org'}</span>
+                  <span style={{ color: '#f8fafc' }}>
+                    {isGoogleAuth && user?.email
+                      ? user.email
+                      : activeRecord.email &&
+                        !activeRecord.email.endsWith('@patient.health') &&
+                        !activeRecord.email.includes('+') &&
+                        !activeRecord.email.includes('mobile') &&
+                        !/^\d+@/.test(activeRecord.email)
+                      ? activeRecord.email
+                      : 'Not provided'}
+                  </span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>

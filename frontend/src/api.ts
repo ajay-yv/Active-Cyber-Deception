@@ -759,7 +759,7 @@ export async function registerPatient(payload: PatientRegisterPayload): Promise<
     cleanDigits = cleanDigits.slice(1)
   }
   cleanDigits = cleanDigits.slice(0, 10) || mobile
-  const fullName = payload.full_name?.trim() || `Patient (${cleanDigits})`
+  const fullName = payload.full_name?.trim() || 'Patient'
   const email = payload.email?.trim() || `${cleanDigits}@patient.health`
 
   // Store password locally in fallback storage so offline login works seamlessly
@@ -787,6 +787,28 @@ export async function registerPatient(payload: PatientRegisterPayload): Promise<
     filtered.unshift(patientObj)
     localStorage.setItem('ehr_registered_patients', JSON.stringify(filtered))
     localStorage.setItem('ehr_last_registered_patient', JSON.stringify(patientObj))
+
+    // Also sync with enclave patients so patient profile displays this exact name
+    const enclave = getEnclavePatients()
+    const alreadyInEnclave = enclave.some((p) => (payload.full_name && p.name.toLowerCase() === fullName.toLowerCase()) || (p.phone && p.phone.includes(cleanDigits)))
+    if (!alreadyInEnclave && payload.full_name) {
+      const newRec: PatientRecord = {
+        id: `P-${enclave.length + 1001}`,
+        patient_id: enclave.length + 1001,
+        name: fullName,
+        age: 28,
+        disease: 'Clinical Evaluation',
+        diagnosis: 'General Health Checkup & Routine Clinical Observation',
+        medicines: ['Multivitamin Minerals 1 Tab OD', 'Hydration Regimen'],
+        gender: 'Not specified',
+        phone: `+91 ${cleanDigits}`,
+        email: payload.email?.trim() || undefined,
+        doctor_assigned: 'Dr. Priya Nair',
+        department: 'General Medicine',
+        admission_date: new Date().toISOString().split('T')[0],
+      }
+      saveEnclavePatients([newRec, ...enclave])
+    }
   } catch (err) {
     console.warn('Could not save to localStorage:', err)
   }
