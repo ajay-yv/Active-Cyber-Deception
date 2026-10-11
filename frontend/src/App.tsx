@@ -19,6 +19,7 @@ import type {
   SecurityOverviewResponse,
   AnalyticsSummaryResponse,
   AuditEvent,
+  AttackAlert,
   LabResultResponse,
 } from './api'
 import {
@@ -31,6 +32,7 @@ import {
   fetchDashboard,
   fetchDeceptionStatus,
   fetchForensicLeak,
+  fetchForensicRecords,
   fetchLabResults,
   fetchPatients,
   fetchSecurityEvents,
@@ -807,7 +809,10 @@ function AdminDashboard({ token }: { token: string }) {
   const [watermarkId, setWatermarkId] = useState('wm-trace-2')
   const [forensic, setForensic] = useState<ForensicLeakResponse | null>(null)
   const [forensicError, setForensicError] = useState('')
+  const [forensicRecords, setForensicRecords] = useState<AttackAlert[]>([])
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [alarmActive, setAlarmActive] = useState(false)
+  const [audioEnabled, setAudioEnabled] = useState(false)
   const alarmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const alarmOscillatorRef = useRef<OscillatorNode | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -818,7 +823,11 @@ function AdminDashboard({ token }: { token: string }) {
       if (!AudioContextClass) return
       const context = audioContextRef.current || new AudioContextClass()
       audioContextRef.current = context
-      if (context.state === 'suspended') void context.resume()
+      if (context.state === 'suspended') {
+        void context.resume().then(() => setAudioEnabled(context.state === 'running'))
+      } else {
+        setAudioEnabled(context.state === 'running')
+      }
     }
 
     window.addEventListener('click', unlockAudio)
@@ -843,6 +852,7 @@ function AdminDashboard({ token }: { token: string }) {
 
   function triggerAdminAlarm() {
     if (alarmIntervalRef.current) clearInterval(alarmIntervalRef.current)
+    setAlarmActive(true)
 
     const playCycle = async () => {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
@@ -879,6 +889,27 @@ function AdminDashboard({ token }: { token: string }) {
     alarmIntervalRef.current = setInterval(() => void playCycle(), 2400)
   }
 
+  async function enableAlarmAudio() {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioContextClass) return
+    const context = audioContextRef.current || new AudioContextClass()
+    audioContextRef.current = context
+    if (context.state === 'suspended') await context.resume()
+    setAudioEnabled(context.state === 'running')
+  }
+
+  function silenceAdminAlarm() {
+    if (alarmIntervalRef.current) clearInterval(alarmIntervalRef.current)
+    alarmIntervalRef.current = null
+    try {
+      alarmOscillatorRef.current?.stop()
+    } catch {
+      // already stopped
+    }
+    alarmOscillatorRef.current = null
+    setAlarmActive(false)
+  }
+
   async function refreshAdminData() {
     try {
       const overviewResponse = await fetchSecurityOverview(token)
@@ -910,6 +941,12 @@ function AdminDashboard({ token }: { token: string }) {
     } catch {
       setAuditEvents([])
     }
+    try {
+      const forensicResponse = await fetchForensicRecords(token, 50)
+      setForensicRecords(forensicResponse.records)
+    } catch {
+      setForensicRecords([])
+    }
   }
 
   useEffect(() => {
@@ -937,6 +974,8 @@ function AdminDashboard({ token }: { token: string }) {
       type === 'audit' ||
       type === 'session_block' ||
       type === 'ai_decision'
+      || type === 'hacker_attack_alert'
+      || type === 'ATTACK_DETECTED'
     ) {
       await refreshAdminData()
     }
@@ -952,14 +991,6 @@ function AdminDashboard({ token }: { token: string }) {
       setForensic(null)
     }
   }
-
-  useEffect(() => {
-    fetchSecurityOverview(token).then(setOverview)
-    fetchSecurityEvents(token).then(setEvents)
-    fetchDeceptionStatus(token).then(setDeception)
-    fetchAnalyticsSummary(token).then(setAnalytics).catch(() => setAnalytics(null))
-    fetchAuditEvents(token).then(setAuditEvents).catch(() => setAuditEvents([]))
-  }, [token])
 
   return (
     <Layout accent="#7c3aed">
@@ -977,6 +1008,41 @@ function AdminDashboard({ token }: { token: string }) {
           <DashboardCard label="Honeytokens" value={overview?.honeytokens ?? 0} accent="#7c3aed" />
           <DashboardCard label="Active Decoy Sessions" value={deception?.sessions.length ?? 0} accent="#7c3aed" />
         </div>
+        <div className="panel" style={{ marginTop: '1rem' }}>
+          <strong>{alarmActive ? '🚨 Security siren active' : 'Security siren ready'}</strong>
+          <p>Enable audio in this browser before running the hacker demo so the alert can sound.</p>
+          <button type="button" onClick={() => void enableAlarmAudio()}>
+            {audioEnabled ? 'Siren audio enabled' : 'Enable siren audio'}
+          </button>
+          {alarmActive ? (
+            <button type="button" onClick={silenceAdminAlarm} style={{ marginLeft: 8 }}>
+              Silence siren
+            </button>
+          ) : null}
+        </div>
+        <section className="panel">
+          <h3>Hacker Request Forensics</h3>
+          {forensicRecords.length === 0 ? (
+            <p>No hacker requests have been recorded yet.</p>
+          ) : (
+            <div className="table">
+              <div className="table-row table-head">
+                <span>Timestamp</span>
+                <span>Attacker IP</span>
+                <span>Request type / data</span>
+                <span>Threat / action</span>
+              </div>
+              {forensicRecords.map((record) => (
+                <div className="table-row" key={record.attack_id}>
+                  <span>{new Date(record.timestamp).toLocaleString()}</span>
+                  <span>{record.ip_address || 'Unknown'}</span>
+                  <span>{record.attack_type}: {record.requested_fields?.join(', ') || record.data_type || 'Not specified'}</span>
+                  <span>{record.risk_score}/100 · {record.gateway_decision}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       {analytics ? (
         <section className="panel">
           <h3>Analytics Summary</h3>

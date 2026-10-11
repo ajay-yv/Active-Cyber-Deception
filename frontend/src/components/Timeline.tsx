@@ -35,8 +35,8 @@ export function Timeline({ steps = defaultSteps }: TimelineProps) {
   }
 
   return (
-    <div style={{ background: 'rgba(15, 23, 42, 0.85)', borderRadius: '20px', padding: '24px', border: '1px solid rgba(255,255,255,0.08)' }}>
-      <h4 style={{ margin: '0 0 20px', color: '#f8fafc', fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 14px -2px rgba(15, 23, 42, 0.05)' }}>
+      <h4 style={{ margin: '0 0 20px', color: '#0f172a', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
         ⚡ Visual Deception Pipeline & Attack Timeline
       </h4>
 
@@ -47,9 +47,10 @@ export function Timeline({ steps = defaultSteps }: TimelineProps) {
             <div
               key={idx}
               style={{
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: `1px solid ${color}40`,
-                borderRadius: '14px',
+                background: '#f8fafc',
+                border: `1px solid ${color}33`,
+                borderTop: `3px solid ${color}`,
+                borderRadius: '12px',
                 padding: '14px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -63,7 +64,7 @@ export function Timeline({ steps = defaultSteps }: TimelineProps) {
                     width: '28px',
                     height: '28px',
                     borderRadius: '50%',
-                    background: `${color}25`,
+                    background: `${color}18`,
                     color: color,
                     display: 'grid',
                     placeItems: 'center',
@@ -74,18 +75,18 @@ export function Timeline({ steps = defaultSteps }: TimelineProps) {
                 >
                   {step.icon || idx + 1}
                 </span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: color, textTransform: 'uppercase' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: color, textTransform: 'uppercase' }}>
                   Step {idx + 1}
                 </span>
               </div>
 
               <div>
-                <h5 style={{ margin: 0, color: '#f8fafc', fontSize: '0.9rem', fontWeight: 700 }}>{step.title}</h5>
-                <p style={{ margin: '2px 0 0', color: '#94a3b8', fontSize: '0.78rem' }}>{step.subtitle}</p>
+                <h5 style={{ margin: 0, color: '#0f172a', fontSize: '0.92rem', fontWeight: 800 }}>{step.title}</h5>
+                <p style={{ margin: '2px 0 0', color: '#64748b', fontSize: '0.78rem' }}>{step.subtitle}</p>
               </div>
 
               {step.detail ? (
-                <div style={{ fontSize: '0.72rem', color: '#cbd5e1', background: 'rgba(0,0,0,0.3)', padding: '6px 8px', borderRadius: '6px', marginTop: 'auto' }}>
+                <div style={{ fontSize: '0.74rem', color: '#334155', background: '#ffffff', border: '1px solid #e2e8f0', padding: '6px 8px', borderRadius: '6px', marginTop: 'auto', fontWeight: 500 }}>
                   {step.detail}
                 </div>
               ) : null}

@@ -33,26 +33,26 @@ export function SecurityCard({
   return (
     <div
       style={{
-        background: 'rgba(15, 23, 42, 0.85)',
-        backdropFilter: 'blur(12px)',
-        border: `1px solid ${getStatusColor()}33`,
-        borderRadius: '20px',
+        background: '#ffffff',
+        border: `1px solid #e2e8f0`,
+        borderTop: `4px solid ${getStatusColor()}`,
+        borderRadius: '16px',
         padding: '24px',
         position: 'relative',
-        boxShadow: `0 12px 36px ${getStatusColor()}15`,
+        boxShadow: '0 4px 14px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03)',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h4 style={{ margin: 0, color: '#f8fafc', fontSize: '1rem', fontWeight: 700 }}>{title}</h4>
+        <h4 style={{ margin: 0, color: '#0f172a', fontSize: '1.05rem', fontWeight: 800 }}>{title}</h4>
         <span
           style={{
             fontSize: '0.75rem',
             fontWeight: 700,
             padding: '4px 12px',
             borderRadius: '999px',
-            background: `${getStatusColor()}20`,
+            background: `${getStatusColor()}15`,
             color: getStatusColor(),
-            border: `1px solid ${getStatusColor()}40`,
+            border: `1px solid ${getStatusColor()}33`,
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
@@ -65,11 +65,11 @@ export function SecurityCard({
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '12px' }}>
         <span style={{ fontSize: '2.5rem', fontWeight: 900, color: getStatusColor(), lineHeight: 1 }}>{score}</span>
-        <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 600 }}>/ 100 Risk Score</span>
+        <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>/ 100 Risk Score</span>
       </div>
 
       {/* Progress meter bar */}
-      <div style={{ width: '100%', height: '8px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '999px', overflow: 'hidden', marginBottom: '12px' }}>
+      <div style={{ width: '100%', height: '8px', background: '#f1f5f9', borderRadius: '999px', overflow: 'hidden', marginBottom: '12px' }}>
         <div
           style={{
             width: `${Math.min(100, Math.max(0, score))}%`,
@@ -81,7 +81,7 @@ export function SecurityCard({
         />
       </div>
 
-      {details ? <p style={{ margin: 0, fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.5 }}>{details}</p> : null}
+      {details ? <p style={{ margin: 0, fontSize: '0.84rem', color: '#475569', lineHeight: 1.5 }}>{details}</p> : null}
     </div>
   )
 }

@@ -33,16 +33,16 @@ export function ChangePassword({ token }: Props) {
   }
 
   return (
-    <section style={{ background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 12, padding: 18, color: '#f8fafc' }}>
-      <h4>Change Password</h4>
-      <form onSubmit={submit} style={{ display: 'grid', gap: 8 }}>
-        <input type="password" placeholder="Current password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
-        <input type="password" placeholder="New password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-        <input type="password" placeholder="Confirm new password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
-        <button type="submit">Change password</button>
+    <section style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 22, color: '#0f172a', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
+      <h4 style={{ margin: '0 0 14px', color: '#0f172a', fontSize: '1.05rem', fontWeight: 800 }}>Change Password</h4>
+      <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
+        <input type="password" placeholder="Current password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
+        <input type="password" placeholder="New password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
+        <input type="password" placeholder="Confirm new password" value={confirm} onChange={(e) => setConfirm(e.target.value)} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
+        <button type="submit" style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff', fontWeight: 700, cursor: 'pointer' }}>Change password</button>
       </form>
-      {message ? <p style={{ color: '#064e3b' }}>{message}</p> : null}
-      {error ? <p style={{ color: '#991b1b' }}>{error}</p> : null}
+      {message ? <p style={{ color: '#059669', marginTop: 10, fontWeight: 600 }}>✓ {message}</p> : null}
+      {error ? <p style={{ color: '#dc2626', marginTop: 10, fontWeight: 600 }}>⚠ {error}</p> : null}
     </section>
   )
 }

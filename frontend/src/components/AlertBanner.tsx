@@ -20,13 +20,13 @@ export function AlertBanner({
   const getTypeStyles = () => {
     switch (type) {
       case 'danger':
-        return { bg: 'rgba(239, 68, 68, 0.12)', border: 'rgba(239, 68, 68, 0.35)', color: '#fca5a5', icon: '🚨' }
+        return { bg: '#fee2e2', border: '#fecaca', color: '#991b1b', text: '#7f1d1d', icon: '🚨' }
       case 'warning':
-        return { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.35)', color: '#fcd34d', icon: '⚠️' }
+        return { bg: '#fef3c7', border: '#fde68a', color: '#92400e', text: '#78350f', icon: '⚠️' }
       case 'success':
-        return { bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.35)', color: '#6ee7b7', icon: '✅' }
+        return { bg: '#dcfce7', border: '#bbf7d0', color: '#166534', text: '#14532d', icon: '✅' }
       default:
-        return { bg: 'rgba(56, 189, 248, 0.12)', border: 'rgba(56, 189, 248, 0.35)', color: '#7dd3fc', icon: 'ℹ️' }
+        return { bg: '#e0f2fe', border: '#bae6fd', color: '#0369a1', text: '#0c4a6e', icon: 'ℹ️' }
     }
   }
 
@@ -37,21 +37,21 @@ export function AlertBanner({
       style={{
         background: styles.bg,
         border: `1px solid ${styles.border}`,
-        borderRadius: '14px',
+        borderRadius: '12px',
         padding: '14px 20px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '16px',
-        color: '#f8fafc',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+        color: styles.text,
+        boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <span style={{ fontSize: '1.25rem' }}>{styles.icon}</span>
         <div>
-          <strong style={{ color: styles.color, fontSize: '0.9rem', fontWeight: 800 }}>{title}</strong>
-          <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: '#e2e8f0' }}>{message}</p>
+          <strong style={{ color: styles.color, fontSize: '0.92rem', fontWeight: 800 }}>{title}</strong>
+          <p style={{ margin: '2px 0 0', fontSize: '0.84rem', color: styles.text }}>{message}</p>
         </div>
       </div>
 

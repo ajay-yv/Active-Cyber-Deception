@@ -355,13 +355,13 @@ export function OverviewDashboardGraphs({
       {/* Top SOC Graph Command Header with Time Range & Live Telemetry Controls */}
       <div
         style={{
-          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9))',
-          border: recentInterceptSpike ? '1px solid #ef4444' : '1px solid rgba(56, 189, 248, 0.3)',
+          background: '#ffffff',
+          border: recentInterceptSpike ? '1px solid #ef4444' : '1px solid #e2e8f0',
           borderRadius: 20,
           padding: '20px 24px',
           boxShadow: recentInterceptSpike
-            ? '0 0 30px rgba(239, 68, 68, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-            : '0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            ? '0 0 30px rgba(239, 68, 68, 0.2), 0 4px 16px rgba(15, 23, 42, 0.04)'
+            : '0 4px 20px rgba(15, 23, 42, 0.04)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -373,7 +373,7 @@ export function OverviewDashboardGraphs({
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
             <span style={{ fontSize: '1.6rem' }}>📈</span>
-            <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '0.01em' }}>
+            <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', letterSpacing: '0.01em' }}>
               Healthcare Enclave Visual Telemetry &amp; Cyber Analytics
             </h2>
 
@@ -381,9 +381,9 @@ export function OverviewDashboardGraphs({
             <button
               onClick={() => setIsLiveStreaming((prev) => !prev)}
               style={{
-                background: isLiveStreaming ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                border: isLiveStreaming ? '1px solid #10b981' : '1px solid #ef4444',
-                color: isLiveStreaming ? '#6ee7b7' : '#fca5a5',
+                background: isLiveStreaming ? '#ecfdf5' : '#fef2f2',
+                border: isLiveStreaming ? '1px solid #a7f3d0' : '1px solid #fecaca',
+                color: isLiveStreaming ? '#059669' : '#dc2626',
                 padding: '4px 12px',
                 borderRadius: 999,
                 fontSize: '0.74rem',
@@ -411,9 +411,9 @@ export function OverviewDashboardGraphs({
             {recentInterceptSpike && (
               <span
                 style={{
-                  background: 'rgba(239, 68, 68, 0.25)',
+                  background: '#fee2e2',
                   border: '1px solid #ef4444',
-                  color: '#fca5a5',
+                  color: '#b91c1c',
                   padding: '4px 10px',
                   borderRadius: 999,
                   fontSize: '0.74rem',
@@ -425,7 +425,7 @@ export function OverviewDashboardGraphs({
               </span>
             )}
           </div>
-          <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.84rem' }}>
+          <p style={{ margin: 0, color: '#64748b', fontSize: '0.84rem' }}>
             Real-time traffic throughput, threat interception curves, adversary vector distributions, and enclave health gauges.
           </p>
         </div>
@@ -435,8 +435,8 @@ export function OverviewDashboardGraphs({
           <div
             style={{
               display: 'flex',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: '#f1f5f9',
+              border: '1px solid #e2e8f0',
               borderRadius: 10,
               padding: 3,
             }}
@@ -450,7 +450,7 @@ export function OverviewDashboardGraphs({
                   borderRadius: 8,
                   border: 'none',
                   background: timeRange === range ? 'linear-gradient(135deg, #0284c7, #2563eb)' : 'transparent',
-                  color: timeRange === range ? '#fff' : '#94a3b8',
+                  color: timeRange === range ? '#fff' : '#64748b',
                   fontSize: '0.8rem',
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -480,8 +480,8 @@ export function OverviewDashboardGraphs({
                 alignItems: 'center',
                 gap: 6,
                 boxShadow: recentInterceptSpike
-                  ? '0 0 16px rgba(239, 68, 68, 0.6)'
-                  : '0 4px 12px rgba(2, 132, 199, 0.35)',
+                  ? '0 0 16px rgba(239, 68, 68, 0.4)'
+                  : '0 4px 12px rgba(2, 132, 199, 0.3)',
                 transition: 'all 0.2s ease',
               }}
             >
@@ -495,81 +495,85 @@ export function OverviewDashboardGraphs({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
         <div
           style={{
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
             borderLeft: '4px solid #10b981',
             borderRadius: 16,
             padding: 18,
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
           }}
         >
-          <div style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
             Total Inpatient Census
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#f8fafc', margin: '4px 0' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', margin: '4px 0' }}>
             {effectivePatientCount} {effectivePatientCount === 1 ? 'Patient' : 'Patients'}
           </div>
-          <div style={{ fontSize: '0.76rem', color: '#10b981', fontWeight: 700 }}>
+          <div style={{ fontSize: '0.76rem', color: '#059669', fontWeight: 700 }}>
             ✔ 100% Real Vault Isolation
           </div>
         </div>
 
         <div
           style={{
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderLeft: '4px solid #38bdf8',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderLeft: '4px solid #0284c7',
             borderRadius: 16,
             padding: 18,
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
           }}
         >
-          <div style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
             Traffic Inspected ({timeRange})
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#38bdf8', margin: '4px 0' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0284c7', margin: '4px 0' }}>
             {trafficData.totalQueries.toLocaleString()}
           </div>
-          <div style={{ fontSize: '0.76rem', color: '#7dd3fc', fontWeight: 600 }}>
+          <div style={{ fontSize: '0.76rem', color: '#0369a1', fontWeight: 600 }}>
             &lt; {securityIndex.latencyMs}ms Gateway Latency
           </div>
         </div>
 
         <div
           style={{
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: recentInterceptSpike ? '1px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.08)',
-            borderLeft: '4px solid #ef4444',
+            background: '#ffffff',
+            border: recentInterceptSpike ? '1px solid #ef4444' : '1px solid #e2e8f0',
+            borderLeft: '4px solid #dc2626',
             borderRadius: 16,
             padding: 18,
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
             transition: 'border 0.3s ease',
           }}
         >
-          <div style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
             Attacks Intercepted &amp; Deflected
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#f87171', margin: '4px 0' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#dc2626', margin: '4px 0' }}>
             {trafficData.totalBlocked}
           </div>
-          <div style={{ fontSize: '0.76rem', color: '#fca5a5', fontWeight: 700 }}>
+          <div style={{ fontSize: '0.76rem', color: '#b91c1c', fontWeight: 700 }}>
             🛡️ 0 Real Records Exposed
           </div>
         </div>
 
         <div
           style={{
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderLeft: '4px solid #c084fc',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderLeft: '4px solid #7c3aed',
             borderRadius: 16,
             padding: 18,
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
           }}
         >
-          <div style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
             Enclave Deception Efficacy
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#c084fc', margin: '4px 0' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#7c3aed', margin: '4px 0' }}>
             {securityIndex.compositeScore.toFixed(1)}%
           </div>
-          <div style={{ fontSize: '0.76rem', color: '#d8b4fe', fontWeight: 700 }}>
+          <div style={{ fontSize: '0.76rem', color: '#6d28d9', fontWeight: 700 }}>
             A+ Military Enclave Grade
           </div>
         </div>
@@ -580,30 +584,30 @@ export function OverviewDashboardGraphs({
         {/* Graph 1: Area/Line Spline Chart */}
         <div
           style={{
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
             borderRadius: 20,
             padding: 24,
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f8fafc', fontWeight: 800 }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
                 📊 Real-Time Traffic &amp; Attack Interception Flow
               </h3>
-              <p style={{ margin: '3px 0 0', color: '#94a3b8', fontSize: '0.78rem' }}>
+              <p style={{ margin: '3px 0 0', color: '#64748b', fontSize: '0.78rem' }}>
                 Curved volume comparison: Legitimate Clinical Traffic vs. Intercepted Hostile Probes
               </p>
             </div>
             <div style={{ display: 'flex', gap: 14, fontSize: '0.75rem', fontWeight: 700 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#38bdf8' }} />
-                <span style={{ color: '#7dd3fc' }}>Staff Traffic</span>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#0284c7' }} />
+                <span style={{ color: '#0369a1' }}>Staff Traffic</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }} />
-                <span style={{ color: '#fca5a5' }}>Attacks Deflected</span>
+                <span style={{ color: '#b91c1c' }}>Attacks Deflected</span>
               </div>
             </div>
           </div>
@@ -619,18 +623,18 @@ export function OverviewDashboardGraphs({
         {/* Graph 2: Donut Chart (Adversary Vectors) */}
         <div
           style={{
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
             borderRadius: 20,
             padding: 24,
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
           }}
         >
           <div style={{ marginBottom: 16 }}>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f8fafc', fontWeight: 800 }}>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
               🎯 Adversary Vector Distribution
             </h3>
-            <p style={{ margin: '3px 0 0', color: '#94a3b8', fontSize: '0.78rem' }}>
+            <p style={{ margin: '3px 0 0', color: '#64748b', fontSize: '0.78rem' }}>
               Breakdown of {vectorStats.totalDeflected} intercepted exploitation attempts
             </p>
           </div>
@@ -647,30 +651,30 @@ export function OverviewDashboardGraphs({
         {/* Graph 3: Department Workload & Deception Bar Chart */}
         <div
           style={{
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
             borderRadius: 20,
             padding: 24,
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f8fafc', fontWeight: 800 }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
                 🏥 Department Admissions &amp; Decoy Shielding
               </h3>
-              <p style={{ margin: '3px 0 0', color: '#94a3b8', fontSize: '0.78rem' }}>
+              <p style={{ margin: '3px 0 0', color: '#64748b', fontSize: '0.78rem' }}>
                 Real hospital patients vs. active synthetic twin lures deployed per clinical department
               </p>
             </div>
             <div style={{ display: 'flex', gap: 12, fontSize: '0.75rem', fontWeight: 700 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 10, height: 10, borderRadius: 2, background: '#10b981' }} />
-                <span style={{ color: '#6ee7b7' }}>Real Patients</span>
+                <span style={{ color: '#059669' }}>Real Patients</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 2, background: '#c084fc' }} />
-                <span style={{ color: '#d8b4fe' }}>Decoy Twins</span>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: '#a855f7' }} />
+                <span style={{ color: '#7c3aed' }}>Decoy Twins</span>
               </div>
             </div>
           </div>
@@ -681,18 +685,18 @@ export function OverviewDashboardGraphs({
         {/* Graph 4: Security Posture Radial Gauge */}
         <div
           style={{
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
             borderRadius: 20,
             padding: 24,
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
           }}
         >
           <div style={{ marginBottom: 16 }}>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f8fafc', fontWeight: 800 }}>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
               🛡️ Multi-Vector Security &amp; Compliance Index
             </h3>
-            <p style={{ margin: '3px 0 0', color: '#94a3b8', fontSize: '0.78rem' }}>
+            <p style={{ margin: '3px 0 0', color: '#64748b', fontSize: '0.78rem' }}>
               Real-time audit assurance across cryptographic and machine learning enclaves
             </p>
           </div>
@@ -707,34 +711,34 @@ export function OverviewDashboardGraphs({
       {/* Graph 5: 24-Hour Activity Heatmap Strips */}
       <div
         style={{
-          background: 'rgba(15, 23, 42, 0.85)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
           borderRadius: 20,
           padding: 24,
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+          boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#f8fafc', fontWeight: 800 }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a', fontWeight: 800 }}>
               ⏱️ Hourly Enclave Traffic &amp; Threat Deflection Timeline (24-Hour Strip)
             </h3>
-            <p style={{ margin: '3px 0 0', color: '#94a3b8', fontSize: '0.78rem' }}>
+            <p style={{ margin: '3px 0 0', color: '#64748b', fontSize: '0.78rem' }}>
               Hover over any hour to inspect traffic density and automated decoy routing
             </p>
           </div>
           <div style={{ display: 'flex', gap: 12, fontSize: '0.75rem', fontWeight: 600, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 10, height: 10, borderRadius: 2, background: '#10b981' }} />
-              <span style={{ color: '#94a3b8' }}>Normal Traffic</span>
+              <span style={{ color: '#64748b' }}>Normal Traffic</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: 2, background: '#38bdf8' }} />
-              <span style={{ color: '#94a3b8' }}>High Traffic Peak</span>
+              <span style={{ width: 10, height: 10, borderRadius: 2, background: '#0284c7' }} />
+              <span style={{ color: '#64748b' }}>High Traffic Peak</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 10, height: 10, borderRadius: 2, background: '#ef4444' }} />
-              <span style={{ color: '#94a3b8' }}>Attack Deflected</span>
+              <span style={{ color: '#64748b' }}>Attack Deflected</span>
             </div>
           </div>
         </div>
@@ -832,7 +836,7 @@ function TrafficAreaChart({
           const y = paddingY + chartH * ratio
           return (
             <g key={idx}>
-              <line x1={paddingX} y1={y} x2={paddingX + chartW} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
+              <line x1={paddingX} y1={y} x2={paddingX + chartW} y2={y} stroke="#e2e8f0" strokeDasharray="4 4" />
               <text x={paddingX - 8} y={y + 4} textAnchor="end" fill="#64748b" fontSize="9" fontFamily="monospace">
                 {Math.round(maxVal * (1 - ratio))}
               </text>
@@ -845,7 +849,7 @@ function TrafficAreaChart({
         <path d={threatsArea} fill="url(#threatsGrad)" style={{ transition: 'all 0.5s ease' }} />
 
         {/* Spline Lines */}
-        <path d={staffPath} fill="none" stroke="#38bdf8" strokeWidth="2.5" style={{ transition: 'all 0.5s ease' }} />
+        <path d={staffPath} fill="none" stroke="#0284c7" strokeWidth="2.5" style={{ transition: 'all 0.5s ease' }} />
         <path d={threatsPath} fill="none" stroke="#ef4444" strokeWidth="2.5" style={{ transition: 'all 0.5s ease' }} />
 
         {/* Live Pulse Halo on latest Threat Point */}
@@ -880,7 +884,7 @@ function TrafficAreaChart({
             cy={p.y}
             r={hoveredIdx === idx ? 6 : 4}
             fill="#0284c7"
-            stroke="#38bdf8"
+            stroke="#ffffff"
             strokeWidth="2"
             style={{ transition: 'r 0.2s ease' }}
           />
@@ -893,8 +897,8 @@ function TrafficAreaChart({
             cx={p.x}
             cy={p.y}
             r={hoveredIdx === idx ? 6 : 4}
-            fill="#991b1b"
-            stroke="#f87171"
+            fill="#dc2626"
+            stroke="#ffffff"
             strokeWidth="2"
             style={{ transition: 'r 0.2s ease' }}
           />
@@ -924,7 +928,7 @@ function TrafficAreaChart({
             y1={paddingY}
             x2={pointsStaff[hoveredIdx].x}
             y2={paddingY + chartH}
-            stroke="rgba(255, 255, 255, 0.3)"
+            stroke="#cbd5e1"
             strokeDasharray="3 3"
           />
         )}
@@ -939,7 +943,7 @@ function TrafficAreaChart({
               x={x}
               y={height - 4}
               textAnchor="middle"
-              fill={isLatest ? '#38bdf8' : hoveredIdx === idx ? '#f8fafc' : '#94a3b8'}
+              fill={isLatest ? '#0284c7' : hoveredIdx === idx ? '#0f172a' : '#64748b'}
               fontSize="10"
               fontWeight={isLatest || hoveredIdx === idx ? '800' : '600'}
             >
@@ -956,31 +960,31 @@ function TrafficAreaChart({
             position: 'absolute',
             top: 8,
             right: 12,
-            background: 'rgba(15, 23, 42, 0.96)',
-            border: '1px solid rgba(56, 189, 248, 0.4)',
+            background: '#ffffff',
+            border: '1px solid #cbd5e1',
             borderRadius: 10,
             padding: '8px 14px',
             fontSize: '0.78rem',
-            color: '#f8fafc',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+            color: '#0f172a',
+            boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
             display: 'flex',
             flexDirection: 'column',
             gap: 4,
             pointerEvents: 'none',
           }}
         >
-          <div style={{ fontWeight: 800, color: '#38bdf8', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 2 }}>
+          <div style={{ fontWeight: 800, color: '#0284c7', borderBottom: '1px solid #e2e8f0', paddingBottom: 2 }}>
             ⏱ {labels[hoveredIdx]} Telemetry Snapshot
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-            <span style={{ color: '#7dd3fc' }}>👨‍⚕️ Staff Traffic:</span>
+            <span style={{ color: '#0369a1' }}>👨‍⚕️ Staff Traffic:</span>
             <strong>{staff[hoveredIdx]} queries</strong>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-            <span style={{ color: '#fca5a5' }}>🛡️ Attacks Deflected:</span>
-            <strong style={{ color: '#ef4444' }}>{threats[hoveredIdx]} intercepted</strong>
+            <span style={{ color: '#b91c1c' }}>🛡️ Attacks Deflected:</span>
+            <strong style={{ color: '#dc2626' }}>{threats[hoveredIdx]} intercepted</strong>
           </div>
-          <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700, marginTop: 2 }}>
+          <div style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 700, marginTop: 2 }}>
             ✔ 100% Routed to Synthetic Decoys
           </div>
         </div>
@@ -1020,7 +1024,7 @@ function DonutVectorChart({
       <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
         <svg viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
           {/* Background Track */}
-          <circle cx={center} cy={center} r={radius} fill="none" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="24" />
+          <circle cx={center} cy={center} r={radius} fill="none" stroke="#f1f5f9" strokeWidth="24" />
 
           {slices.map((slice, idx) => {
             const strokeDasharray = `${(slice.percent / 100) * circumference} ${circumference}`
@@ -1066,10 +1070,10 @@ function DonutVectorChart({
             pointerEvents: 'none',
           }}
         >
-          <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f8fafc', lineHeight: 1 }}>
+          <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', lineHeight: 1 }}>
             {activeSlice !== null ? slices[activeSlice].count : totalBlocked}
           </span>
-          <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#38bdf8', letterSpacing: '0.08em', marginTop: 2 }}>
+          <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#0284c7', letterSpacing: '0.08em', marginTop: 2 }}>
             {activeSlice !== null ? slices[activeSlice].percent + '%' : 'DEFLECTED'}
           </span>
         </div>
@@ -1090,21 +1094,21 @@ function DonutVectorChart({
                 cursor: 'pointer',
                 padding: '4px 6px',
                 borderRadius: 8,
-                background: isHovered ? 'rgba(255,255,255,0.06)' : 'transparent',
+                background: isHovered ? '#f1f5f9' : 'transparent',
                 transition: 'background 0.2s ease',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ width: 10, height: 10, borderRadius: 3, background: slice.color, flexShrink: 0 }} />
-                  <span style={{ color: isHovered ? '#fff' : '#cbd5e1', fontWeight: 600 }}>{slice.label}</span>
+                  <span style={{ color: isHovered ? '#0f172a' : '#334155', fontWeight: 600 }}>{slice.label}</span>
                 </div>
                 <span style={{ color: slice.color, fontWeight: 800 }}>
                   {slice.percent}% <span style={{ color: '#64748b', fontSize: '0.72rem', fontWeight: 400 }}>({slice.count})</span>
                 </span>
               </div>
               {isHovered && (
-                <div style={{ fontSize: '0.7rem', color: '#94a3b8', paddingLeft: 18 }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', paddingLeft: 18 }}>
                   {slice.desc}
                 </div>
               )}
@@ -1155,7 +1159,7 @@ function DepartmentBarChart({
           const y = chartH - (level / maxLevel) * (chartH - 20) - 10
           return (
             <g key={idx}>
-              <line x1="20" y1={y} x2={width - 10} y2={y} stroke="rgba(255, 255, 255, 0.05)" strokeDasharray="3 3" />
+              <line x1="20" y1={y} x2={width - 10} y2={y} stroke="#e2e8f0" strokeDasharray="3 3" />
               <text x="12" y={y + 3} textAnchor="end" fill="#64748b" fontSize="9" fontFamily="monospace">
                 {level}
               </text>
@@ -1185,7 +1189,7 @@ function DepartmentBarChart({
                 y={10}
                 width={barWidth * 2 + 16}
                 height={chartH + 10}
-                fill={isHovered ? 'rgba(255,255,255,0.03)' : 'transparent'}
+                fill={isHovered ? '#f1f5f9' : 'transparent'}
                 rx="6"
               />
 
@@ -1196,7 +1200,7 @@ function DepartmentBarChart({
                 width={barWidth}
                 height={Math.max(realH, 3)}
                 rx="4"
-                fill={dept.real > 0 ? '#10b981' : 'rgba(255,255,255,0.06)'}
+                fill={dept.real > 0 ? '#10b981' : '#e2e8f0'}
                 style={{ transition: 'all 0.4s ease' }}
               />
 
@@ -1207,7 +1211,7 @@ function DepartmentBarChart({
                 width={barWidth}
                 height={Math.max(decoyH, 3)}
                 rx="4"
-                fill="#c084fc"
+                fill="#a855f7"
                 style={{ transition: 'all 0.4s ease' }}
               />
 
@@ -1216,7 +1220,7 @@ function DepartmentBarChart({
                 x={groupX + barWidth + 2}
                 y={height - 8}
                 textAnchor="middle"
-                fill={isHovered ? '#f8fafc' : '#94a3b8'}
+                fill={isHovered ? '#0f172a' : '#64748b'}
                 fontSize="9"
                 fontWeight={isHovered ? '800' : '600'}
               >
@@ -1234,31 +1238,31 @@ function DepartmentBarChart({
             position: 'absolute',
             top: 4,
             right: 8,
-            background: 'rgba(15, 23, 42, 0.96)',
-            border: '1px solid rgba(192, 132, 252, 0.4)',
+            background: '#ffffff',
+            border: '1px solid #cbd5e1',
             borderRadius: 10,
             padding: '8px 14px',
             fontSize: '0.78rem',
-            color: '#f8fafc',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+            color: '#0f172a',
+            boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
             pointerEvents: 'none',
           }}
         >
-          <div style={{ fontWeight: 800, color: '#c084fc', marginBottom: 2 }}>
+          <div style={{ fontWeight: 800, color: '#7c3aed', marginBottom: 2 }}>
             🏥 {departments[hoveredDeptIdx].name} Department
           </div>
-          <div style={{ color: '#6ee7b7' }}>
+          <div style={{ color: '#059669' }}>
             🟢 Real Admitted Patients: <strong>{departments[hoveredDeptIdx].real}</strong>
             {departments[hoveredDeptIdx].patients.length > 0 && (
-              <span style={{ color: '#94a3b8', fontSize: '0.72rem', display: 'block' }}>
+              <span style={{ color: '#64748b', fontSize: '0.72rem', display: 'block' }}>
                 ({departments[hoveredDeptIdx].patients.join(', ')})
               </span>
             )}
           </div>
-          <div style={{ color: '#d8b4fe' }}>
+          <div style={{ color: '#7c3aed' }}>
             🟣 Active Decoy Twin Lures: <strong>{departments[hoveredDeptIdx].decoys}</strong>
           </div>
-          <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700, marginTop: 2 }}>
+          <div style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 700, marginTop: 2 }}>
             ✔ 100% Decoy Shielding Deployed
           </div>
         </div>
@@ -1306,7 +1310,7 @@ function SecurityGaugeChart({
                   cy={center}
                   r={ring.r}
                   fill="none"
-                  stroke="rgba(255, 255, 255, 0.05)"
+                  stroke="#f1f5f9"
                   strokeWidth={ring.stroke}
                 />
                 {/* Meter */}
@@ -1347,10 +1351,10 @@ function SecurityGaugeChart({
             pointerEvents: 'none',
           }}
         >
-          <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#10b981', lineHeight: 1 }}>
+          <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#059669', lineHeight: 1 }}>
             {hoveredRing !== null ? `${rings[hoveredRing].score}%` : `${overallScore.toFixed(1)}%`}
           </span>
-          <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#cbd5e1', letterSpacing: '0.05em', marginTop: 2 }}>
+          <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginTop: 2 }}>
             {hoveredRing !== null ? 'AUDIT VERIFIED' : 'A+ SHIELD'}
           </span>
         </div>
@@ -1370,19 +1374,19 @@ function SecurityGaugeChart({
                 cursor: 'pointer',
                 padding: '4px 6px',
                 borderRadius: 8,
-                background: isHovered ? 'rgba(255,255,255,0.06)' : 'transparent',
+                background: isHovered ? '#f1f5f9' : 'transparent',
                 transition: 'background 0.2s ease',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem' }}>
-                <span style={{ color: isHovered ? '#fff' : '#cbd5e1', fontWeight: 600 }}>{ring.label}</span>
+                <span style={{ color: isHovered ? '#0f172a' : '#334155', fontWeight: 600 }}>{ring.label}</span>
                 <span style={{ color: ring.color, fontWeight: 800 }}>{ring.score}%</span>
               </div>
-              <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 999 }}>
+              <div style={{ width: '100%', height: 4, background: '#f1f5f9', borderRadius: 999 }}>
                 <div style={{ width: `${ring.score}%`, height: '100%', background: ring.color, borderRadius: 999, transition: 'width 0.5s ease' }} />
               </div>
               {isHovered && (
-                <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
                   {ring.detail}
                 </div>
               )}
@@ -1419,7 +1423,7 @@ function HourlyActivityStrip({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(24, 1fr)', gap: 6, alignItems: 'flex-end', height: 74 }}>
         {hours.map((h, idx) => {
           const heightPercent = Math.max(15, (h.load / maxLoad) * 100)
-          const barColor = h.threat ? '#ef4444' : h.load > 110 ? '#38bdf8' : '#10b981'
+          const barColor = h.threat ? '#ef4444' : h.load > 110 ? '#0284c7' : '#10b981'
 
           return (
             <div
@@ -1440,11 +1444,11 @@ function HourlyActivityStrip({
                 transition: 'all 0.3s ease',
                 opacity: h.isCurrent ? 1 : 0.85,
                 position: 'relative',
-                border: h.isCurrent ? '2px solid #38bdf8' : 'none',
+                border: h.isCurrent ? '2px solid #0284c7' : 'none',
                 boxShadow: h.isCurrent
-                  ? '0 0 12px rgba(56, 189, 248, 0.7)'
+                  ? '0 0 12px rgba(2, 132, 199, 0.4)'
                   : h.threat
-                  ? '0 0 8px rgba(239, 68, 68, 0.5)'
+                  ? '0 0 8px rgba(239, 68, 68, 0.3)'
                   : 'none',
               }}
             >
@@ -1458,8 +1462,8 @@ function HourlyActivityStrip({
                     width: 6,
                     height: 6,
                     borderRadius: '50%',
-                    background: '#38bdf8',
-                    boxShadow: '0 0 6px #38bdf8',
+                    background: '#0284c7',
+                    boxShadow: '0 0 6px #0284c7',
                   }}
                   title="Current Active Hour"
                 />
@@ -1480,14 +1484,14 @@ function HourlyActivityStrip({
       {activeTooltip && (
         <div
           style={{
-            background: 'rgba(15, 23, 42, 0.95)',
-            border: '1px solid rgba(56, 189, 248, 0.4)',
+            background: '#ffffff',
+            border: '1px solid #cbd5e1',
             borderRadius: 8,
             padding: '6px 14px',
             fontSize: '0.78rem',
-            color: '#f8fafc',
+            color: '#0f172a',
             textAlign: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.1)',
           }}
         >
           {activeTooltip}

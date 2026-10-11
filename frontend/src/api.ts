@@ -97,6 +97,9 @@ export type BreachResponse = {
   original_target_id?: string
   source_type?: string
   watermark_id?: string
+  threat_score?: number
+  gateway_decision?: string
+  attack_type?: string
   decoy_records?: Array<{
     synthetic_patient_id: string
     name: string

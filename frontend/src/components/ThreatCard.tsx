@@ -30,15 +30,16 @@ export function ThreatCard({
   return (
     <div
       style={{
-        background: 'rgba(15, 23, 42, 0.85)',
-        border: `1px solid ${getSeverityColor()}33`,
+        background: '#ffffff',
+        border: `1px solid #e2e8f0`,
+        borderLeft: `4px solid ${getSeverityColor()}`,
         borderRadius: '14px',
-        padding: '16px',
+        padding: '16px 20px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         gap: '16px',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+        boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -47,8 +48,8 @@ export function ThreatCard({
             width: '40px',
             height: '40px',
             borderRadius: '10px',
-            background: `${getSeverityColor()}18`,
-            border: `1px solid ${getSeverityColor()}40`,
+            background: `${getSeverityColor()}15`,
+            border: `1px solid ${getSeverityColor()}33`,
             display: 'grid',
             placeItems: 'center',
             fontSize: '1.1rem',
@@ -59,22 +60,22 @@ export function ThreatCard({
         </div>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>{ip}</span>
+            <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>{ip}</span>
             <span
               style={{
                 fontSize: '0.7rem',
                 fontWeight: 700,
                 padding: '2px 8px',
                 borderRadius: '999px',
-                background: `${getSeverityColor()}20`,
+                background: `${getSeverityColor()}15`,
                 color: getSeverityColor(),
-                border: `1px solid ${getSeverityColor()}40`,
+                border: `1px solid ${getSeverityColor()}33`,
               }}
             >
               {attackType}
             </span>
           </div>
-          <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#cbd5e1' }}>
+          <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#475569' }}>
             {details || 'Suspicious request activity detected by Cyber Deception Gateway.'}
           </p>
         </div>
@@ -82,20 +83,20 @@ export function ThreatCard({
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: getSeverityColor() }}>{score}</div>
-          <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Risk Score</span>
+          <div style={{ fontSize: '1.25rem', fontWeight: 900, color: getSeverityColor() }}>{score}</div>
+          <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Risk Score</span>
         </div>
 
         {isBlocked ? (
           <button
             onClick={onUnblock}
             style={{
-              padding: '6px 12px',
+              padding: '6px 14px',
               borderRadius: '8px',
-              border: '1px solid rgba(16, 185, 129, 0.4)',
-              background: 'rgba(16, 185, 129, 0.15)',
-              color: '#34d399',
-              fontSize: '0.78rem',
+              border: '1px solid #bbf7d0',
+              background: '#dcfce7',
+              color: '#15803d',
+              fontSize: '0.8rem',
               fontWeight: 700,
               cursor: 'pointer',
             }}
@@ -106,12 +107,12 @@ export function ThreatCard({
           <button
             onClick={onBlock}
             style={{
-              padding: '6px 12px',
+              padding: '6px 14px',
               borderRadius: '8px',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              background: 'rgba(239, 68, 68, 0.15)',
-              color: '#fca5a5',
-              fontSize: '0.78rem',
+              border: '1px solid #fecaca',
+              background: '#fee2e2',
+              color: '#b91c1c',
+              fontSize: '0.8rem',
               fontWeight: 700,
               cursor: 'pointer',
             }}

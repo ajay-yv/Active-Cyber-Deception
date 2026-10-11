@@ -1476,7 +1476,7 @@ export default function AppUser() {
   }
 
   return (
-    <div style={{ fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100vh', background: '#020617', color: '#f1f5f9' }}>
+    <div style={{ fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100vh', background: '#f8fafc', color: '#0f172a' }}>
 
       {showDoctorPortal || (user?.role === 'doctor' && !isDoctorVerified) ? (
         <DoctorLoginPage
@@ -1493,19 +1493,19 @@ export default function AppUser() {
         />
       ) : !token ? (
         /* CLEAN FRONT PAGE */
-        <div style={{ minHeight: '100vh', background: 'radial-gradient(circle at 50% 0%, #0f172a 0%, #020617 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', position: 'relative', overflow: 'hidden' }}>
           
-          <div style={{ width: '100%', maxWidth: 440, background: 'rgba(15, 23, 42, 0.95)', borderRadius: 24, padding: 36, border: '1px solid rgba(56, 189, 248, 0.2)', boxShadow: '0 25px 60px rgba(0,0,0,0.8)', textAlign: 'center' }}>
+          <div style={{ width: '100%', maxWidth: 440, background: '#ffffff', borderRadius: 24, padding: 36, border: '1px solid #e2e8f0', boxShadow: '0 20px 40px rgba(15, 23, 42, 0.08)', textAlign: 'center' }}>
             
             <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #0284c7, #2563eb)', display: 'grid', placeItems: 'center', fontSize: 26, color: '#fff', margin: '0 auto 16px', boxShadow: '0 6px 20px rgba(2, 132, 199, 0.4)' }}>
               🔐
             </div>
 
-            <h2 style={{ margin: '0 0 6px', fontSize: '1.75rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+            <h2 style={{ margin: '0 0 6px', fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
               Healthcare Security Portal
             </h2>
 
-            <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 24px' }}>
+            <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 24px' }}>
               Admin Authentication & Security Command Center
             </p>
 
@@ -1516,7 +1516,7 @@ export default function AppUser() {
                 setError('')
                 setIsAdminLoginModalOpen(true)
               }}
-              style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4)' }}
+              style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(2, 132, 199, 0.35)' }}
             >
               🔐 Login
             </button>
@@ -1524,8 +1524,8 @@ export default function AppUser() {
 
           {/* ADMIN & ROLE AUTHENTICATION MODAL */}
           {isAdminLoginModalOpen ? (
-            <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(10px)', display: 'grid', placeItems: 'center', padding: 20 }}>
-              <div style={{ width: '100%', maxWidth: 440, background: 'rgba(15, 23, 42, 0.98)', borderRadius: 24, padding: 32, border: '1px solid rgba(56, 189, 248, 0.3)', boxShadow: '0 25px 60px rgba(0,0,0,0.9)', position: 'relative' }}>
+            <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', padding: 20 }}>
+              <div style={{ width: '100%', maxWidth: 440, background: '#ffffff', borderRadius: 24, padding: 32, border: '1px solid #e2e8f0', boxShadow: '0 25px 60px rgba(15, 23, 42, 0.15)', position: 'relative' }}>
                 
                 {/* Close Button */}
                 <button
@@ -1543,33 +1543,33 @@ export default function AppUser() {
                   <div style={{ width: 50, height: 50, borderRadius: 14, background: 'linear-gradient(135deg, #0284c7, #2563eb)', display: 'grid', placeItems: 'center', fontSize: 24, color: '#fff', margin: '0 auto 12px' }}>
                     🔐
                   </div>
-                  <h3 style={{ margin: '0 0 4px', fontSize: '1.4rem', fontWeight: 800, color: '#f8fafc' }}>
+                  <h3 style={{ margin: '0 0 4px', fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>
                     Healthcare Security Portal
                   </h3>
-                  <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.82rem' }}>
+                  <p style={{ margin: 0, color: '#64748b', fontSize: '0.82rem' }}>
                     Admin Authentication & Security Command Center
                   </p>
                 </div>
 
                 {/* Status Messages */}
                 {message ? (
-                  <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#34d399', marginBottom: 16, fontSize: '0.82rem' }}>
+                  <div style={{ padding: '10px 14px', borderRadius: 8, background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#059669', marginBottom: 16, fontSize: '0.82rem' }}>
                     ✓ {message}
                   </div>
                 ) : null}
                 {error ? (
-                  <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', marginBottom: 16, fontSize: '0.82rem' }}>
+                  <div style={{ padding: '10px 14px', borderRadius: 8, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', marginBottom: 16, fontSize: '0.82rem' }}>
                     ⚠ {error}
                   </div>
                 ) : null}
 
                 <form onSubmit={handleLogin} style={{ display: 'grid', gap: 16 }}>
-                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                     Account Role
                     <select
                       value={username}
                       onChange={(e) => handleUsernameChange(e.target.value)}
-                      style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(56, 189, 248, 0.3)', background: '#1e293b', color: '#38bdf8', fontSize: '0.9rem', fontWeight: 700 }}
+                      style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.9rem', fontWeight: 700 }}
                     >
                       <option value="admin">Administrator (admin)</option>
                       <option value="doctor">Doctor (doctor)</option>
@@ -1579,7 +1579,7 @@ export default function AppUser() {
 
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <label style={{ fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Password
                       </label>
                       <button
@@ -1590,7 +1590,7 @@ export default function AppUser() {
                           setForgotStep('step1')
                           setIsForgotModalOpen(true)
                         }}
-                        style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}
+                        style={{ background: 'none', border: 'none', color: '#0284c7', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}
                       >
                         Forgot password?
                       </button>
@@ -1604,20 +1604,20 @@ export default function AppUser() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter account password"
-                      style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(56, 189, 248, 0.3)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.95rem' }}
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.95rem' }}
                     />
                   </div>
 
                   <button
                     type="submit"
-                    style={{ padding: 14, borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '0.98rem', fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4)' }}
+                    style={{ padding: 14, borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '0.98rem', fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: '0 4px 16px rgba(2, 132, 199, 0.35)' }}
                   >
                     Authenticate & Enter Portal →
                   </button>
                 </form>
 
                 {username === 'patient' ? (
-                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)', display: 'grid', gap: 10 }}>
+                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e2e8f0', display: 'grid', gap: 10 }}>
                     {/* 1. SEPARATE SIGN IN WITH GOOGLE BUTTON */}
                     <button
                       type="button"
@@ -1626,7 +1626,7 @@ export default function AppUser() {
                         width: '100%',
                         padding: '12px 16px',
                         borderRadius: 12,
-                        border: '1px solid rgba(255,255,255,0.2)',
+                        border: '1px solid #cbd5e1',
                         background: '#ffffff',
                         color: '#1f2937',
                         fontSize: '0.92rem',
@@ -1636,7 +1636,7 @@ export default function AppUser() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: 12,
-                        boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                         transition: 'all 0.2s ease',
                       }}
                     >
@@ -1652,9 +1652,9 @@ export default function AppUser() {
                           width: '100%',
                           padding: '11px 16px',
                           borderRadius: 10,
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          background: 'rgba(255,255,255,0.06)',
-                          color: '#e2e8f0',
+                          border: '1px solid #cbd5e1',
+                          background: '#f8fafc',
+                          color: '#334155',
                           fontSize: '0.86rem',
                           fontWeight: 600,
                           cursor: patientRegLoading ? 'wait' : 'pointer',
@@ -1665,10 +1665,10 @@ export default function AppUser() {
                     ) : null}
 
                     {/* DIVIDER */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '2px 0', fontSize: '0.75rem', color: '#94a3b8' }}>
-                      <span style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.1)' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '2px 0', fontSize: '0.75rem', color: '#64748b' }}>
+                      <span style={{ height: 1, flex: 1, background: '#e2e8f0' }} />
                       <span style={{ fontWeight: 600 }}>OR</span>
-                      <span style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.1)' }} />
+                      <span style={{ height: 1, flex: 1, background: '#e2e8f0' }} />
                     </div>
 
                     {/* 2. SEPARATE REGISTER BUTTON */}
@@ -1697,7 +1697,7 @@ export default function AppUser() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: 10,
-                        boxShadow: '0 4px 18px rgba(16, 185, 129, 0.45)',
+                        boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)',
                         transition: 'all 0.2s ease',
                       }}
                     >
@@ -1712,8 +1712,8 @@ export default function AppUser() {
 
           {/* PATIENT REGISTRATION MODAL */}
           {isPatientRegisterModalOpen ? (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.90)', backdropFilter: 'blur(10px)', display: 'grid', placeItems: 'center', zIndex: 9999, padding: 16 }}>
-              <div style={{ width: '100%', maxWidth: 440, background: '#0f172a', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: 20, padding: 32, boxShadow: '0 20px 50px rgba(0,0,0,0.6)', color: '#fff', position: 'relative' }}>
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 9999, padding: 16 }}>
+              <div style={{ width: '100%', maxWidth: 440, background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 32, boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)', color: '#0f172a', position: 'relative' }}>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1721,10 +1721,10 @@ export default function AppUser() {
                       🏥
                     </div>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#f8fafc' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
                         Patient Registration
                       </h3>
-                      <span style={{ fontSize: '0.75rem', color: '#34d399', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>
                         Create Account to Access Clinical EHR
                       </span>
                     </div>
@@ -1736,34 +1736,34 @@ export default function AppUser() {
                       setIsAdminLoginModalOpen(true)
                       setUsername('patient')
                     }}
-                    style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1 }}
+                    style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1 }}
                   >
                     ×
                   </button>
                 </div>
 
                 {patientRegError ? (
-                  <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', marginBottom: 16, fontSize: '0.82rem' }}>
+                  <div style={{ padding: '10px 14px', borderRadius: 8, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', marginBottom: 16, fontSize: '0.82rem' }}>
                     ⚠ {patientRegError}
                   </div>
                 ) : null}
 
                 <form onSubmit={handlePatientRegister} style={{ display: 'grid', gap: 14 }}>
-                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                     Full Name
                     <input
                       type="text"
                       value={patientRegFullName}
                       onChange={(e) => setPatientRegFullName(e.target.value)}
                       placeholder="e.g. Ajay Y V"
-                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.9rem' }}
+                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.9rem' }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>Mobile Number *</span>
-                      <span style={{ fontSize: '0.74rem', color: patientRegMobile.length === 10 ? '#34d399' : '#94a3b8', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.74rem', color: patientRegMobile.length === 10 ? '#059669' : '#64748b', fontWeight: 600 }}>
                         {patientRegMobile.length}/10 digits
                       </span>
                     </div>
@@ -1796,11 +1796,11 @@ export default function AppUser() {
                       }}
                       placeholder="e.g. 9876543210"
                       title="Mobile number must be exactly 10 digits"
-                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.9rem' }}
+                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.9rem' }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                     New Password *
                     <input
                       required
@@ -1809,11 +1809,11 @@ export default function AppUser() {
                       value={patientRegPassword}
                       onChange={(e) => setPatientRegPassword(e.target.value)}
                       placeholder="Create new password"
-                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.9rem' }}
+                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.9rem' }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                     Confirm Password *
                     <input
                       required
@@ -1822,7 +1822,7 @@ export default function AppUser() {
                       value={patientRegConfirmPassword}
                       onChange={(e) => setPatientRegConfirmPassword(e.target.value)}
                       placeholder="Confirm password"
-                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.9rem' }}
+                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.9rem' }}
                     />
                   </label>
 
@@ -1839,7 +1839,7 @@ export default function AppUser() {
                       fontWeight: 700,
                       cursor: 'pointer',
                       marginTop: 4,
-                      boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)',
+                      boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)',
                     }}
                   >
                     {patientRegLoading ? 'Registering Account...' : 'Complete Registration & Proceed to Login →'}
@@ -1852,7 +1852,7 @@ export default function AppUser() {
                       setIsAdminLoginModalOpen(true)
                       setUsername('patient')
                     }}
-                    style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '0.8rem', cursor: 'pointer', textAlign: 'center', marginTop: 4, textDecoration: 'underline' }}
+                    style={{ background: 'none', border: 'none', color: '#0284c7', fontSize: '0.8rem', cursor: 'pointer', textAlign: 'center', marginTop: 4, textDecoration: 'underline', fontWeight: 600 }}
                   >
                     Already have an account? Login with password
                   </button>
@@ -1891,21 +1891,21 @@ export default function AppUser() {
         <PatientDashboardComponent token={token} user={user} onLogout={handleLogout} />
       ) : (
         /* AUTHENTICATED COMMAND CENTER LAYOUT FOR ADMIN */
-        <div style={{ display: 'flex', minHeight: '100vh', background: '#020617' }}>
+        <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
           
           {/* STICKY LEFT SIDEBAR WITH 11 NAVIGATION LINKS */}
           <aside className="sticky-sidebar">
             
             {/* Sidebar Brand Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28, padding: '0 8px' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #0284c7, #06b6d4)', display: 'grid', placeItems: 'center', fontSize: 20, color: '#fff', fontWeight: 800 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #0284c7, #0369a1)', display: 'grid', placeItems: 'center', fontSize: 20, color: '#fff', fontWeight: 800 }}>
                 🛡️
               </div>
               <div>
-                <span style={{ fontSize: '0.68rem', color: '#06b6d4', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                <span style={{ fontSize: '0.68rem', color: '#0284c7', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                   AI Security Command
                 </span>
-                <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+                <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
                   Deception EHR
                 </h2>
               </div>
@@ -1913,51 +1913,51 @@ export default function AppUser() {
 
             {/* Sidebar Nav Buttons (11 Items) */}
             <nav style={{ display: 'grid', gap: 6 }}>
-              <button onClick={() => setActiveTab('overview')} className={activeTab === 'overview' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'overview' ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.05)', background: activeTab === 'overview' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.02)', color: activeTab === 'overview' ? '#38bdf8' : '#cbd5e1', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
+              <button onClick={() => setActiveTab('overview')} className={activeTab === 'overview' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'overview' ? '1px solid #bae6fd' : '1px solid transparent', background: activeTab === 'overview' ? '#e0f2fe' : 'transparent', color: activeTab === 'overview' ? '#0369a1' : '#475569', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
                 📊 <span>Dashboard</span>
               </button>
 
-              <button onClick={() => { setActiveTab('patients'); setPatientSubTab('active') }} className={activeTab === 'patients' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'patients' ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.05)', background: activeTab === 'patients' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.02)', color: activeTab === 'patients' ? '#38bdf8' : '#cbd5e1', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
+              <button onClick={() => { setActiveTab('patients'); setPatientSubTab('active') }} className={activeTab === 'patients' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'patients' ? '1px solid #bae6fd' : '1px solid transparent', background: activeTab === 'patients' ? '#e0f2fe' : 'transparent', color: activeTab === 'patients' ? '#0369a1' : '#475569', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
                 👥 <span>Active Patients ({patients.length})</span>
               </button>
 
-              <button onClick={() => setActiveTab('twins')} className={activeTab === 'twins' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'twins' ? '1px solid #c084fc' : '1px solid rgba(255,255,255,0.05)', background: activeTab === 'twins' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.02)', color: activeTab === 'twins' ? '#c084fc' : '#cbd5e1', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
+              <button onClick={() => setActiveTab('twins')} className={activeTab === 'twins' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'twins' ? '1px solid #e9d5ff' : '1px solid transparent', background: activeTab === 'twins' ? '#f3e8ff' : 'transparent', color: activeTab === 'twins' ? '#7c3aed' : '#475569', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
                 🧬 <span>Synthetic Twin Center</span>
               </button>
 
-              <button onClick={() => setActiveTab('gateway')} className={activeTab === 'gateway' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'gateway' ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.05)', background: activeTab === 'gateway' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)', color: activeTab === 'gateway' ? '#34d399' : '#cbd5e1', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
+              <button onClick={() => setActiveTab('gateway')} className={activeTab === 'gateway' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'gateway' ? '1px solid #bbf7d0' : '1px solid transparent', background: activeTab === 'gateway' ? '#dcfce7' : 'transparent', color: activeTab === 'gateway' ? '#15803d' : '#475569', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
                 🤖 <span>AI Security Gateway</span>
               </button>
 
-              <button onClick={() => setActiveTab('analytics')} className={activeTab === 'analytics' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'analytics' ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.05)', background: activeTab === 'analytics' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.02)', color: activeTab === 'analytics' ? '#fbbf24' : '#cbd5e1', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
+              <button onClick={() => setActiveTab('analytics')} className={activeTab === 'analytics' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'analytics' ? '1px solid #fde68a' : '1px solid transparent', background: activeTab === 'analytics' ? '#fef3c7' : 'transparent', color: activeTab === 'analytics' ? '#b45309' : '#475569', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
                 📈 <span>Threat Analytics</span>
               </button>
 
-              <button onClick={() => setActiveTab('watermarks')} className={activeTab === 'watermarks' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'watermarks' ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.05)', background: activeTab === 'watermarks' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.02)', color: activeTab === 'watermarks' ? '#38bdf8' : '#cbd5e1', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
+              <button onClick={() => setActiveTab('watermarks')} className={activeTab === 'watermarks' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'watermarks' ? '1px solid #bae6fd' : '1px solid transparent', background: activeTab === 'watermarks' ? '#e0f2fe' : 'transparent', color: activeTab === 'watermarks' ? '#0369a1' : '#475569', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
                 🕵️ <span>Decoy Leak Verifier</span>
               </button>
 
-              <button onClick={() => setActiveTab('reports')} className={activeTab === 'reports' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'reports' ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.05)', background: activeTab === 'reports' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.02)', color: activeTab === 'reports' ? '#38bdf8' : '#cbd5e1', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
+              <button onClick={() => setActiveTab('reports')} className={activeTab === 'reports' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'reports' ? '1px solid #bae6fd' : '1px solid transparent', background: activeTab === 'reports' ? '#e0f2fe' : 'transparent', color: activeTab === 'reports' ? '#0369a1' : '#475569', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
                 📋 <span>Reports</span>
               </button>
 
-              <button onClick={() => setActiveTab('settings')} className={activeTab === 'settings' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'settings' ? '1px solid #94a3b8' : '1px solid rgba(255,255,255,0.05)', background: activeTab === 'settings' ? 'rgba(148, 163, 184, 0.15)' : 'rgba(255,255,255,0.02)', color: activeTab === 'settings' ? '#f8fafc' : '#cbd5e1', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
+              <button onClick={() => setActiveTab('settings')} className={activeTab === 'settings' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'settings' ? '1px solid #cbd5e1' : '1px solid transparent', background: activeTab === 'settings' ? '#f1f5f9' : 'transparent', color: activeTab === 'settings' ? '#0f172a' : '#475569', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
                 ⚙️ <span>Settings</span>
               </button>
 
-              <button onClick={() => setActiveTab('profile')} className={activeTab === 'profile' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'profile' ? '1px solid #94a3b8' : '1px solid rgba(255,255,255,0.05)', background: activeTab === 'profile' ? 'rgba(148, 163, 184, 0.15)' : 'rgba(255,255,255,0.02)', color: activeTab === 'profile' ? '#f8fafc' : '#cbd5e1', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
+              <button onClick={() => setActiveTab('profile')} className={activeTab === 'profile' ? 'active' : ''} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: activeTab === 'profile' ? '1px solid #cbd5e1' : '1px solid transparent', background: activeTab === 'profile' ? '#f1f5f9' : 'transparent', color: activeTab === 'profile' ? '#0f172a' : '#475569', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'left' }}>
                 👤 <span>Profile</span>
               </button>
             </nav>
 
             {/* Sidebar Bottom User Banner */}
-            <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <strong style={{ display: 'block', fontSize: '0.85rem', color: '#f8fafc' }}>{user?.full_name}</strong>
-                  <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{user?.role}</span>
+                  <strong style={{ display: 'block', fontSize: '0.85rem', color: '#0f172a' }}>{user?.full_name}</strong>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{user?.role}</span>
                 </div>
-                <button onClick={handleLogout} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', padding: '6px 10px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
+                <button onClick={handleLogout} style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#dc2626', padding: '6px 10px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
                   Logout
                 </button>
               </div>
@@ -1968,9 +1968,9 @@ export default function AppUser() {
           <div className="main-content-scrollable">
             
             {/* TOP HEADER */}
-            <header style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <header style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #e2e8f0', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem', fontWeight: 700 }}>
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem', fontWeight: 700 }}>
                   {activeTab === 'overview' && '📊 Security Command Overview'}
                   {activeTab === 'patients' && '👥 Patient Clinical Records'}
                   {activeTab === 'twins' && '🧬 Synthetic Patient Twin Center'}
@@ -2019,17 +2019,17 @@ export default function AppUser() {
                     padding: '8px 14px',
                     borderRadius: 10,
                     border: '1px solid #ef4444',
-                    background: 'rgba(239, 68, 68, 0.2)',
-                    color: '#fca5a5',
+                    background: '#fef2f2',
+                    color: '#dc2626',
                     fontSize: '0.82rem',
                     fontWeight: 700,
                     cursor: 'pointer',
-                    boxShadow: '0 0 12px rgba(239, 68, 68, 0.3)',
+                    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.15)',
                   }}
                 >
                   🚨 Test Burglar Alarm Sound
                 </button>
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
                   {user?.full_name} ({user?.role})
                 </span>
               </div>
@@ -2044,10 +2044,10 @@ export default function AppUser() {
                   marginBottom: 24,
                   padding: '20px 24px',
                   borderRadius: 16,
-                  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.35))',
+                  background: '#fef2f2',
                   border: '2px solid #ef4444',
-                  boxShadow: '0 0 30px rgba(239, 68, 68, 0.5)',
-                  color: '#fff',
+                  boxShadow: '0 4px 20px rgba(239, 68, 68, 0.15)',
+                  color: '#0f172a',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -2057,14 +2057,14 @@ export default function AppUser() {
                           <span style={{ background: '#ef4444', color: '#fff', padding: '2px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase' }}>
                             CRITICAL INTRUSION DETECTED
                           </span>
-                          <span style={{ color: '#fca5a5', fontSize: '0.85rem', fontWeight: 700 }}>
+                          <span style={{ color: '#b91c1c', fontSize: '0.85rem', fontWeight: 700 }}>
                             Risk Score: {hackerAlert?.threatScore || 95}% HIGH THREAT
                           </span>
                         </div>
-                        <h4 style={{ margin: '6px 0 2px', fontSize: '1.15rem', color: '#fff', fontWeight: 800 }}>
+                        <h4 style={{ margin: '6px 0 2px', fontSize: '1.15rem', color: '#991b1b', fontWeight: 800 }}>
                           Adversary Target Probe: {hackerAlert?.action || 'Patient Data Theft Attack'}
                         </h4>
-                        <p style={{ margin: 0, color: '#fecaca', fontSize: '0.88rem' }}>
+                        <p style={{ margin: 0, color: '#475569', fontSize: '0.88rem' }}>
                           Target Scope: <strong>{hackerAlert?.targetPatientName || 'Hospital Patient Database'}</strong> (ID: {hackerAlert?.targetPatientId || 'P-01'})
                         </p>
                       </div>
@@ -2099,13 +2099,13 @@ export default function AppUser() {
                         style={{
                           padding: '10px 18px',
                           borderRadius: 10,
-                          background: '#fff',
-                          color: '#991b1b',
+                          background: '#dc2626',
+                          color: '#fff',
                           border: 'none',
                           fontWeight: 800,
                           fontSize: '0.88rem',
                           cursor: 'pointer',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                          boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
                         }}
                       >
                         🔍 View Targeted Data Details
@@ -2115,9 +2115,9 @@ export default function AppUser() {
                         style={{
                           padding: '10px 18px',
                           borderRadius: 10,
-                          background: 'rgba(255,255,255,0.15)',
-                          border: '1px solid rgba(255,255,255,0.4)',
-                          color: '#fff',
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
+                          color: '#334155',
                           fontWeight: 700,
                           fontSize: '0.88rem',
                           cursor: 'pointer',
@@ -2129,20 +2129,20 @@ export default function AppUser() {
                   </div>
 
                   {/* DATA FIELDS BEING HACKED / STOLEN */}
-                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.2)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 10, border: '1px solid rgba(239, 68, 68, 0.4)' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#fca5a5', fontWeight: 800, textTransform: 'uppercase', display: 'block' }}>
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #fecaca', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
+                    <div style={{ background: '#ffffff', padding: 12, borderRadius: 10, border: '1px solid #fecaca' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#b91c1c', fontWeight: 800, textTransform: 'uppercase', display: 'block' }}>
                         ⚠️ WHAT KIND OF DATA THE HACKER IS TRYING TO STEAL:
                       </span>
-                      <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600, marginTop: 4 }}>
+                      <div style={{ fontSize: '0.85rem', color: '#0f172a', fontWeight: 600, marginTop: 4 }}>
                         {hackerAlert?.dataType || 'Patient PII (Aadhaar Number, Mobile Phone, Residential Address, Clinical Diagnosis & Prescriptions)'}
                       </div>
                     </div>
-                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.4)' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#6ee7b7', fontWeight: 800, textTransform: 'uppercase', display: 'block' }}>
+                    <div style={{ background: '#ffffff', padding: 12, borderRadius: 10, border: '1px solid #bbf7d0' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 800, textTransform: 'uppercase', display: 'block' }}>
                         🛡️ COUNTERMEASURE SERVED TO HACKER:
                       </span>
-                      <div style={{ fontSize: '0.85rem', color: '#34d399', fontWeight: 700, marginTop: 4 }}>
+                      <div style={{ fontSize: '0.85rem', color: '#059669', fontWeight: 700, marginTop: 4 }}>
                         Served Decoy Twin: <strong>{hackerAlert?.syntheticPatientId || 'SYN-01'}</strong> (100% Synthetic Twin Served to Decoys)
                       </div>
                     </div>
@@ -2152,15 +2152,15 @@ export default function AppUser() {
 
               {/* Status Alerts */}
               {message ? (
-                <div style={{ padding: '14px 20px', borderRadius: 12, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#34d399', marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ padding: '14px 20px', borderRadius: 12, background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#059669', marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>✓ {message}</span>
-                  <button onClick={() => setMessage('')} style={{ background: 'none', border: 'none', color: '#34d399', cursor: 'pointer' }}>✕</button>
+                  <button onClick={() => setMessage('')} style={{ background: 'none', border: 'none', color: '#059669', cursor: 'pointer' }}>✕</button>
                 </div>
               ) : null}
               {error ? (
-                <div style={{ padding: '14px 20px', borderRadius: 12, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ padding: '14px 20px', borderRadius: 12, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>⚠ {error}</span>
-                  <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer' }}>✕</button>
+                  <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer' }}>✕</button>
                 </div>
               ) : null}
 
@@ -2198,26 +2198,26 @@ export default function AppUser() {
               <div style={{ display: 'grid', gap: 24 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                   <div>
-                    <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.3rem', fontWeight: 800 }}>👥 Patient Record Management</h3>
-                    <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.85rem' }}>Original EHR records linked with AI Synthetic Twins and Forensic Watermarks.</p>
+                    <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.3rem', fontWeight: 800 }}>👥 Patient Record Management</h3>
+                    <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.85rem' }}>Original EHR records linked with AI Synthetic Twins and Forensic Watermarks.</p>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <button onClick={() => setActiveTab('register')} style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer' }}>
+                    <button onClick={() => setActiveTab('register')} style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)' }}>
                       + Register New Patient
                     </button>
                   </div>
                 </div>
 
                 {/* PATIENT SUB-TAB SWITCHER */}
-                <div style={{ display: 'flex', gap: 12, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 12 }}>
+                <div style={{ display: 'flex', gap: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 12 }}>
                   <button
                     onClick={() => setPatientSubTab('active')}
                     style={{
                       padding: '8px 16px',
                       borderRadius: 8,
-                      border: patientSubTab === 'active' ? '1px solid #38bdf8' : '1px solid transparent',
-                      background: patientSubTab === 'active' ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
-                      color: patientSubTab === 'active' ? '#38bdf8' : '#94a3b8',
+                      border: patientSubTab === 'active' ? '1px solid #bae6fd' : '1px solid transparent',
+                      background: patientSubTab === 'active' ? '#e0f2fe' : 'transparent',
+                      color: patientSubTab === 'active' ? '#0369a1' : '#64748b',
                       fontWeight: 700,
                       fontSize: '0.88rem',
                       cursor: 'pointer',
@@ -2230,9 +2230,9 @@ export default function AppUser() {
                     style={{
                       padding: '8px 16px',
                       borderRadius: 8,
-                      border: patientSubTab === 'history' ? '1px solid #f59e0b' : '1px solid transparent',
-                      background: patientSubTab === 'history' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
-                      color: patientSubTab === 'history' ? '#fbbf24' : '#94a3b8',
+                      border: patientSubTab === 'history' ? '1px solid #fde68a' : '1px solid transparent',
+                      background: patientSubTab === 'history' ? '#fef3c7' : 'transparent',
+                      color: patientSubTab === 'history' ? '#b45309' : '#64748b',
                       fontWeight: 700,
                       fontSize: '0.88rem',
                       cursor: 'pointer',
@@ -2245,10 +2245,10 @@ export default function AppUser() {
                 {patientSubTab === 'active' ? (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
                     {patients.length === 0 ? (
-                      <div style={{ gridColumn: '1 / -1', padding: '48px 24px', textAlign: 'center', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 16, border: '1px dashed rgba(255, 255, 255, 0.12)' }}>
+                      <div style={{ gridColumn: '1 / -1', padding: '48px 24px', textAlign: 'center', background: '#ffffff', borderRadius: 16, border: '1px dashed #cbd5e1', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)' }}>
                         <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📋</div>
-                        <h3 style={{ color: '#f8fafc', fontSize: '1.25rem', fontWeight: 700, margin: '0 0 8px' }}>No Active Patients in Vault</h3>
-                        <p style={{ color: '#94a3b8', fontSize: '0.9rem', maxWidth: 480, margin: '0 auto 20px', lineHeight: 1.5 }}>
+                        <h3 style={{ color: '#0f172a', fontSize: '1.25rem', fontWeight: 700, margin: '0 0 8px' }}>No Active Patients in Vault</h3>
+                        <p style={{ color: '#64748b', fontSize: '0.9rem', maxWidth: 480, margin: '0 auto 20px', lineHeight: 1.5 }}>
                           No patient records are currently stored. Register a patient to securely protect their clinical data and automatically generate a corresponding 1:1 AI synthetic decoy twin.
                         </p>
                         <button
@@ -2348,11 +2348,11 @@ export default function AppUser() {
                   </div>
                 ) : (
                   /* ARCHIVED PATIENT HISTORY VIEW */
-                  <div style={{ background: 'rgba(15, 23, 42, 0.9)', borderRadius: 16, padding: 20, border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                  <div style={{ background: '#ffffff', borderRadius: 16, padding: 24, border: '1px solid #fde68a', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
                       <div>
-                        <h4 style={{ margin: 0, color: '#fbbf24', fontSize: '1.1rem' }}>📜 Archived Patient Deception Audit Trail</h4>
-                        <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Total Archived Records: {patientHistory.length}</span>
+                        <h4 style={{ margin: 0, color: '#b45309', fontSize: '1.1rem', fontWeight: 700 }}>📜 Archived Patient Deception Audit Trail</h4>
+                        <span style={{ fontSize: '0.82rem', color: '#64748b' }}>Total Archived Records: {patientHistory.length}</span>
                       </div>
                       {patientHistory.length > 0 ? (
                         <button
@@ -2367,7 +2367,7 @@ export default function AppUser() {
                               setError(String(err))
                             }
                           }}
-                          style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #ef4444', background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                          style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #fca5a5', background: '#fef2f2', color: '#dc2626', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                         >
                           🗑️ Clear All Archived History
                         </button>
@@ -2376,43 +2376,43 @@ export default function AppUser() {
 
                     {patientHistory.length > 0 ? (
                       <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                           <thead>
-                            <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>Patient ID</th>
-                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>Patient Name</th>
-                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>Disease & Diagnosis</th>
-                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>Aadhaar & Phone</th>
-                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>Archived Status</th>
-                              <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>Actions</th>
+                            <tr style={{ background: '#f8fafc' }}>
+                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 700 }}>Patient ID</th>
+                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 700 }}>Patient Name</th>
+                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 700 }}>Disease & Diagnosis</th>
+                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 700 }}>Aadhaar & Phone</th>
+                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 700 }}>Archived Status</th>
+                              <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 700 }}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
                             {patientHistory.map((h) => (
                               <tr key={h.id}>
-                                <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#38bdf8', fontWeight: 700 }}>{h.id}</td>
-                                <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#f8fafc', fontWeight: 600 }}>{h.name} ({h.age} yrs)</td>
-                                <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#cbd5e1' }}>
-                                  <strong style={{ color: '#f59e0b', display: 'block' }}>{h.disease}</strong>
-                                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{h.diagnosis}</span>
+                                <td style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', color: '#0284c7', fontWeight: 700 }}>{h.id}</td>
+                                <td style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', color: '#0f172a', fontWeight: 600 }}>{h.name} ({h.age} yrs)</td>
+                                <td style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', color: '#334155' }}>
+                                  <strong style={{ color: '#b45309', display: 'block' }}>{h.disease}</strong>
+                                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{h.diagnosis}</span>
                                 </td>
-                                <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#cbd5e1' }}>
-                                  <div style={{ fontSize: '0.8rem', color: '#4ade80' }}>🆔 {h.aadhaar || '5544-2211-9988'}</div>
-                                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>📞 {h.phone || '+91 98301 22341'}</div>
+                                <td style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', color: '#334155' }}>
+                                  <div style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>🆔 {h.aadhaar || '5544-2211-9988'}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>📞 {h.phone || '+91 98301 22341'}</div>
                                 </td>
-                                <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#ef4444' }}>
-                                  <span style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '3px 8px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>
+                                <td style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', color: '#dc2626' }}>
+                                  <span style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626', padding: '3px 8px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>
                                     {h.status || 'ARCHIVED / DELETED'}
                                   </span>
                                 </td>
-                                <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+                                <td style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', textAlign: 'center' }}>
                                   <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                                     <button
                                       onClick={() => {
                                         setSelectedPatientDetails(h)
                                         setIsDetailsModalOpen(true)
                                       }}
-                                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #0284c7', background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #bae6fd', background: '#f0f9ff', color: '#0284c7', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
                                     >
                                       👁️ View Details
                                     </button>
@@ -2427,7 +2427,7 @@ export default function AppUser() {
                                           setError(String(err))
                                         }
                                       }}
-                                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ef4444', background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fef2f2', color: '#dc2626', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
                                     >
                                       🗑️ Delete
                                     </button>
@@ -2439,7 +2439,7 @@ export default function AppUser() {
                         </table>
                       </div>
                     ) : (
-                      <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No archived patient history records found.</p>
+                      <p style={{ color: '#64748b', fontStyle: 'italic', margin: 0 }}>No archived patient history records found.</p>
                     )}
                   </div>
                 )}
@@ -2448,18 +2448,18 @@ export default function AppUser() {
 
             {/* TAB 6: PATIENT HISTORY & ARCHIVED LOGS */}
             {activeTab === 'history' ? (
-              <div style={{ background: 'rgba(15, 23, 42, 0.8)', borderRadius: 20, border: '1px solid rgba(245, 158, 11, 0.2)', padding: 24 }}>
+              <div style={{ background: '#ffffff', borderRadius: 20, border: '1px solid #fde68a', padding: 24, boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <div>
-                    <h3 style={{ margin: 0, color: '#f59e0b', fontSize: '1.2rem', fontWeight: 700 }}>
+                    <h3 style={{ margin: 0, color: '#b45309', fontSize: '1.2rem', fontWeight: 700 }}>
                       📜 Patient History & Discharged Logs Partition
                     </h3>
-                    <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.82rem' }}>
+                    <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.82rem' }}>
                       Historical archive of deleted patient records, discharge dates, and forensic watermarks.
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#d97706', fontWeight: 600, background: 'rgba(245, 158, 11, 0.1)', padding: '4px 12px', borderRadius: 999 }}>
+                    <span style={{ fontSize: '0.8rem', color: '#b45309', fontWeight: 600, background: '#fef3c7', border: '1px solid #fde68a', padding: '4px 12px', borderRadius: 999 }}>
                       {patientHistory.length} Archived Records
                     </span>
                     {patientHistory.length > 0 ? (
@@ -2475,7 +2475,7 @@ export default function AppUser() {
                             setError(String(err))
                           }
                         }}
-                        style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #ef4444', background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                        style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #fca5a5', background: '#fef2f2', color: '#dc2626', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
                       >
                         🗑️ Clear All
                       </button>
@@ -2484,9 +2484,9 @@ export default function AppUser() {
                 </div>
 
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', color: '#e2e8f0', fontSize: '0.88rem', textAlign: 'left' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', color: '#0f172a', fontSize: '0.88rem', textAlign: 'left' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.15)', color: '#94a3b8', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         <th style={{ padding: '12px 10px' }}>Patient ID</th>
                         <th style={{ padding: '12px 10px' }}>Full Name</th>
                         <th style={{ padding: '12px 10px' }}>Age</th>
@@ -2502,34 +2502,34 @@ export default function AppUser() {
                     <tbody>
                       {patientHistory.length === 0 ? (
                         <tr>
-                          <td colSpan={10} style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>
+                          <td colSpan={10} style={{ padding: 24, textAlign: 'center', color: '#64748b' }}>
                             No archived or historical patient records available.
                           </td>
                         </tr>
                       ) : (
                         patientHistory.map((h) => (
-                          <tr key={h.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                            <td style={{ padding: '12px 10px', color: '#f59e0b', fontWeight: 700 }}>
+                          <tr key={h.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <td style={{ padding: '12px 10px', color: '#0284c7', fontWeight: 700 }}>
                               {h.id && h.id.startsWith('P-') ? h.id : `P-${h.id}`}
                             </td>
-                            <td style={{ padding: '12px 10px', fontWeight: 600, color: '#f8fafc' }}>
+                            <td style={{ padding: '12px 10px', fontWeight: 600, color: '#0f172a' }}>
                               {h.name}
                             </td>
-                            <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{h.age} yrs</td>
+                            <td style={{ padding: '12px 10px', color: '#64748b' }}>{h.age} yrs</td>
                             <td style={{ padding: '12px 10px' }}>
-                              <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{h.disease}</span>
-                              {h.diagnosis ? <span style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8' }}>{h.diagnosis}</span> : null}
+                              <span style={{ color: '#0f172a', fontWeight: 600 }}>{h.disease}</span>
+                              {h.diagnosis ? <span style={{ display: 'block', fontSize: '0.78rem', color: '#64748b' }}>{h.diagnosis}</span> : null}
                             </td>
-                            <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{h.doctor_assigned || 'Dr. Unassigned'}</td>
-                            <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{h.department || 'General Medicine'}</td>
-                            <td style={{ padding: '12px 10px', color: '#94a3b8', fontSize: '0.82rem' }}>
+                            <td style={{ padding: '12px 10px', color: '#334155' }}>{h.doctor_assigned || 'Dr. Unassigned'}</td>
+                            <td style={{ padding: '12px 10px', color: '#334155' }}>{h.department || 'General Medicine'}</td>
+                            <td style={{ padding: '12px 10px', color: '#64748b', fontSize: '0.82rem' }}>
                               {formatISTDate(h.admission_date)}
                             </td>
-                            <td style={{ padding: '12px 10px', color: '#f59e0b', fontSize: '0.82rem', fontWeight: 600 }}>
+                            <td style={{ padding: '12px 10px', color: '#b45309', fontSize: '0.82rem', fontWeight: 600 }}>
                               {formatISTDateTime(h.archived_at)}
                             </td>
                             <td style={{ padding: '12px 10px' }}>
-                              <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: 999, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', fontWeight: 600 }}>
+                              <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: 999, background: '#fef3c7', border: '1px solid #fde68a', color: '#b45309', fontWeight: 600 }}>
                                 Discharged / Archived
                               </span>
                             </td>
@@ -2543,9 +2543,9 @@ export default function AppUser() {
                                   style={{
                                     padding: '6px 12px',
                                     borderRadius: 8,
-                                    border: '1px solid rgba(245, 158, 11, 0.4)',
-                                    background: 'rgba(245, 158, 11, 0.15)',
-                                    color: '#fbbf24',
+                                    border: '1px solid #bae6fd',
+                                    background: '#f0f9ff',
+                                    color: '#0284c7',
                                     fontSize: '0.78rem',
                                     fontWeight: 600,
                                     cursor: 'pointer',
@@ -2567,9 +2567,9 @@ export default function AppUser() {
                                   style={{
                                     padding: '6px 12px',
                                     borderRadius: 8,
-                                    border: '1px solid #ef4444',
-                                    background: 'rgba(239, 68, 68, 0.15)',
-                                    color: '#fca5a5',
+                                    border: '1px solid #fca5a5',
+                                    background: '#fef2f2',
+                                    color: '#dc2626',
                                     fontSize: '0.78rem',
                                     fontWeight: 700,
                                     cursor: 'pointer',
@@ -2590,24 +2590,24 @@ export default function AppUser() {
 
             {/* PATIENT PROFILE & HISTORY DETAILS MODAL */}
             {isDetailsModalOpen && selectedPatientDetails ? (
-              <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 100, padding: 20 }}>
-                <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 24, padding: 32, maxWidth: 800, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)', color: '#f8fafc' }}>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 100, padding: 20 }}>
+                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 24, padding: 32, maxWidth: 800, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.15)', color: '#0f172a' }}>
                   {/* Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16, marginBottom: 24 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: 16, marginBottom: 24 }}>
                     <div>
-                      <span style={{ fontSize: '0.8rem', color: selectedPatientDetails.archived_at ? '#f59e0b' : '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <span style={{ fontSize: '0.8rem', color: selectedPatientDetails.archived_at ? '#b45309' : '#0284c7', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         {selectedPatientDetails.archived_at ? '📜 Archived / Discharged Record' : '📋 Active Patient Record'}
                       </span>
-                      <h2 style={{ margin: '4px 0 0', fontSize: '1.6rem', fontWeight: 800 }}>
-                        {selectedPatientDetails.name} <span style={{ fontSize: '1rem', color: '#94a3b8', fontWeight: 400 }}>({selectedPatientDetails.patient_id ? `P-${selectedPatientDetails.patient_id}` : selectedPatientDetails.id})</span>
+                      <h2 style={{ margin: '4px 0 0', fontSize: '1.6rem', fontWeight: 800, color: '#0f172a' }}>
+                        {selectedPatientDetails.name} <span style={{ fontSize: '1rem', color: '#64748b', fontWeight: 400 }}>({selectedPatientDetails.patient_id ? `P-${selectedPatientDetails.patient_id}` : selectedPatientDetails.id})</span>
                       </h2>
                     </div>
                     <button
                       onClick={() => setIsDetailsModalOpen(false)}
                       style={{
-                        background: 'rgba(239, 68, 68, 0.2)',
-                        border: '1px solid #ef4444',
-                        color: '#fca5a5',
+                        background: '#fef2f2',
+                        border: '1px solid #fca5a5',
+                        color: '#dc2626',
                         width: 40,
                         height: 40,
                         borderRadius: '50%',
@@ -2616,7 +2616,7 @@ export default function AppUser() {
                         fontSize: 18,
                         display: 'grid',
                         placeItems: 'center',
-                        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                        boxShadow: '0 2px 8px rgba(220, 38, 38, 0.15)',
                       }}
                       title="Close Record View"
                     >
@@ -2628,44 +2628,44 @@ export default function AppUser() {
                   <div style={{ display: 'grid', gap: 24 }}>
                     {/* Demographics */}
                     <div>
-                      <h4 style={{ margin: '0 0 12px', color: '#38bdf8', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>👤 Demographic & Contact Information</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, background: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 14, border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.88rem' }}>
-                        <div><strong style={{ color: '#94a3b8' }}>Age:</strong> {selectedPatientDetails.age || 'N/A'} yrs</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Gender:</strong> {selectedPatientDetails.gender || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Blood Group:</strong> <span style={{ color: '#ef4444', fontWeight: 700 }}>{selectedPatientDetails.blood_group || 'N/A'}</span></div>
-                        <div><strong style={{ color: '#94a3b8' }}>Date of Birth:</strong> {selectedPatientDetails.date_of_birth || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Aadhaar / ID:</strong> {selectedPatientDetails.aadhaar || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Phone:</strong> {selectedPatientDetails.phone || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Email:</strong> {selectedPatientDetails.email || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Emergency Contact:</strong> {selectedPatientDetails.emergency_contact || 'N/A'}</div>
-                        <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: '#94a3b8' }}>Address:</strong> {selectedPatientDetails.address || 'N/A'}</div>
+                      <h4 style={{ margin: '0 0 12px', color: '#0284c7', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>👤 Demographic & Contact Information</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, background: '#f8fafc', padding: 16, borderRadius: 14, border: '1px solid #e2e8f0', fontSize: '0.88rem' }}>
+                        <div><strong style={{ color: '#64748b' }}>Age:</strong> {selectedPatientDetails.age || 'N/A'} yrs</div>
+                        <div><strong style={{ color: '#64748b' }}>Gender:</strong> {selectedPatientDetails.gender || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Blood Group:</strong> <span style={{ color: '#dc2626', fontWeight: 700 }}>{selectedPatientDetails.blood_group || 'N/A'}</span></div>
+                        <div><strong style={{ color: '#64748b' }}>Date of Birth:</strong> {selectedPatientDetails.date_of_birth || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Aadhaar / ID:</strong> {selectedPatientDetails.aadhaar || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Phone:</strong> {selectedPatientDetails.phone || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Email:</strong> {selectedPatientDetails.email || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Emergency Contact:</strong> {selectedPatientDetails.emergency_contact || 'N/A'}</div>
+                        <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: '#64748b' }}>Address:</strong> {selectedPatientDetails.address || 'N/A'}</div>
                       </div>
                     </div>
 
                     {/* Clinical History */}
                     <div>
-                      <h4 style={{ margin: '0 0 12px', color: '#10b981', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🩺 Clinical History & Medical Notes</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, background: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 14, border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.88rem' }}>
-                        <div><strong style={{ color: '#94a3b8' }}>Primary Disease:</strong> <span style={{ fontWeight: 700, color: '#f8fafc' }}>{selectedPatientDetails.disease}</span></div>
-                        <div><strong style={{ color: '#94a3b8' }}>Diagnosis:</strong> {selectedPatientDetails.diagnosis || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Doctor Assigned:</strong> {selectedPatientDetails.doctor_assigned || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Department:</strong> {selectedPatientDetails.department || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Admission Date:</strong> {formatISTDate(selectedPatientDetails.admission_date)}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Discharge Date:</strong> {selectedPatientDetails.discharge_date || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Symptoms:</strong> {Array.isArray(selectedPatientDetails.symptoms) && selectedPatientDetails.symptoms.length > 0 ? selectedPatientDetails.symptoms.join(', ') : 'None Reported'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Allergies:</strong> {Array.isArray(selectedPatientDetails.allergies) && selectedPatientDetails.allergies.length > 0 ? selectedPatientDetails.allergies.join(', ') : 'None'}</div>
-                        <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: '#94a3b8' }}>Medicines & Dosage:</strong> {Array.isArray(selectedPatientDetails.medicines) && selectedPatientDetails.medicines.length > 0 ? selectedPatientDetails.medicines.join(', ') : 'None'}</div>
+                      <h4 style={{ margin: '0 0 12px', color: '#059669', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>🩺 Clinical History & Medical Notes</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, background: '#f8fafc', padding: 16, borderRadius: 14, border: '1px solid #e2e8f0', fontSize: '0.88rem' }}>
+                        <div><strong style={{ color: '#64748b' }}>Primary Disease:</strong> <span style={{ fontWeight: 700, color: '#0f172a' }}>{selectedPatientDetails.disease}</span></div>
+                        <div><strong style={{ color: '#64748b' }}>Diagnosis:</strong> {selectedPatientDetails.diagnosis || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Doctor Assigned:</strong> {selectedPatientDetails.doctor_assigned || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Department:</strong> {selectedPatientDetails.department || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Admission Date:</strong> {formatISTDate(selectedPatientDetails.admission_date)}</div>
+                        <div><strong style={{ color: '#64748b' }}>Discharge Date:</strong> {selectedPatientDetails.discharge_date || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Symptoms:</strong> {Array.isArray(selectedPatientDetails.symptoms) && selectedPatientDetails.symptoms.length > 0 ? selectedPatientDetails.symptoms.join(', ') : 'None Reported'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Allergies:</strong> {Array.isArray(selectedPatientDetails.allergies) && selectedPatientDetails.allergies.length > 0 ? selectedPatientDetails.allergies.join(', ') : 'None'}</div>
+                        <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: '#64748b' }}>Medicines & Dosage:</strong> {Array.isArray(selectedPatientDetails.medicines) && selectedPatientDetails.medicines.length > 0 ? selectedPatientDetails.medicines.join(', ') : 'None'}</div>
                       </div>
                     </div>
 
                     {/* Security & Watermark Audit */}
                     <div>
-                      <h4 style={{ margin: '0 0 12px', color: '#f59e0b', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🛡️ Security Audit & Archival Status</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, background: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 14, border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.88rem' }}>
-                        <div><strong style={{ color: '#94a3b8' }}>Record Status:</strong> <span style={{ color: selectedPatientDetails.archived_at ? '#f59e0b' : '#10b981', fontWeight: 700 }}>{selectedPatientDetails.status || (selectedPatientDetails.archived_at ? 'Discharged / Archived' : 'Active Admission')}</span></div>
-                        <div><strong style={{ color: '#94a3b8' }}>Archived / Discharged At:</strong> {formatISTDateTime(selectedPatientDetails.archived_at)}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Watermark ID:</strong> {selectedPatientDetails.watermark_id || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Watermark Fingerprint:</strong> <code style={{ color: '#38bdf8' }}>{selectedPatientDetails.watermark_fingerprint ? selectedPatientDetails.watermark_fingerprint.slice(0, 16) + '…' : 'N/A'}</code></div>
+                      <h4 style={{ margin: '0 0 12px', color: '#b45309', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>🛡️ Security Audit & Archival Status</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, background: '#f8fafc', padding: 16, borderRadius: 14, border: '1px solid #e2e8f0', fontSize: '0.88rem' }}>
+                        <div><strong style={{ color: '#64748b' }}>Record Status:</strong> <span style={{ color: selectedPatientDetails.archived_at ? '#b45309' : '#059669', fontWeight: 700 }}>{selectedPatientDetails.status || (selectedPatientDetails.archived_at ? 'Discharged / Archived' : 'Active Admission')}</span></div>
+                        <div><strong style={{ color: '#64748b' }}>Archived / Discharged At:</strong> {formatISTDateTime(selectedPatientDetails.archived_at)}</div>
+                        <div><strong style={{ color: '#64748b' }}>Watermark ID:</strong> {selectedPatientDetails.watermark_id || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Watermark Fingerprint:</strong> <code style={{ color: '#0284c7' }}>{selectedPatientDetails.watermark_fingerprint ? selectedPatientDetails.watermark_fingerprint.slice(0, 16) + '…' : 'N/A'}</code></div>
                       </div>
                     </div>
                   </div>
@@ -2680,9 +2680,9 @@ export default function AppUser() {
                       style={{
                         padding: '10px 20px',
                         borderRadius: 12,
-                        border: '1px solid #38bdf8',
-                        background: 'rgba(56, 189, 248, 0.15)',
-                        color: '#38bdf8',
+                        border: '1px solid #bae6fd',
+                        background: '#f0f9ff',
+                        color: '#0284c7',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'flex',
@@ -2697,9 +2697,9 @@ export default function AppUser() {
                       style={{
                         padding: '10px 24px',
                         borderRadius: 12,
-                        border: '1px solid rgba(239, 68, 68, 0.4)',
-                        background: 'rgba(239, 68, 68, 0.15)',
-                        color: '#fca5a5',
+                        border: '1px solid #cbd5e1',
+                        background: '#f8fafc',
+                        color: '#475569',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'flex',
@@ -2716,24 +2716,24 @@ export default function AppUser() {
 
             {/* REAL VS SYNTHETIC TWIN SIDE-BY-SIDE COMPARISON MODAL */}
             {isCompareModalOpen && selectedTwinComparison ? (
-              <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 100, padding: 20 }}>
-                <div style={{ background: '#0f172a', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: 24, padding: 32, maxWidth: 900, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 60px rgba(0,0,0,0.8)', color: '#f8fafc' }}>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 100, padding: 20 }}>
+                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 24, padding: 32, maxWidth: 900, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.15)', color: '#0f172a' }}>
                   {/* Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16, marginBottom: 24 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: 16, marginBottom: 24 }}>
                     <div>
-                      <span style={{ fontSize: '0.8rem', color: '#c084fc', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <span style={{ fontSize: '0.8rem', color: '#7c3aed', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         🧬 Deception Engine Data Safeguard
                       </span>
-                      <h2 style={{ margin: '4px 0 0', fontSize: '1.5rem', fontWeight: 800 }}>
+                      <h2 style={{ margin: '4px 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>
                         Real Patient Data vs Generated Synthetic Twin Decoy
                       </h2>
                     </div>
                     <button
                       onClick={() => setIsCompareModalOpen(false)}
                       style={{
-                        background: 'rgba(239, 68, 68, 0.2)',
-                        border: '1px solid #ef4444',
-                        color: '#fca5a5',
+                        background: '#fef2f2',
+                        border: '1px solid #fca5a5',
+                        color: '#dc2626',
                         width: 40,
                         height: 40,
                         borderRadius: '50%',
@@ -2742,7 +2742,7 @@ export default function AppUser() {
                         fontSize: 18,
                         display: 'grid',
                         placeItems: 'center',
-                        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                        boxShadow: '0 2px 8px rgba(220, 38, 38, 0.15)',
                       }}
                       title="Close Comparison Window"
                     >
@@ -2753,49 +2753,49 @@ export default function AppUser() {
                   {/* Side-by-Side Comparison Layout */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                     {/* LEFT PANEL: REAL PATIENT DATA */}
-                    <div style={{ background: 'rgba(2, 132, 199, 0.05)', border: '1px solid rgba(2, 132, 199, 0.3)', borderRadius: 16, padding: 20 }}>
+                    <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 16, padding: 20 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                         <span style={{ fontSize: 18 }}>🔒</span>
-                        <h4 style={{ margin: 0, color: '#38bdf8', fontSize: '1rem', fontWeight: 700 }}>
+                        <h4 style={{ margin: 0, color: '#0369a1', fontSize: '1rem', fontWeight: 700 }}>
                           Original Patient Data (Stored Securely)
                         </h4>
                       </div>
 
                       <div style={{ display: 'grid', gap: 12, fontSize: '0.85rem' }}>
-                        <div><strong style={{ color: '#94a3b8' }}>Original Name:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{selectedTwinComparison.name}</span></div>
-                        <div><strong style={{ color: '#94a3b8' }}>Patient ID:</strong> P-{selectedTwinComparison.patient_id || selectedTwinComparison.id}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Age / Gender:</strong> {selectedTwinComparison.age || 'N/A'} yrs / {selectedTwinComparison.gender || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Blood Group:</strong> {selectedTwinComparison.blood_group || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Real Aadhaar / ID:</strong> {selectedTwinComparison.aadhaar || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Real Contact Phone:</strong> {selectedTwinComparison.phone || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Real Email Address:</strong> {selectedTwinComparison.email || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Real Primary Disease:</strong> <span style={{ color: '#38bdf8', fontWeight: 600 }}>{selectedTwinComparison.disease}</span></div>
-                        <div><strong style={{ color: '#94a3b8' }}>Real Diagnosis:</strong> {selectedTwinComparison.diagnosis || 'N/A'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Forensic Watermark ID:</strong> <code style={{ color: '#38bdf8' }}>{selectedTwinComparison.watermark_id || 'N/A'}</code></div>
+                        <div><strong style={{ color: '#64748b' }}>Original Name:</strong> <span style={{ color: '#0f172a', fontWeight: 700 }}>{selectedTwinComparison.name}</span></div>
+                        <div><strong style={{ color: '#64748b' }}>Patient ID:</strong> P-{selectedTwinComparison.patient_id || selectedTwinComparison.id}</div>
+                        <div><strong style={{ color: '#64748b' }}>Age / Gender:</strong> {selectedTwinComparison.age || 'N/A'} yrs / {selectedTwinComparison.gender || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Blood Group:</strong> {selectedTwinComparison.blood_group || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Real Aadhaar / ID:</strong> {selectedTwinComparison.aadhaar || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Real Contact Phone:</strong> {selectedTwinComparison.phone || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Real Email Address:</strong> {selectedTwinComparison.email || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Real Primary Disease:</strong> <span style={{ color: '#0284c7', fontWeight: 600 }}>{selectedTwinComparison.disease}</span></div>
+                        <div><strong style={{ color: '#64748b' }}>Real Diagnosis:</strong> {selectedTwinComparison.diagnosis || 'N/A'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Forensic Watermark ID:</strong> <code style={{ color: '#0284c7' }}>{selectedTwinComparison.watermark_id || 'N/A'}</code></div>
                       </div>
                     </div>
 
                     {/* RIGHT PANEL: SYNTHETIC TWIN DATA (DECOY) */}
-                    <div style={{ background: 'rgba(168, 85, 247, 0.05)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: 16, padding: 20 }}>
+                    <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 16, padding: 20 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                         <span style={{ fontSize: 18 }}>🧬</span>
-                        <h4 style={{ margin: 0, color: '#c084fc', fontSize: '1rem', fontWeight: 700 }}>
+                        <h4 style={{ margin: 0, color: '#7c3aed', fontSize: '1rem', fontWeight: 700 }}>
                           Generated Synthetic Twin (Served to Decoys)
                         </h4>
                       </div>
 
                       <div style={{ display: 'grid', gap: 12, fontSize: '0.85rem' }}>
-                        <div><strong style={{ color: '#94a3b8' }}>Synthetic Decoy Name:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{selectedTwinComparison.forensic_record?.name || selectedTwinComparison.name}</span></div>
-                        <div><strong style={{ color: '#94a3b8' }}>Synthetic Patient ID:</strong> <code style={{ color: '#c084fc' }}>{selectedTwinComparison.forensic_record?.synthetic_patient_id ? selectedTwinComparison.forensic_record.synthetic_patient_id.slice(0, 14) + '…' : 'SYNTH-TWIN'}</code></div>
-                        <div><strong style={{ color: '#94a3b8' }}>Age Range:</strong> {selectedTwinComparison.forensic_record?.age_range || `${selectedTwinComparison.age - 2}-${selectedTwinComparison.age + 2} yrs`}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Treatment Pattern:</strong> {selectedTwinComparison.forensic_record?.treatment_pattern || 'Standard Decoy Shift'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Synthetic Aadhaar:</strong> {selectedTwinComparison.forensic_record?.aadhaar_number || 'Anonymized Decoy'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Synthetic Phone:</strong> {selectedTwinComparison.forensic_record?.phone_number || 'Decoy Contact'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Synthetic Email:</strong> {selectedTwinComparison.forensic_record?.email || 'decoy@decoy-health.org'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Synthetic Decoy Name:</strong> <span style={{ color: '#0f172a', fontWeight: 700 }}>{selectedTwinComparison.forensic_record?.name || selectedTwinComparison.name}</span></div>
+                        <div><strong style={{ color: '#64748b' }}>Synthetic Patient ID:</strong> <code style={{ color: '#7c3aed' }}>{selectedTwinComparison.forensic_record?.synthetic_patient_id ? selectedTwinComparison.forensic_record.synthetic_patient_id.slice(0, 14) + '…' : 'SYNTH-TWIN'}</code></div>
+                        <div><strong style={{ color: '#64748b' }}>Age Range:</strong> {selectedTwinComparison.forensic_record?.age_range || `${selectedTwinComparison.age - 2}-${selectedTwinComparison.age + 2} yrs`}</div>
+                        <div><strong style={{ color: '#64748b' }}>Treatment Pattern:</strong> {selectedTwinComparison.forensic_record?.treatment_pattern || 'Standard Decoy Shift'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Synthetic Aadhaar:</strong> {selectedTwinComparison.forensic_record?.aadhaar_number || 'Anonymized Decoy'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Synthetic Phone:</strong> {selectedTwinComparison.forensic_record?.phone_number || 'Decoy Contact'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Synthetic Email:</strong> {selectedTwinComparison.forensic_record?.email || 'decoy@decoy-health.org'}</div>
 
-                        <div><strong style={{ color: '#94a3b8' }}>Decoy Disease:</strong> <span style={{ color: '#c084fc', fontWeight: 600 }}>{selectedTwinComparison.forensic_record?.disease || selectedTwinComparison.disease}</span></div>
-                        <div><strong style={{ color: '#94a3b8' }}>Decoy Diagnosis:</strong> {selectedTwinComparison.forensic_record?.diagnosis || selectedTwinComparison.diagnosis || 'Decoy Shift'}</div>
-                        <div><strong style={{ color: '#94a3b8' }}>Watermark Fingerprint:</strong> <code style={{ color: '#a855f7' }}>{selectedTwinComparison.forensic_record?.watermark_fingerprint ? selectedTwinComparison.forensic_record.watermark_fingerprint.slice(0, 16) + '…' : 'N/A'}</code></div>
+                        <div><strong style={{ color: '#64748b' }}>Decoy Disease:</strong> <span style={{ color: '#7c3aed', fontWeight: 600 }}>{selectedTwinComparison.forensic_record?.disease || selectedTwinComparison.disease}</span></div>
+                        <div><strong style={{ color: '#64748b' }}>Decoy Diagnosis:</strong> {selectedTwinComparison.forensic_record?.diagnosis || selectedTwinComparison.diagnosis || 'Decoy Shift'}</div>
+                        <div><strong style={{ color: '#64748b' }}>Watermark Fingerprint:</strong> <code style={{ color: '#7c3aed' }}>{selectedTwinComparison.forensic_record?.watermark_fingerprint ? selectedTwinComparison.forensic_record.watermark_fingerprint.slice(0, 16) + '…' : 'N/A'}</code></div>
                       </div>
                     </div>
                   </div>
@@ -2810,9 +2810,9 @@ export default function AppUser() {
                       style={{
                         padding: '10px 20px',
                         borderRadius: 12,
-                        border: '1px solid #38bdf8',
-                        background: 'rgba(56, 189, 248, 0.15)',
-                        color: '#38bdf8',
+                        border: '1px solid #bae6fd',
+                        background: '#f0f9ff',
+                        color: '#0284c7',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'flex',
@@ -2827,9 +2827,9 @@ export default function AppUser() {
                       style={{
                         padding: '10px 24px',
                         borderRadius: 12,
-                        border: '1px solid rgba(239, 68, 68, 0.4)',
-                        background: 'rgba(239, 68, 68, 0.15)',
-                        color: '#fca5a5',
+                        border: '1px solid #cbd5e1',
+                        background: '#f8fafc',
+                        color: '#475569',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'flex',
@@ -2850,33 +2850,33 @@ export default function AppUser() {
 
             {/* TAB 3: REGISTER PATIENT */}
             {activeTab === 'register' ? (
-              <div style={{ maxWidth: 880, margin: '0 auto', padding: 32, background: 'rgba(15, 23, 42, 0.95)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
-                <div style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16, marginBottom: 24 }}>
-                  <span style={{ color: '#38bdf8', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{editingPatientId ? 'Edit Existing Patient' : 'Healthcare Clinical Admission'}</span>
+              <div style={{ maxWidth: 880, margin: '0 auto', padding: 32, background: '#ffffff', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)' }}>
+                <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: 16, marginBottom: 24 }}>
+                  <span style={{ color: '#0284c7', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{editingPatientId ? 'Edit Existing Patient' : 'Healthcare Clinical Admission'}</span>
 
-                  <h2 style={{ margin: '4px 0 0', fontSize: '1.6rem', fontWeight: 700 }}>{editingPatientId ? 'Update Patient Record' : 'Comprehensive Patient Registration'}</h2>
+                  <h2 style={{ margin: '4px 0 0', fontSize: '1.6rem', fontWeight: 800, color: '#0f172a' }}>{editingPatientId ? 'Update Patient Record' : 'Comprehensive Patient Registration'}</h2>
                 </div>
 
                 <form onSubmit={handlePatientSubmit} style={{ display: 'grid', gap: 24 }}>
                   
                   {/* SECTION 1: PERSONAL & CONTACT INFORMATION */}
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 20, borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <h3 style={{ margin: '0 0 16px', color: '#0284c7', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ background: '#f8fafc', padding: 20, borderRadius: 16, border: '1px solid #e2e8f0' }}>
+                    <h3 style={{ margin: '0 0 16px', color: '#0284c7', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
                       👤 Personal & Contact Details
                     </h3>
                     
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.2fr 1fr', gap: 14, marginBottom: 14 }}>
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Patient ID (Auto)
-                        <input disabled value={`P-${(patients.length + 1001)}`} style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#38bdf8', fontWeight: 700 }} />
+                        <input disabled value={`P-${(patients.length + 1001)}`} style={{ padding: 11, borderRadius: 8, border: '1px solid #e2e8f0', background: '#f1f5f9', color: '#0284c7', fontWeight: 700 }} />
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Full Name *
-                        <input required value={patientForm.name} onChange={(e) => setPatientForm({ ...patientForm, name: e.target.value })} placeholder="e.g. Ananya Sharma" style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                        <input required value={patientForm.name} onChange={(e) => setPatientForm({ ...patientForm, name: e.target.value })} placeholder="e.g. Ananya Sharma" style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Date of Birth *
                         <input
                           type="date"
@@ -2887,11 +2887,11 @@ export default function AppUser() {
                             const calculatedAge = calculateAgeFromDob(dob)
                             setPatientForm({ ...patientForm, date_of_birth: dob, age: calculatedAge })
                           }}
-                          style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                          style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }}
                         />
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Age (Auto-calc)
                         <input
                           type="number"
@@ -2899,18 +2899,18 @@ export default function AppUser() {
                           max={130}
                           value={patientForm.age}
                           onChange={(e) => setPatientForm({ ...patientForm, age: Number(e.target.value) })}
-                          style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#38bdf8', fontWeight: 700 }}
+                          style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0284c7', fontWeight: 700 }}
                         />
                       </label>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Gender *
                         <select
                           value={patientForm.gender || 'Male'}
                           onChange={(e) => setPatientForm({ ...patientForm, gender: e.target.value })}
-                          style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#1e293b', color: '#fff', fontSize: '0.9rem' }}
+                          style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.9rem' }}
                         >
                           <option value="Male">Male</option>
                           <option value="Female">Female</option>
@@ -2918,12 +2918,12 @@ export default function AppUser() {
                         </select>
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Blood Group *
                         <select
                           value={patientForm.blood_group || 'O+'}
                           onChange={(e) => setPatientForm({ ...patientForm, blood_group: e.target.value })}
-                          style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#1e293b', color: '#fff', fontSize: '0.9rem' }}
+                          style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.9rem' }}
                         >
                           <option value="A+">A+</option>
                           <option value="A-">A-</option>
@@ -2936,79 +2936,79 @@ export default function AppUser() {
                         </select>
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Phone Number
-                        <input value={patientForm.phone || ''} onChange={(e) => setPatientForm({ ...patientForm, phone: e.target.value })} placeholder="+91 9876543210" style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                        <input value={patientForm.phone || ''} onChange={(e) => setPatientForm({ ...patientForm, phone: e.target.value })} placeholder="+91 9876543210" style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Email Address
-                        <input type="email" value={patientForm.email || ''} onChange={(e) => setPatientForm({ ...patientForm, email: e.target.value })} placeholder="patient@example.com" style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                        <input type="email" value={patientForm.email || ''} onChange={(e) => setPatientForm({ ...patientForm, email: e.target.value })} placeholder="patient@example.com" style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                       </label>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Address
-                        <input value={patientForm.address || ''} onChange={(e) => setPatientForm({ ...patientForm, address: e.target.value })} placeholder="City, State" style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                        <input value={patientForm.address || ''} onChange={(e) => setPatientForm({ ...patientForm, address: e.target.value })} placeholder="City, State" style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Aadhaar / Patient ID (Simulation)
-                        <input value={patientForm.aadhaar || ''} onChange={(e) => setPatientForm({ ...patientForm, aadhaar: e.target.value })} placeholder="1234-5678-9012" style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                        <input value={patientForm.aadhaar || ''} onChange={(e) => setPatientForm({ ...patientForm, aadhaar: e.target.value })} placeholder="1234-5678-9012" style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Emergency Contact
-                        <input value={patientForm.emergency_contact || ''} onChange={(e) => setPatientForm({ ...patientForm, emergency_contact: e.target.value })} placeholder="Spouse: +91 9876500000" style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                        <input value={patientForm.emergency_contact || ''} onChange={(e) => setPatientForm({ ...patientForm, emergency_contact: e.target.value })} placeholder="Spouse: +91 9876500000" style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                       </label>
                     </div>
                   </div>
 
                   {/* SECTION 2: CLINICAL & MEDICAL INFORMATION */}
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 20, borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <h3 style={{ margin: '0 0 16px', color: '#10b981', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ background: '#f8fafc', padding: 20, borderRadius: 16, border: '1px solid #e2e8f0' }}>
+                    <h3 style={{ margin: '0 0 16px', color: '#059669', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
                       🏥 Clinical & Diagnosis Details
                     </h3>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Disease / Specialty *
-                        <input required value={patientForm.disease} onChange={(e) => setPatientForm({ ...patientForm, disease: e.target.value })} placeholder="e.g. Essential Hypertension" style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                        <input required value={patientForm.disease} onChange={(e) => setPatientForm({ ...patientForm, disease: e.target.value })} placeholder="e.g. Essential Hypertension" style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Diagnosis Status *
-                        <input required value={patientForm.diagnosis} onChange={(e) => setPatientForm({ ...patientForm, diagnosis: e.target.value })} placeholder="e.g. Stage 2 High Blood Pressure" style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                        <input required value={patientForm.diagnosis} onChange={(e) => setPatientForm({ ...patientForm, diagnosis: e.target.value })} placeholder="e.g. Stage 2 High Blood Pressure" style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                       </label>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Symptoms (comma separated)
-                        <input value={(patientForm.symptoms || []).join(', ')} onChange={(e) => setPatientForm({ ...patientForm, symptoms: e.target.value.split(',').map((s) => s.trim()) })} placeholder="Chest tightness, Headache" style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                        <input value={(patientForm.symptoms || []).join(', ')} onChange={(e) => setPatientForm({ ...patientForm, symptoms: e.target.value.split(',').map((s) => s.trim()) })} placeholder="Chest tightness, Headache" style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Allergies (comma separated)
-                        <input value={(patientForm.allergies || []).join(', ')} onChange={(e) => setPatientForm({ ...patientForm, allergies: e.target.value.split(',').map((s) => s.trim()) })} placeholder="Penicillin, Sulfa drugs" style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                        <input value={(patientForm.allergies || []).join(', ')} onChange={(e) => setPatientForm({ ...patientForm, allergies: e.target.value.split(',').map((s) => s.trim()) })} placeholder="Penicillin, Sulfa drugs" style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                       </label>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Prescribed Medicines (comma separated)
-                        <input value={patientForm.medicines.join(', ')} onChange={(e) => setPatientForm({ ...patientForm, medicines: e.target.value.split(',').map((s) => s.trim()) })} placeholder="Amlodipine 5mg, Telmisartan 40mg" style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                        <input value={patientForm.medicines.join(', ')} onChange={(e) => setPatientForm({ ...patientForm, medicines: e.target.value.split(',').map((s) => s.trim()) })} placeholder="Amlodipine 5mg, Telmisartan 40mg" style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Dosage Instructions
-                        <input value={(patientForm.dosages || []).join(', ')} onChange={(e) => setPatientForm({ ...patientForm, dosages: e.target.value.split(',').map((s) => s.trim()) })} placeholder="1 tab daily after breakfast" style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                        <input value={(patientForm.dosages || []).join(', ')} onChange={(e) => setPatientForm({ ...patientForm, dosages: e.target.value.split(',').map((s) => s.trim()) })} placeholder="1 tab daily after breakfast" style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                       </label>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Laboratory Reports (Upload)
                         <input
                           type="file"
@@ -3017,14 +3017,14 @@ export default function AppUser() {
                             const files = Array.from(e.target.files || []).map((f) => f.name)
                             setPatientForm({ ...patientForm, lab_reports: [...(patientForm.lab_reports ?? []), ...files] })
                           }}
-                          style={{ padding: 8, borderRadius: 8, border: '1px dashed rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: '#cbd5e1', fontSize: '0.8rem' }}
+                          style={{ padding: 8, borderRadius: 8, border: '1px dashed #cbd5e1', background: '#ffffff', color: '#64748b', fontSize: '0.8rem' }}
                         />
                         {(patientForm.lab_reports || []).length > 0 ? (
-                          <span style={{ fontSize: '0.75rem', color: '#2dd4bf' }}>Attached: {(patientForm.lab_reports ?? []).join(', ')}</span>
+                          <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>Attached: {(patientForm.lab_reports ?? []).join(', ')}</span>
                         ) : null}
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Medical Images (Upload)
                         <input
                           type="file"
@@ -3034,17 +3034,17 @@ export default function AppUser() {
                             const files = Array.from(e.target.files || []).map((f) => f.name)
                             setPatientForm({ ...patientForm, medical_images: [...(patientForm.medical_images ?? []), ...files] })
                           }}
-                          style={{ padding: 8, borderRadius: 8, border: '1px dashed rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: '#cbd5e1', fontSize: '0.8rem' }}
+                          style={{ padding: 8, borderRadius: 8, border: '1px dashed #cbd5e1', background: '#ffffff', color: '#64748b', fontSize: '0.8rem' }}
                         />
                         {(patientForm.medical_images || []).length > 0 ? (
-                          <span style={{ fontSize: '0.75rem', color: '#2dd4bf' }}>Attached: {(patientForm.medical_images ?? []).join(', ')}</span>
+                          <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>Attached: {(patientForm.medical_images ?? []).join(', ')}</span>
                         ) : null}
 
                       </label>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 14 }}>
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Doctor Assigned *
                         <select
                           value={patientForm.doctor_assigned || 'Dr. Priya Nair (Cardiology)'}
@@ -3060,7 +3060,7 @@ export default function AppUser() {
                             const dept = docToDeptMap[doc] || patientForm.department || 'Cardiology'
                             setPatientForm({ ...patientForm, doctor_assigned: doc, department: dept })
                           }}
-                          style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#1e293b', color: '#fff', fontSize: '0.85rem' }}
+                          style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.85rem' }}
                         >
                           <option value="Dr. Priya Nair (Cardiology)">Dr. Priya Nair (Cardiology)</option>
                           <option value="Dr. Ramesh Kumar (Neurology)">Dr. Ramesh Kumar (Neurology)</option>
@@ -3070,7 +3070,7 @@ export default function AppUser() {
                         </select>
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Department *
                         <select
                           value={patientForm.department || 'Cardiology'}
@@ -3087,7 +3087,7 @@ export default function AppUser() {
                             const doc = deptToDocMap[dept] || patientForm.doctor_assigned || 'Dr. Priya Nair (Cardiology)'
                             setPatientForm({ ...patientForm, department: dept, doctor_assigned: doc })
                           }}
-                          style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#1e293b', color: '#fff', fontSize: '0.85rem' }}
+                          style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.85rem' }}
                         >
                           <option value="Cardiology">Cardiology</option>
                           <option value="Neurology">Neurology</option>
@@ -3098,24 +3098,24 @@ export default function AppUser() {
                         </select>
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Admission Date *
                         <input
                           type="date"
                           required
                           value={patientForm.admission_date || new Date().toISOString().slice(0, 10)}
                           onChange={(e) => setPatientForm({ ...patientForm, admission_date: e.target.value })}
-                          style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                          style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }}
                         />
                       </label>
 
-                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
                         Discharge Date (Optional)
                         <input
                           type="date"
                           value={patientForm.discharge_date || ''}
                           onChange={(e) => setPatientForm({ ...patientForm, discharge_date: e.target.value })}
-                          style={{ padding: 11, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                          style={{ padding: 11, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }}
                         />
                       </label>
                     </div>
@@ -3123,7 +3123,7 @@ export default function AppUser() {
 
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
                     {editingPatientId ? (
-                      <button type="button" onClick={cancelEditingPatient} style={{ padding: '16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: '#cbd5e1', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}>
+                      <button type="button" onClick={cancelEditingPatient} style={{ padding: '16px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}>
                         Cancel Edit
                       </button>
                     ) : null}
@@ -3136,7 +3136,7 @@ export default function AppUser() {
                         borderRadius: 12,
                         border: 'none',
                         background: isSubmittingPatient
-                          ? 'rgba(148, 163, 184, 0.4)'
+                          ? '#cbd5e1'
                           : editingPatientId
                           ? 'linear-gradient(135deg, #059669, #10b981)'
                           : 'linear-gradient(135deg, #0284c7, #2563eb)',
@@ -3144,7 +3144,7 @@ export default function AppUser() {
                         fontWeight: 700,
                         fontSize: '1rem',
                         cursor: isSubmittingPatient ? 'not-allowed' : 'pointer',
-                        boxShadow: isSubmittingPatient ? 'none' : '0 4px 16px rgba(2, 132, 199, 0.4)',
+                        boxShadow: isSubmittingPatient ? 'none' : '0 4px 16px rgba(2, 132, 199, 0.3)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 10,
@@ -3167,32 +3167,32 @@ export default function AppUser() {
 
             {/* TAB 4: LAB DIAGNOSTICS */}
             {activeTab === 'lab' ? (
-              <div style={{ maxWidth: 600, margin: '0 auto', padding: 28, background: 'rgba(15, 23, 42, 0.8)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)' }}>
-                <h2 style={{ margin: '0 0 16px' }}>Diagnostic Lab Result Lookup</h2>
+              <div style={{ maxWidth: 600, margin: '0 auto', padding: 28, background: '#ffffff', borderRadius: 20, border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
+                <h2 style={{ margin: '0 0 16px', color: '#0f172a', fontWeight: 800 }}>Diagnostic Lab Result Lookup</h2>
                 <form onSubmit={handleFetchLab} style={{ display: 'grid', gap: 14 }}>
-                  <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem' }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
                     Patient ID or Identifier
-                    <input value={labPatientId} onChange={(e) => setLabPatientId(e.target.value)} placeholder="e.g. P-1001" style={{ padding: 12, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+                    <input value={labPatientId} onChange={(e) => setLabPatientId(e.target.value)} placeholder="e.g. P-1001" style={{ padding: 12, borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }} />
                   </label>
-                  <button type="submit" style={{ padding: '12px', borderRadius: 10, border: 'none', background: '#10b981', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+                  <button type="submit" style={{ padding: '12px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #059669, #10b981)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
                     Fetch Lab Results
                   </button>
                 </form>
 
                 {labResult ? (
-                  <div style={{ marginTop: 24, padding: 18, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}>
+                  <div style={{ marginTop: 24, padding: 18, borderRadius: 12, background: '#f0fdf4', border: '1px solid #bbf7d0', position: 'relative' }}>
                     <button
                       onClick={() => setLabResult(null)}
-                      style={{ position: 'absolute', top: 14, right: 14, background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', color: '#fca5a5', width: 28, height: 28, borderRadius: '50%', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}
+                      style={{ position: 'absolute', top: 14, right: 14, background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626', width: 28, height: 28, borderRadius: '50%', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}
                       title="Close Lab Result"
                     >
                       ✕
                     </button>
-                    <h3 style={{ margin: '0 0 10px', color: '#34d399' }}>Lab Result Retrieved</h3>
-                    <p><strong>Patient ID:</strong> {labResult.patient_id}</p>
-                    <p><strong>Test Name:</strong> {labResult.test_name}</p>
-                    <p><strong>Result:</strong> {labResult.result}</p>
-                    <p><strong>Reported At:</strong> {new Date(labResult.reported_at).toLocaleString()}</p>
+                    <h3 style={{ margin: '0 0 10px', color: '#059669', fontWeight: 700 }}>Lab Result Retrieved</h3>
+                    <p style={{ margin: '4px 0', color: '#0f172a' }}><strong>Patient ID:</strong> {labResult.patient_id}</p>
+                    <p style={{ margin: '4px 0', color: '#0f172a' }}><strong>Test Name:</strong> {labResult.test_name}</p>
+                    <p style={{ margin: '4px 0', color: '#0f172a' }}><strong>Result:</strong> {labResult.result}</p>
+                    <p style={{ margin: '4px 0', color: '#64748b', fontSize: '0.85rem' }}><strong>Reported At:</strong> {new Date(labResult.reported_at).toLocaleString()}</p>
                   </div>
                 ) : null}
               </div>
@@ -3202,15 +3202,15 @@ export default function AppUser() {
             {activeTab === 'twins' ? (
               <div style={{ display: 'grid', gap: 24 }}>
                 {/* Synthetic Twin Decoy Catalog */}
-                <div style={{ background: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: 24 }}>
+                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#f8fafc', fontWeight: 800 }}>
+                      <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a', fontWeight: 800 }}>
                         🧬 AI Synthetic Patient Decoy Catalog
                       </h3>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ background: 'rgba(168, 85, 247, 0.15)', border: '1px solid #c084fc', color: '#e9d5ff', padding: '6px 14px', borderRadius: 999, fontSize: '0.82rem', fontWeight: 700 }}>
+                      <span style={{ background: '#faf5ff', border: '1px solid #d8b4fe', color: '#7c3aed', padding: '6px 14px', borderRadius: 999, fontSize: '0.82rem', fontWeight: 700 }}>
                         {activeSyntheticRecords.length} Active Synthetic Decoys
                       </span>
                     </div>
@@ -3218,9 +3218,9 @@ export default function AppUser() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
                     {activeSyntheticRecords.length === 0 ? (
-                      <div style={{ gridColumn: '1 / -1', padding: '36px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(255,255,255,0.1)' }}>
-                        <div style={{ fontSize: '1.25rem', color: '#cbd5e1', fontWeight: 700, marginBottom: 8 }}>📋 No Active Patient Records in Vault</div>
-                        <div style={{ fontSize: '0.88rem', color: '#94a3b8', maxWidth: 500, margin: '0 auto 18px' }}>
+                      <div style={{ gridColumn: '1 / -1', padding: '36px', textAlign: 'center', background: '#f8fafc', borderRadius: 16, border: '1px dashed #cbd5e1' }}>
+                        <div style={{ fontSize: '1.25rem', color: '#0f172a', fontWeight: 700, marginBottom: 8 }}>📋 No Active Patient Records in Vault</div>
+                        <div style={{ fontSize: '0.88rem', color: '#64748b', maxWidth: 500, margin: '0 auto 18px' }}>
                           Whenever an Administrator registers a genuine patient record into the clinical database, our AI engine automatically generates a corresponding 1:1 synthetic decoy twin.
                         </div>
                         <button
@@ -3245,32 +3245,32 @@ export default function AppUser() {
                         const synFingerprint = syn.watermark_fingerprint || 'Unavailable'
 
                         return (
-                          <div key={synId} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: 16, padding: 18, display: 'grid', gap: 12 }}>
+                          <div key={synId} style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 16, padding: 18, display: 'grid', gap: 12 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                               <div>
-                                <span style={{ fontSize: '0.72rem', color: '#c084fc', fontWeight: 800, textTransform: 'uppercase' }}>Synthetic Twin Decoy</span>
-                                <h4 style={{ margin: '2px 0 0', color: '#f8fafc', fontSize: '1.1rem', fontWeight: 700 }}>{synName}</h4>
+                                <span style={{ fontSize: '0.72rem', color: '#7c3aed', fontWeight: 800, textTransform: 'uppercase' }}>Synthetic Twin Decoy</span>
+                                <h4 style={{ margin: '2px 0 0', color: '#0f172a', fontSize: '1.1rem', fontWeight: 700 }}>{synName}</h4>
                               </div>
-                              <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: 6 }}>
+                              <span style={{ background: '#f0f9ff', border: '1px solid #bae6fd', color: '#0284c7', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: 6 }}>
                                 {synId}
                               </span>
                             </div>
 
-                            <div style={{ display: 'grid', gap: 6, fontSize: '0.8rem', color: '#cbd5e1' }}>
-                              <div><strong>Condition:</strong> <span style={{ color: '#e2e8f0' }}>{synDisease}</span></div>
-                              <div><strong>Diagnosis:</strong> <span style={{ color: '#94a3b8' }}>{synDiagnosis}</span></div>
-                              <div><strong>Treatment Pattern:</strong> <span style={{ color: '#a7f3d0' }}>{synTreatment}</span></div>
+                            <div style={{ display: 'grid', gap: 6, fontSize: '0.8rem', color: '#334155' }}>
+                              <div><strong>Condition:</strong> <span style={{ color: '#0f172a', fontWeight: 600 }}>{synDisease}</span></div>
+                              <div><strong>Diagnosis:</strong> <span style={{ color: '#64748b' }}>{synDiagnosis}</span></div>
+                              <div><strong>Treatment Pattern:</strong> <span style={{ color: '#059669', fontWeight: 600 }}>{synTreatment}</span></div>
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 4 }}>
-                                <div><strong>Age Range:</strong> {synAgeRange}</div>
-                                <div><strong>Phone:</strong> {synPhone}</div>
-                                <div><strong>Aadhaar:</strong> {synAadhaar}</div>
-                                <div><strong>Email:</strong> <span style={{ color: '#38bdf8' }}>{synEmail}</span></div>
+                                <div><strong style={{ color: '#64748b' }}>Age Range:</strong> {synAgeRange}</div>
+                                <div><strong style={{ color: '#64748b' }}>Phone:</strong> {synPhone}</div>
+                                <div><strong style={{ color: '#64748b' }}>Aadhaar:</strong> {synAadhaar}</div>
+                                <div><strong style={{ color: '#64748b' }}>Email:</strong> <span style={{ color: '#0284c7' }}>{synEmail}</span></div>
                               </div>
-                              <div><strong>Watermark Fingerprint:</strong> <code style={{ color: '#c084fc', fontSize: '0.75rem' }}>{synFingerprint}</code></div>
+                              <div><strong style={{ color: '#64748b' }}>Watermark Fingerprint:</strong> <code style={{ color: '#7c3aed', fontSize: '0.75rem' }}>{synFingerprint}</code></div>
                             </div>
 
-                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Linked to Real: {syn.id || syn.patient_id || 'Vault'} ({linkedPatient?.name || 'Protected Inpatient'})</span>
+                            <div style={{ borderTop: '1px solid #f3e8ff', paddingTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Linked to Real: {syn.id || syn.patient_id || 'Vault'} ({linkedPatient?.name || 'Protected Inpatient'})</span>
                               <button
                                 onClick={() => {
                                   const compTarget = linkedPatient || {
@@ -3299,7 +3299,7 @@ export default function AppUser() {
                                   setSelectedTwinComparison(compTarget)
                                   setIsCompareModalOpen(true)
                                 }}
-                                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #c084fc', background: 'rgba(168, 85, 247, 0.15)', color: '#e9d5ff', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #d8b4fe', background: '#f5f3ff', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
                               >
                                 🔍 Compare Side-by-Side
                               </button>
@@ -3317,17 +3317,17 @@ export default function AppUser() {
             {activeTab === 'gateway' ? (
               <div style={{ display: 'grid', gap: 24 }}>
                 {/* Live AI Traffic Evaluation & Interception Feed */}
-                <div style={{ background: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: 24 }}>
+                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f8fafc', fontWeight: 800 }}>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
                         📡 Live AI Gateway Decision & Traffic Evaluation Stream
                       </h3>
-                      <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.82rem' }}>
+                      <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.82rem' }}>
                         Real-time inspection decisions rendered by the Port 8001 AI Gateway engine.
                       </p>
                     </div>
-                    <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#7dd3fc', padding: '5px 12px', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700 }}>
+                    <span style={{ background: '#f0f9ff', border: '1px solid #bae6fd', color: '#0284c7', padding: '5px 12px', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700 }}>
                       ● Continuous Deep Packet Inspection
                     </span>
                   </div>
@@ -3374,8 +3374,8 @@ export default function AppUser() {
                       <div
                         key={idx}
                         style={{
-                          background: 'rgba(255,255,255,0.02)',
-                          border: item.isThreat ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(16, 185, 129, 0.25)',
+                          background: item.isThreat ? '#fff1f2' : '#f0fdf4',
+                          border: item.isThreat ? '1px solid #fecdd3' : '1px solid #bbf7d0',
                           borderRadius: 12,
                           padding: '14px 18px',
                           display: 'flex',
@@ -3387,11 +3387,11 @@ export default function AppUser() {
                       >
                         <div style={{ display: 'grid', gap: 4 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <strong style={{ color: '#f8fafc', fontSize: '0.88rem' }}>{item.client}</strong>
+                            <strong style={{ color: '#0f172a', fontSize: '0.88rem' }}>{item.client}</strong>
                             <span
                               style={{
-                                background: item.isThreat ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                                color: item.isThreat ? '#fca5a5' : '#6ee7b7',
+                                background: item.isThreat ? '#fee2e2' : '#dcfce7',
+                                color: item.isThreat ? '#dc2626' : '#059669',
                                 fontSize: '0.72rem',
                                 fontWeight: 700,
                                 padding: '2px 8px',
@@ -3400,19 +3400,19 @@ export default function AppUser() {
                             >
                               Threat Score: {item.score}%
                             </span>
-                            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{item.time}</span>
+                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{item.time}</span>
                           </div>
-                          <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'monospace' }}>
+                          <div style={{ fontSize: '0.78rem', color: '#475569', fontFamily: 'monospace' }}>
                             {item.query}
                           </div>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                           <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: item.isThreat ? '#c084fc' : '#34d399' }}>
+                            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: item.isThreat ? '#7c3aed' : '#059669' }}>
                               {item.decision}
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: 2 }}>
+                            <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: 2, fontWeight: 600 }}>
                               🛡️ Real Vault: {item.realStatus}
                             </div>
                           </div>
@@ -3423,12 +3423,12 @@ export default function AppUser() {
                 </div>
 
                 {/* Emergency Hostile IP Defense & Deception Scrub */}
-                <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                   <div>
-                    <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#f8fafc', fontWeight: 700 }}>
+                    <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a', fontWeight: 700 }}>
                       🛡️ Emergency Enclave Firewall & Deception Cache Control
                     </h4>
-                    <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.82rem', maxWidth: 640 }}>
+                    <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.82rem', maxWidth: 640 }}>
                       Manually isolate a hostile attacker IP address or scrub active deception session caches once an adversary demonstration has concluded.
                     </p>
                   </div>
@@ -3449,7 +3449,7 @@ export default function AppUser() {
                         }
                       }}
                       disabled={isTeardownActive}
-                      style={{ padding: '10px 18px', borderRadius: 10, border: '1px solid #38bdf8', background: 'rgba(56, 189, 248, 0.15)', color: '#7dd3fc', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}
+                      style={{ padding: '10px 18px', borderRadius: 10, border: '1px solid #bae6fd', background: '#f0f9ff', color: '#0284c7', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}
                     >
                       {isTeardownActive ? 'Scrubbing…' : '🧹 Scrub Deception Caches'}
                     </button>
@@ -3462,42 +3462,42 @@ export default function AppUser() {
             {activeTab === 'watermarks' ? (
               <div style={{ display: 'grid', gap: 24 }}>
                 {/* Executive Header Banner */}
-                <div style={{ background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(99, 102, 241, 0.08))', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 20, padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                <div style={{ background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', border: '1px solid #bae6fd', borderRadius: 20, padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <span style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #10b981', color: '#6ee7b7', padding: '3px 10px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      <span style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#059669', padding: '3px 10px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         DECOY ATTRIBUTION ACTIVE
                       </span>
-                      <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 700 }}>
+                      <span style={{ fontSize: '0.78rem', color: '#0284c7', fontWeight: 700 }}>
                         🛡️ Forensic Defense & Exoneration System
                       </span>
                     </div>
-                    <h2 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 800, color: '#f8fafc' }}>
+                    <h2 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 800, color: '#0f172a' }}>
                       Data Leak Attribution & Decoy Provenance Verifier
                     </h2>
-                    <p style={{ margin: '8px 0 0', color: '#cbd5e1', fontSize: '0.88rem', maxWidth: 840, lineHeight: 1.6 }}>
+                    <p style={{ margin: '8px 0 0', color: '#475569', fontSize: '0.88rem', maxWidth: 840, lineHeight: 1.6 }}>
                       When hackers attack our hospital, they are secretly fed <strong>synthetic decoy twins</strong> with invisible digital signatures. If stolen medical data appears on the dark web or paste sites, scan it here to prove the data is <strong>100% fake decoy data</strong> and that <strong>zero real patient records were compromised</strong>.
                     </p>
                   </div>
 
                   <div style={{ display: 'flex', gap: 24 }}>
-                    <div style={{ textAlign: 'center', background: 'rgba(0,0,0,0.3)', padding: '12px 18px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-                      <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Attribution Rate</div>
-                      <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#10b981' }}>100%</div>
+                    <div style={{ textAlign: 'center', background: '#ffffff', padding: '12px 18px', borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
+                      <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Attribution Rate</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#059669' }}>100%</div>
                     </div>
-                    <div style={{ textAlign: 'center', background: 'rgba(0,0,0,0.3)', padding: '12px 18px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-                      <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Real Data Exposed</div>
-                      <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#38bdf8' }}>0.0% (Protected)</div>
+                    <div style={{ textAlign: 'center', background: '#ffffff', padding: '12px 18px', borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
+                      <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Real Data Exposed</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0284c7' }}>0.0% (Protected)</div>
                     </div>
                   </div>
                 </div>
 
                 {/* SCANNER INTERFACE */}
-                <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: 20, padding: 24, display: 'grid', gap: 18 }}>
+                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, display: 'grid', gap: 18, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f8fafc' }}>🔍 Scan Leaked Medical Record or Text</h3>
-                      <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.82rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>🔍 Scan Leaked Medical Record or Text</h3>
+                      <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.82rem' }}>
                         Paste any suspicious medical record, leaked pastebin dump, or dark web text below to test for hospital decoy watermarks.
                       </p>
                     </div>
@@ -3511,7 +3511,7 @@ export default function AppUser() {
                           setForensicScanInput(testText)
                           handleRealtimeScan(testText)
                         }}
-                        style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #10b981', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                        style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #a7f3d0', background: '#ecfdf5', color: '#059669', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                       >
                         🧪 Test Decoy #1 (Dynamic Twin)
                       </button>
@@ -3523,7 +3523,7 @@ export default function AppUser() {
                           setForensicScanInput(testText)
                           handleRealtimeScan(testText)
                         }}
-                        style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #38bdf8', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                        style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #bae6fd', background: '#f0f9ff', color: '#0284c7', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                       >
                         🧪 Test Decoy #2 (Dynamic Twin)
                       </button>
@@ -3535,7 +3535,7 @@ export default function AppUser() {
                           setForensicScanInput(testText)
                           handleRealtimeScan(testText)
                         }}
-                        style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #a855f7', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                        style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #ddd6fe', background: '#faf5ff', color: '#7c3aed', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                       >
                         🧪 Test Decoy #3 (Dynamic Twin)
                       </button>
@@ -3546,7 +3546,7 @@ export default function AppUser() {
                           setForensicScanInput(cleanText)
                           handleRealtimeScan(cleanText)
                         }}
-                        style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                        style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#64748b', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
                       >
                         ⚠️ Test Clean Real Text
                       </button>
@@ -3558,7 +3558,7 @@ export default function AppUser() {
                     value={forensicScanInput}
                     onChange={(e) => setForensicScanInput(e.target.value)}
                     placeholder="Paste leaked patient text or click one of the test buttons above..."
-                    style={{ width: '100%', padding: 14, borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.35)', color: '#fff', fontSize: '0.88rem', fontFamily: 'monospace' }}
+                    style={{ width: '100%', padding: 14, borderRadius: 12, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.88rem', fontFamily: 'monospace' }}
                   />
 
                   <div style={{ display: 'flex', gap: 12 }}>
@@ -3573,14 +3573,14 @@ export default function AppUser() {
 
                   {/* Scan Result Card */}
                   {forensicScanResult && (
-                    <div style={{ padding: 20, borderRadius: 14, background: forensicScanResult.matched ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)', border: forensicScanResult.matched ? '1px solid #10b981' : '1px solid #ef4444' }}>
+                    <div style={{ padding: 20, borderRadius: 14, background: forensicScanResult.matched ? '#ecfdf5' : '#fef2f2', border: forensicScanResult.matched ? '1px solid #a7f3d0' : '1px solid #fecdd3' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                         <span style={{ fontSize: '1.4rem' }}>{forensicScanResult.matched ? '✅' : 'ℹ️'}</span>
                         <div>
-                          <strong style={{ color: forensicScanResult.matched ? '#34d399' : '#fca5a5', fontSize: '1.05rem', display: 'block' }}>
+                          <strong style={{ color: forensicScanResult.matched ? '#059669' : '#dc2626', fontSize: '1.05rem', display: 'block' }}>
                             {forensicScanResult.matched ? 'VERIFIED: 100% SYNTHETIC DECOY DATA (ZERO REAL PATIENT LEAKAGE)' : 'NO DECEPTION WATERMARK DETECTED'}
                           </strong>
-                          <span style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                          <span style={{ fontSize: '0.82rem', color: '#475569' }}>
                             {forensicScanResult.matched ? 'This leaked record originated from our AI Decoy Twin Engine. Real hospital patient records remain 100% secure in the vault.' : 'This text does not match any hospital decoy watermarks. It was not generated by our cyber deception system.'}
                           </span>
                         </div>
@@ -3589,32 +3589,32 @@ export default function AppUser() {
                       {forensicScanResult.matched && (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginTop: 16 }}>
                           {/* REAL PATIENT VAULT */}
-                          <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: 14, padding: 16 }}>
+                          <div style={{ background: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 14, padding: 16, boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                               <span style={{ fontSize: '1.1rem' }}>🛡️</span>
-                              <strong style={{ color: '#34d399', fontSize: '0.9rem' }}>PROTECTED REAL PATIENT (SECURE VAULT)</strong>
+                              <strong style={{ color: '#059669', fontSize: '0.9rem' }}>PROTECTED REAL PATIENT (SECURE VAULT)</strong>
                             </div>
-                            <div style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1' }}>
-                              <div><strong>Real Patient Name:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{forensicScanResult.dossier?.recovered_real_patient?.name || (patients[0]?.name || 'Clinical Vault Record')}</span></div>
-                              <div><strong>Real ID:</strong> <code style={{ color: '#38bdf8' }}>{forensicScanResult.dossier?.recovered_real_patient?.id || forensicScanResult.dossier?.recovered_real_patient?.patient_id || 'P-01'}</code></div>
-                              <div><strong>Vault Status:</strong> <span style={{ color: '#34d399', fontWeight: 700 }}>100% Untouched & Encrypted</span></div>
-                              <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(16, 185, 129, 0.2)', borderRadius: 6, color: '#a7f3d0', fontSize: '0.75rem', fontWeight: 600 }}>
+                            <div style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155' }}>
+                              <div><strong style={{ color: '#64748b' }}>Real Patient Name:</strong> <span style={{ color: '#0f172a', fontWeight: 700 }}>{forensicScanResult.dossier?.recovered_real_patient?.name || (patients[0]?.name || 'Clinical Vault Record')}</span></div>
+                              <div><strong style={{ color: '#64748b' }}>Real ID:</strong> <code style={{ color: '#0284c7' }}>{forensicScanResult.dossier?.recovered_real_patient?.id || forensicScanResult.dossier?.recovered_real_patient?.patient_id || 'P-01'}</code></div>
+                              <div><strong style={{ color: '#64748b' }}>Vault Status:</strong> <span style={{ color: '#059669', fontWeight: 700 }}>100% Untouched & Encrypted</span></div>
+                              <div style={{ marginTop: 6, padding: '6px 10px', background: '#ecfdf5', borderRadius: 6, color: '#047857', fontSize: '0.75rem', fontWeight: 600 }}>
                                 ✓ The adversary never gained access to genuine patient PII.
                               </div>
                             </div>
                           </div>
 
                           {/* DECOY EXFILTRATED TO HACKER */}
-                          <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 14, padding: 16 }}>
+                          <div style={{ background: '#ffffff', border: '1px solid #fecdd3', borderRadius: 14, padding: 16, boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                               <span style={{ fontSize: '1.1rem' }}>🎭</span>
-                              <strong style={{ color: '#fca5a5', fontSize: '0.9rem' }}>DECOY RECORD EXFILTRATED BY ATTACKER</strong>
+                              <strong style={{ color: '#dc2626', fontSize: '0.9rem' }}>DECOY RECORD EXFILTRATED BY ATTACKER</strong>
                             </div>
-                            <div style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#cbd5e1' }}>
-                              <div><strong>Decoy Patient:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{forensicScanResult.dossier?.decoy_patient?.name || 'Devansh Desai'}</span></div>
-                              <div><strong>Decoy Twin ID:</strong> <code style={{ color: '#f43f5e' }}>{forensicScanResult.watermark?.source_id || 'SYN-01'}</code></div>
-                              <div><strong>Attributed Attack Session:</strong> <code style={{ color: '#38bdf8' }}>{forensicScanResult.watermark?.session_id || 'adversary-exfiltration-session'}</code></div>
-                              <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(239, 68, 68, 0.2)', borderRadius: 6, color: '#fca5a5', fontSize: '0.75rem', fontWeight: 600 }}>
+                            <div style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155' }}>
+                              <div><strong style={{ color: '#64748b' }}>Decoy Patient:</strong> <span style={{ color: '#0f172a', fontWeight: 700 }}>{forensicScanResult.dossier?.decoy_patient?.name || 'Devansh Desai'}</span></div>
+                              <div><strong style={{ color: '#64748b' }}>Decoy Twin ID:</strong> <code style={{ color: '#e11d48' }}>{forensicScanResult.watermark?.source_id || 'SYN-01'}</code></div>
+                              <div><strong style={{ color: '#64748b' }}>Attributed Attack Session:</strong> <code style={{ color: '#0284c7' }}>{forensicScanResult.watermark?.session_id || 'adversary-exfiltration-session'}</code></div>
+                              <div style={{ marginTop: 6, padding: '6px 10px', background: '#fff1f2', borderRadius: 6, color: '#be123c', fontSize: '0.75rem', fontWeight: 600 }}>
                                 ⚠️ Hacker was tricked with realistic, decoy AI medical data.
                               </div>
                             </div>
@@ -3626,40 +3626,40 @@ export default function AppUser() {
                 </div>
 
                 {/* ACTIVE PROTECTED PATIENT & DECOY TWIN DIRECTORY */}
-                <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: 24 }}>
+                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#f8fafc' }}>📋 Active Clinical Records & Linked Decoy Directory</h3>
-                      <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.8rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a', fontWeight: 800 }}>📋 Active Clinical Records & Linked Decoy Directory</h3>
+                      <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.8rem' }}>
                         Each real patient entered by staff has an active cryptographic synthetic twin protecting their identity.
                       </p>
                     </div>
-                    <span style={{ fontSize: '0.78rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', padding: '4px 10px', borderRadius: 999, fontWeight: 700 }}>
+                    <span style={{ fontSize: '0.78rem', color: '#0284c7', background: '#f0f9ff', border: '1px solid #bae6fd', padding: '4px 10px', borderRadius: 999, fontWeight: 700 }}>
                       1:1 Parity Active
                     </span>
                   </div>
 
                   <div style={{ display: 'grid', gap: 12 }}>
                     {patients.map((p) => (
-                      <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, flexWrap: 'wrap', gap: 10 }}>
+                      <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, flexWrap: 'wrap', gap: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                          <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '4px 10px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 700 }}>
+                          <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '4px 10px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 700 }}>
                             {p.id}
                           </span>
                           <div>
-                            <strong style={{ color: '#f8fafc', fontSize: '0.92rem' }}>{p.name}</strong>
-                            <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{p.age} yrs • {p.diagnosis || p.disease}</div>
+                            <strong style={{ color: '#0f172a', fontSize: '0.92rem' }}>{p.name}</strong>
+                            <div style={{ color: '#64748b', fontSize: '0.75rem' }}>{p.age} yrs • {p.diagnosis || p.disease}</div>
                           </div>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                          <span style={{ fontSize: '0.8rem', color: '#34d399', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: '0.8rem', color: '#059669', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
                             🛡️ Real Patient Protected
                           </span>
-                          <span style={{ fontSize: '0.8rem', color: '#a78bfa', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: '0.8rem', color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
                             🧬 1:1 Decoy Twin Linked
                           </span>
-                          <span style={{ fontSize: '0.8rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: '0.8rem', color: '#0284c7', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
                             ✅ Cryptographically Signed
                           </span>
                         </div>
@@ -3674,26 +3674,26 @@ export default function AppUser() {
             {activeTab === 'analytics' ? (
               <div style={{ display: 'grid', gap: 24 }}>
                 {/* Executive Summary Banner */}
-                <div style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(56, 189, 248, 0.08))', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 20, padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                <div style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)', border: '1px solid #a7f3d0', borderRadius: 20, padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                   <div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#34d399', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#059669', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                       ● Continuous Hospital Enclave Protection
                     </span>
-                    <h3 style={{ margin: '4px 0 6px', fontSize: '1.25rem', color: '#f8fafc', fontWeight: 800 }}>
+                    <h3 style={{ margin: '4px 0 6px', fontSize: '1.25rem', color: '#0f172a', fontWeight: 800 }}>
                       Live Intrusion Defense & Decoy Telemetry
                     </h3>
-                    <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem', maxWidth: 700, lineHeight: 1.5 }}>
+                    <p style={{ margin: 0, color: '#475569', fontSize: '0.85rem', maxWidth: 700, lineHeight: 1.5 }}>
                       Real-time telemetry confirming that 100% of adversary attacks (SQL Injection, IDOR, Mass Exfiltration) are trapped in the synthetic deception layer, keeping real patient medical records completely isolated and protected.
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <div style={{ textAlign: 'center', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', borderRadius: 14, padding: '10px 18px' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#6ee7b7', textTransform: 'uppercase', fontWeight: 700 }}>Real Vault Status</span>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#34d399', marginTop: 2 }}>0% Compromised</div>
+                    <div style={{ textAlign: 'center', background: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 14, padding: '10px 18px', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#059669', textTransform: 'uppercase', fontWeight: 700 }}>Real Vault Status</span>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#059669', marginTop: 2 }}>0% Compromised</div>
                     </div>
-                    <div style={{ textAlign: 'center', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #38bdf8', borderRadius: 14, padding: '10px 18px' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#7dd3fc', textTransform: 'uppercase', fontWeight: 700 }}>Defense Rate</span>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#38bdf8', marginTop: 2 }}>100% Shielded</div>
+                    <div style={{ textAlign: 'center', background: '#ffffff', border: '1px solid #bae6fd', borderRadius: 14, padding: '10px 18px', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#0284c7', textTransform: 'uppercase', fontWeight: 700 }}>Defense Rate</span>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0284c7', marginTop: 2 }}>100% Shielded</div>
                     </div>
                   </div>
                 </div>
@@ -3705,14 +3705,14 @@ export default function AppUser() {
                     value="0.0%" 
                     subtitle={`100% Safe (${patients.length} Active${patients.length > 0 ? ': ' + patients.map(p => p.name).join(', ') : ''})`} 
                     icon="🔒" 
-                    accentColor="#10b981" 
+                    accentColor="#059669" 
                   />
                   <MetricCard 
                     title="Total Attacks Intercepted" 
                     value={String(142 + securityAlerts.length + simulatedInterceptions)} 
                     subtitle="100% Diverted to AI Decoy Twins" 
                     icon="🛡️" 
-                    accentColor="#38bdf8" 
+                    accentColor="#0284c7" 
                   />
                 </div>
 
@@ -3726,22 +3726,22 @@ export default function AppUser() {
                       {
                         label: 'SQL Injection Probes (UNION SELECT / OR 1=1)',
                         value: 48 + securityAlerts.filter((a) => (a.attack_type || '').toLowerCase().includes('sql')).length + Math.floor(simulatedInterceptions * 0.35),
-                        color: '#ef4444',
+                        color: '#dc2626',
                       },
                       {
                         label: 'Targeted Single Patient Theft Probes',
                         value: 42 + securityAlerts.filter((a) => (a.attack_type || '').toLowerCase().includes('patient') || (a.attack_type || '').toLowerCase().includes('single')).length + Math.floor(simulatedInterceptions * 0.3),
-                        color: '#f59e0b',
+                        color: '#d97706',
                       },
                       {
                         label: 'Bulk Database Dump Probes (All Records)',
                         value: 34 + securityAlerts.filter((a) => (a.attack_type || '').toLowerCase().includes('exfiltration') || (a.attack_type || '').toLowerCase().includes('bulk') || (a.attack_type || '').toLowerCase().includes('dump')).length + Math.floor(simulatedInterceptions * 0.23),
-                        color: '#c084fc',
+                        color: '#7c3aed',
                       },
                       {
                         label: 'Unauthorized Reconnaissance & API Scans',
                         value: 18 + securityAlerts.filter((a) => (a.attack_type || '').toLowerCase().includes('recon') || (a.attack_type || '').toLowerCase().includes('api')).length + Math.max(0, simulatedInterceptions - (Math.floor(simulatedInterceptions * 0.35) + Math.floor(simulatedInterceptions * 0.3) + Math.floor(simulatedInterceptions * 0.23))),
-                        color: '#38bdf8',
+                        color: '#0284c7',
                       },
                     ]}
                   />
@@ -3751,41 +3751,41 @@ export default function AppUser() {
                     percentageBasis="max"
                     maxValue={100}
                     data={[
-                      { label: 'Attacker Redirection to Synthetic Twins', value: 100, color: '#10b981' },
-                      { label: 'Real Patient Database Isolation Rate', value: 100, color: '#38bdf8' },
-                      { label: 'Forensic Watermark Leak Attribution', value: 100, color: '#c084fc' },
-                      { label: 'User/Admin Burglar Alarm Reliability', value: 100, color: '#f59e0b' },
+                      { label: 'Attacker Redirection to Synthetic Twins', value: 100, color: '#059669' },
+                      { label: 'Real Patient Database Isolation Rate', value: 100, color: '#0284c7' },
+                      { label: 'Forensic Watermark Leak Attribution', value: 100, color: '#7c3aed' },
+                      { label: 'User/Admin Burglar Alarm Reliability', value: 100, color: '#d97706' },
                     ]}
                   />
                 </div>
 
                 {/* Real-to-Decoy Protection Matrix */}
-                <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 20, padding: 24 }}>
+                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
                     <div>
-                      <h4 style={{ margin: 0, color: '#f8fafc', fontSize: '1.05rem', fontWeight: 800 }}>
+                      <h4 style={{ margin: 0, color: '#0f172a', fontSize: '1.05rem', fontWeight: 800 }}>
                         🎯 Live Attack Deflection & Decoy Substitution Matrix
                       </h4>
-                      <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.82rem' }}>
+                      <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.82rem' }}>
                         Shows exact proof that whenever an attacker targets an active hospital patient, only the synthetic twin is exposed.
                       </p>
                     </div>
-                    <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '5px 12px', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700 }}>
+                    <span style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: '5px 12px', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700 }}>
                       ✔ 100% Enclave Isolation
                     </span>
                   </div>
 
                   {/* Real-Time Live Interception Notification Toast */}
                   {liveDeflectionToast && (
-                    <div style={{ padding: '14px 18px', background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.22), rgba(16, 185, 129, 0.22))', border: '1px solid #38bdf8', borderRadius: 12, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                    <div style={{ padding: '14px 18px', background: 'linear-gradient(135deg, #f0f9ff, #ecfdf5)', border: '1px solid #38bdf8', borderRadius: 12, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: '1.3rem' }}>⚡</span>
                         <div>
-                          <strong style={{ color: '#38bdf8', fontSize: '0.88rem' }}>
+                          <strong style={{ color: '#0284c7', fontSize: '0.88rem' }}>
                             REAL-TIME INTERCEPTION ACTIVE [{liveDeflectionToast.timestamp}]
                           </strong>
-                          <div style={{ color: '#cbd5e1', fontSize: '0.8rem', marginTop: 2 }}>
-                            Adversary targeted <strong style={{ color: '#f8fafc' }}>{liveDeflectionToast.target}</strong> ➡️ AI Security Gateway redirected attack to <strong style={{ color: '#c084fc' }}>{liveDeflectionToast.decoy}</strong>. Real vault 100% isolated.
+                          <div style={{ color: '#334155', fontSize: '0.8rem', marginTop: 2 }}>
+                            Adversary targeted <strong style={{ color: '#0f172a' }}>{liveDeflectionToast.target}</strong> ➡️ AI Security Gateway redirected attack to <strong style={{ color: '#7c3aed' }}>{liveDeflectionToast.decoy}</strong>. Real vault 100% isolated.
                           </div>
                         </div>
                       </div>
@@ -3808,7 +3808,7 @@ export default function AppUser() {
                           setForensicScanInput(sampleText)
                           handleRealtimeScan(sampleText)
                         }}
-                        style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                        style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #059669, #10b981)', color: '#fff', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                       >
                         🔍 Verify Leaked Record in Decoy Scanner →
                       </button>
@@ -3816,7 +3816,7 @@ export default function AppUser() {
                   )}
 
                   <div style={{ display: 'grid', gap: 12 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr auto', padding: '10px 16px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: 10, fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr auto', padding: '10px 16px', background: '#f8fafc', borderRadius: 10, fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       <span>Attacker Target (Attempted)</span>
                       <span>Deception Layer Response (Decoy Handed Out)</span>
                       <span style={{ textAlign: 'right' }}>Real Enclave Protection</span>
@@ -3824,8 +3824,8 @@ export default function AppUser() {
                     </div>
 
                     {patients.length === 0 ? (
-                      <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 12, border: '1px dashed rgba(255, 255, 255, 0.12)' }}>
-                        <div style={{ fontSize: '1.1rem', color: '#cbd5e1', fontWeight: 700, marginBottom: 4 }}>📋 No Active Patients in Vault</div>
+                      <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1' }}>
+                        <div style={{ fontSize: '1.1rem', color: '#0f172a', fontWeight: 700, marginBottom: 4 }}>📋 No Active Patients in Vault</div>
                         <div style={{ fontSize: '0.82rem' }}>Register a real patient in the Clinical Register tab. The system will dynamically generate a corresponding synthetic decoy twin matrix.</div>
                       </div>
                     ) : (
@@ -3836,27 +3836,27 @@ export default function AppUser() {
                         const decoyLabel = `${syn.decoyId}: ${syn.decoyName}`
 
                         return (
-                          <div key={p.id || idx} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr auto', alignItems: 'center', padding: '14px 16px', background: activeDeflection === key ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255, 255, 255, 0.02)', border: activeDeflection === key ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 12, fontSize: '0.86rem', transition: 'all 0.3s ease' }}>
+                          <div key={p.id || idx} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr auto', alignItems: 'center', padding: '14px 16px', background: activeDeflection === key ? '#f0f9ff' : '#f8fafc', border: activeDeflection === key ? '1px solid #38bdf8' : '1px solid #e2e8f0', borderRadius: 12, fontSize: '0.86rem', transition: 'all 0.3s ease' }}>
                             <div>
-                              <strong style={{ color: '#f8fafc' }}>{targetLabel}</strong>
-                              <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Condition: {p.disease || 'Active Clinical Record'}</div>
+                              <strong style={{ color: '#0f172a' }}>{targetLabel}</strong>
+                              <div style={{ color: '#64748b', fontSize: '0.75rem' }}>Condition: {p.disease || 'Active Clinical Record'}</div>
                             </div>
-                            <div style={{ color: '#c084fc', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span>🧬</span>
                               <div>
                                 <strong>{decoyLabel}</strong>
-                                <div style={{ color: '#a855f7', fontSize: '0.75rem' }}>Poisoned Decoy Twin Served</div>
+                                <div style={{ color: '#6d28d9', fontSize: '0.75rem' }}>Poisoned Decoy Twin Served</div>
                               </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <span style={{ color: '#34d399', fontWeight: 700, fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '4px 10px', borderRadius: 8 }}>
+                              <span style={{ color: '#059669', fontWeight: 700, fontSize: '0.8rem', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '4px 10px', borderRadius: 8 }}>
                                 🛡️ 100% UNTOUCHED
                               </span>
                             </div>
                             <div style={{ minWidth: 140, textAlign: 'center' }}>
                               <button
                                 onClick={() => triggerMatrixInterception(key, targetLabel, decoyLabel)}
-                                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #38bdf8', background: activeDeflection === key ? '#0284c7' : 'rgba(56, 189, 248, 0.15)', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #bae6fd', background: activeDeflection === key ? '#0284c7' : '#f0f9ff', color: activeDeflection === key ? '#fff' : '#0284c7', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
                               >
                                 {activeDeflection === key ? '⚡ INTERCEPTED' : '⚡ Test Intercept'}
                               </button>
@@ -3867,27 +3867,27 @@ export default function AppUser() {
                     )}
 
                     {/* Row 4: Mass Exfiltration */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr auto', alignItems: 'center', padding: '14px 16px', background: activeDeflection === 'mass' ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255, 255, 255, 0.02)', border: activeDeflection === 'mass' ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 12, fontSize: '0.86rem', transition: 'all 0.3s ease' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr auto', alignItems: 'center', padding: '14px 16px', background: activeDeflection === 'mass' ? '#f0f9ff' : '#f8fafc', border: activeDeflection === 'mass' ? '1px solid #38bdf8' : '1px solid #e2e8f0', borderRadius: 12, fontSize: '0.86rem', transition: 'all 0.3s ease' }}>
                       <div>
-                        <strong style={{ color: '#f8fafc' }}>Mass Exfiltration (ALL PATIENTS)</strong>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Command: .\hack.bat exfiltration {patients.length || 3}</div>
+                        <strong style={{ color: '#0f172a' }}>Mass Exfiltration (ALL PATIENTS)</strong>
+                        <div style={{ color: '#64748b', fontSize: '0.75rem' }}>Command: .\hack.bat exfiltration {patients.length || 3}</div>
                       </div>
-                      <div style={{ color: '#c084fc', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span>🧬</span>
                         <div>
                           <strong>{patients.length > 0 ? `${patients.length} Synthetic Twins Dumped` : 'Synthetic Twins Dumped'}</strong>
-                          <div style={{ color: '#a855f7', fontSize: '0.75rem' }}>Watermarked AI Decoys Only</div>
+                          <div style={{ color: '#6d28d9', fontSize: '0.75rem' }}>Watermarked AI Decoys Only</div>
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <span style={{ color: '#34d399', fontWeight: 700, fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '4px 10px', borderRadius: 8 }}>
+                        <span style={{ color: '#059669', fontWeight: 700, fontSize: '0.8rem', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '4px 10px', borderRadius: 8 }}>
                           🛡️ 100% UNTOUCHED
                         </span>
                       </div>
                       <div style={{ minWidth: 140, textAlign: 'center' }}>
                         <button
                           onClick={() => triggerMatrixInterception('mass', 'Mass Exfiltration (All Patients)', `${patients.length || 3} Synthetic Decoy Twins`)}
-                          style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #38bdf8', background: activeDeflection === 'mass' ? '#0284c7' : 'rgba(56, 189, 248, 0.15)', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                          style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #bae6fd', background: activeDeflection === 'mass' ? '#0284c7' : '#f0f9ff', color: activeDeflection === 'mass' ? '#fff' : '#0284c7', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
                         >
                           {activeDeflection === 'mass' ? '⚡ INTERCEPTED' : '⚡ Test Intercept'}
                         </button>
@@ -3897,13 +3897,13 @@ export default function AppUser() {
                 </div>
 
                 {/* Regulatory Compliance & Exoneration Guarantee */}
-                <div style={{ background: 'rgba(2, 132, 199, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: 16, padding: '18px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 16, padding: '18px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
                   <span style={{ fontSize: '2rem' }}>📜</span>
                   <div>
-                    <h5 style={{ margin: '0 0 4px', fontSize: '0.95rem', color: '#f8fafc', fontWeight: 700 }}>
+                    <h5 style={{ margin: '0 0 4px', fontSize: '0.95rem', color: '#0f172a', fontWeight: 700 }}>
                       Regulatory Compliance & Legal Exoneration (HIPAA / DPDP Act)
                     </h5>
-                    <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                    <p style={{ margin: 0, color: '#475569', fontSize: '0.82rem', lineHeight: 1.5 }}>
                       Because all adversary queries are answered with dynamically generated synthetic twin records embedded with Zero-Width Unicode forensic watermarks, zero Protected Health Information (PHI) is ever exposed. In the event of extortion or breach claims, the <strong>Decoy Leak Verifier</strong> legally proves the hospital enclave was never breached.
                     </p>
                   </div>
@@ -4161,12 +4161,12 @@ export default function AppUser() {
               return (
                 <div style={{ display: 'grid', gap: 20 }}>
                   {/* Action Toolbar */}
-                  <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+                  <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
                     <div>
-                      <h3 style={{ margin: '0 0 4px', fontSize: '1.2rem', color: '#f8fafc', fontWeight: 800 }}>
+                      <h3 style={{ margin: '0 0 4px', fontSize: '1.2rem', color: '#0f172a', fontWeight: 800 }}>
                         📋 Forensic Compliance & Deception Audit Reports
                       </h3>
-                      <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.82rem' }}>
+                      <p style={{ margin: 0, color: '#64748b', fontSize: '0.82rem' }}>
                         Official regulatory audit dossier certifying 100% Enclave Isolation and 0 bytes PHI breach under HIPAA §164.312 & NIST SP 800-53.
                       </p>
                     </div>
@@ -4181,14 +4181,14 @@ export default function AppUser() {
 
                       <button
                         onClick={handleDownloadJson}
-                        style={{ padding: '9px 15px', borderRadius: 8, border: '1px solid rgba(192, 132, 252, 0.4)', background: 'rgba(192, 132, 252, 0.12)', color: '#d8b4fe', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                        style={{ padding: '9px 15px', borderRadius: 8, border: '1px solid #d8b4fe', background: '#faf5ff', color: '#7c3aed', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                       >
                         🔐 Export JSON Evidence
                       </button>
 
                       <button
                         onClick={handlePrint}
-                        style={{ padding: '9px 15px', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.4)', background: 'rgba(16, 185, 129, 0.12)', color: '#34d399', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                        style={{ padding: '9px 15px', borderRadius: 8, border: '1px solid #a7f3d0', background: '#ecfdf5', color: '#059669', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                       >
                         🖨️ Print Report
                       </button>
@@ -4208,7 +4208,7 @@ export default function AppUser() {
                               setError(String(err))
                             }
                           }}
-                          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.03)', color: '#94a3b8', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
+                          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#64748b', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
                         >
                           📥 Raw CSV Dump
                         </button>
@@ -4217,62 +4217,62 @@ export default function AppUser() {
                   </div>
 
                   {/* Executive Certificate Box */}
-                  <div style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.85))', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 20, padding: 28, position: 'relative', overflow: 'hidden', boxShadow: '0 15px 35px rgba(0,0,0,0.5)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 18, marginBottom: 20 }}>
+                  <div style={{ background: 'linear-gradient(135deg, #f0f9ff 0%, #ffffff 50%, #f0fdf4 100%)', border: '1px solid #bae6fd', borderRadius: 20, padding: 28, position: 'relative', overflow: 'hidden', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, borderBottom: '1px solid #e2e8f0', paddingBottom: 18, marginBottom: 20 }}>
                       <div>
-                        <span style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        <span style={{ fontSize: '0.74rem', color: '#0284c7', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                           🏥 ST. JUDE HEALTHCARE ENCLAVE • OFFICE OF CISO & REGULATORY COMPLIANCE
                         </span>
-                        <h2 style={{ margin: '6px 0 0', fontSize: '1.4rem', color: '#f8fafc', fontWeight: 800 }}>
+                        <h2 style={{ margin: '6px 0 0', fontSize: '1.4rem', color: '#0f172a', fontWeight: 800 }}>
                           Certificate of Enclave Isolation & Non-Breach
                         </h2>
                       </div>
-                      <span style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#34d399', padding: '6px 14px', borderRadius: 999, fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.04em' }}>
+                      <span style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#059669', padding: '6px 14px', borderRadius: 999, fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.04em' }}>
                         ✓ 100% ZERO PHI BREACH • HIPAA §164.312
                       </span>
                     </div>
 
-                    <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.9rem', lineHeight: 1.6, maxWidth: 840 }}>
+                    <p style={{ margin: 0, color: '#334155', fontSize: '0.9rem', lineHeight: 1.6, maxWidth: 840 }}>
                       This official compliance record certifies that throughout the active operational period, the St. Jude Cyber Deception Gateway operated with <strong>100% Enclave Isolation</strong>. All adversary queries, SQL injection payloads, and targeted single-patient exfiltration probes were intercepted and diverted into realistic synthetic decoy twins. <strong>Zero bytes of genuine patient Protected Health Information (PHI) were compromised or leaked.</strong>
                     </p>
 
                     {/* 4 Scorecard Metrics */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginTop: 22 }}>
-                      <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 12, padding: '14px 16px' }}>
-                        <span style={{ fontSize: '0.7rem', color: '#6ee7b7', fontWeight: 700, textTransform: 'uppercase' }}>Audit Status</span>
-                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#34d399', marginTop: 4 }}>CERTIFIED</div>
-                        <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Zero Non-Compliance</span>
+                      <div style={{ background: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 12, padding: '14px 16px', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 700, textTransform: 'uppercase' }}>Audit Status</span>
+                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#059669', marginTop: 4 }}>CERTIFIED</div>
+                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Zero Non-Compliance</span>
                       </div>
 
-                      <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: 12, padding: '14px 16px' }}>
-                        <span style={{ fontSize: '0.7rem', color: '#7dd3fc', fontWeight: 700, textTransform: 'uppercase' }}>Real PHI Leaked</span>
-                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#38bdf8', marginTop: 4 }}>0.00%</div>
-                        <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>0 Real Records Exposed</span>
+                      <div style={{ background: '#ffffff', border: '1px solid #bae6fd', borderRadius: 12, padding: '14px 16px', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#0284c7', fontWeight: 700, textTransform: 'uppercase' }}>Real PHI Leaked</span>
+                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0284c7', marginTop: 4 }}>0.00%</div>
+                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>0 Real Records Exposed</span>
                       </div>
 
-                      <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: 12, padding: '14px 16px' }}>
-                        <span style={{ fontSize: '0.7rem', color: '#fcd34d', fontWeight: 700, textTransform: 'uppercase' }}>Deflections Logged</span>
-                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#f59e0b', marginTop: 4 }}>{142 + securityAlerts.length}+</div>
-                        <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>100% Deceived on Port 8001</span>
+                      <div style={{ background: '#ffffff', border: '1px solid #fde68a', borderRadius: 12, padding: '14px 16px', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#b45309', fontWeight: 700, textTransform: 'uppercase' }}>Deflections Logged</span>
+                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#b45309', marginTop: 4 }}>{142 + securityAlerts.length}+</div>
+                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>100% Deceived on Port 8001</span>
                       </div>
 
-                      <div style={{ background: 'rgba(192, 132, 252, 0.08)', border: '1px solid rgba(192, 132, 252, 0.25)', borderRadius: 12, padding: '14px 16px' }}>
-                        <span style={{ fontSize: '0.7rem', color: '#d8b4fe', fontWeight: 700, textTransform: 'uppercase' }}>Watermark Attribution</span>
-                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#c084fc', marginTop: 4 }}>100%</div>
-                        <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Forensic Steganography Active</span>
+                      <div style={{ background: '#ffffff', border: '1px solid #e9d5ff', borderRadius: 12, padding: '14px 16px', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#7c3aed', fontWeight: 700, textTransform: 'uppercase' }}>Watermark Attribution</span>
+                        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#7c3aed', marginTop: 4 }}>100%</div>
+                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Forensic Steganography Active</span>
                       </div>
                     </div>
                   </div>
 
                   {/* HIPAA & NIST Technical Safeguards Table */}
-                  <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: 24 }}>
-                    <h4 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: '#f8fafc', fontWeight: 700 }}>
+                  <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
+                    <h4 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: '#0f172a', fontWeight: 700 }}>
                       🛡️ HIPAA Security Rule & Regulatory Safeguards Matrix
                     </h4>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left', color: '#94a3b8' }}>
+                          <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc', textAlign: 'left', color: '#64748b' }}>
                             <th style={{ padding: '10px 14px' }}>REGULATORY STANDARD</th>
                             <th style={{ padding: '10px 14px' }}>LEGAL MANDATE</th>
                             <th style={{ padding: '10px 14px' }}>CYBER DECEPTION SAFEGUARD</th>
@@ -4280,36 +4280,36 @@ export default function AppUser() {
                           </tr>
                         </thead>
                         <tbody>
-                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '12px 14px', color: '#38bdf8', fontWeight: 700 }}>HIPAA § 164.312(a)(1)</td>
-                            <td style={{ padding: '12px 14px', color: '#cbd5e1' }}>Access Control & Session Isolation</td>
-                            <td style={{ padding: '12px 14px', color: '#94a3b8' }}>Real vault restricted to verified clinical roles; adversary sessions diverted to Port 8001 sandbox</td>
+                          <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <td style={{ padding: '12px 14px', color: '#0284c7', fontWeight: 700 }}>HIPAA § 164.312(a)(1)</td>
+                            <td style={{ padding: '12px 14px', color: '#0f172a' }}>Access Control & Session Isolation</td>
+                            <td style={{ padding: '12px 14px', color: '#64748b' }}>Real vault restricted to verified clinical roles; adversary sessions diverted to Port 8001 sandbox</td>
                             <td style={{ padding: '12px 14px' }}>
-                              <span style={{ color: '#34d399', fontWeight: 700, background: 'rgba(16, 185, 129, 0.15)', padding: '3px 8px', borderRadius: 6, fontSize: '0.75rem' }}>✓ 100% COMPLIANT</span>
+                              <span style={{ color: '#059669', fontWeight: 700, background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: 6, fontSize: '0.75rem' }}>✓ 100% COMPLIANT</span>
                             </td>
                           </tr>
-                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '12px 14px', color: '#38bdf8', fontWeight: 700 }}>HIPAA § 164.312(c)(1)</td>
-                            <td style={{ padding: '12px 14px', color: '#cbd5e1' }}>Data Integrity & Tamper Prevention</td>
-                            <td style={{ padding: '12px 14px', color: '#94a3b8' }}>Adversary write/alter queries target ephemeral decoy twins; real database write-protected</td>
+                          <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <td style={{ padding: '12px 14px', color: '#0284c7', fontWeight: 700 }}>HIPAA § 164.312(c)(1)</td>
+                            <td style={{ padding: '12px 14px', color: '#0f172a' }}>Data Integrity & Tamper Prevention</td>
+                            <td style={{ padding: '12px 14px', color: '#64748b' }}>Adversary write/alter queries target ephemeral decoy twins; real database write-protected</td>
                             <td style={{ padding: '12px 14px' }}>
-                              <span style={{ color: '#34d399', fontWeight: 700, background: 'rgba(16, 185, 129, 0.15)', padding: '3px 8px', borderRadius: 6, fontSize: '0.75rem' }}>✓ 100% COMPLIANT</span>
+                              <span style={{ color: '#059669', fontWeight: 700, background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: 6, fontSize: '0.75rem' }}>✓ 100% COMPLIANT</span>
                             </td>
                           </tr>
-                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '12px 14px', color: '#38bdf8', fontWeight: 700 }}>HIPAA § 164.402</td>
-                            <td style={{ padding: '12px 14px', color: '#cbd5e1' }}>Breach Notification Standard</td>
-                            <td style={{ padding: '12px 14px', color: '#94a3b8' }}>Zero disclosure of genuine patient PII/PHI; synthetic data carries 0 statutory breach risk</td>
+                          <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <td style={{ padding: '12px 14px', color: '#0284c7', fontWeight: 700 }}>HIPAA § 164.402</td>
+                            <td style={{ padding: '12px 14px', color: '#0f172a' }}>Breach Notification Standard</td>
+                            <td style={{ padding: '12px 14px', color: '#64748b' }}>Zero disclosure of genuine patient PII/PHI; synthetic data carries 0 statutory breach risk</td>
                             <td style={{ padding: '12px 14px' }}>
-                              <span style={{ color: '#34d399', fontWeight: 700, background: 'rgba(16, 185, 129, 0.15)', padding: '3px 8px', borderRadius: 6, fontSize: '0.75rem' }}>✓ ZERO BREACH</span>
+                              <span style={{ color: '#059669', fontWeight: 700, background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: 6, fontSize: '0.75rem' }}>✓ ZERO BREACH</span>
                             </td>
                           </tr>
                           <tr>
-                            <td style={{ padding: '12px 14px', color: '#c084fc', fontWeight: 700 }}>NIST SP 800-53 (SC-26)</td>
-                            <td style={{ padding: '12px 14px', color: '#cbd5e1' }}>Deception & Honeypot Operations</td>
-                            <td style={{ padding: '12px 14px', color: '#94a3b8' }}>Dynamic 1:1 synthetic decoy twins with steganographic zero-width tracking watermarks</td>
+                            <td style={{ padding: '12px 14px', color: '#7c3aed', fontWeight: 700 }}>NIST SP 800-53 (SC-26)</td>
+                            <td style={{ padding: '12px 14px', color: '#0f172a' }}>Deception & Honeypot Operations</td>
+                            <td style={{ padding: '12px 14px', color: '#64748b' }}>Dynamic 1:1 synthetic decoy twins with steganographic zero-width tracking watermarks</td>
                             <td style={{ padding: '12px 14px' }}>
-                              <span style={{ color: '#34d399', fontWeight: 700, background: 'rgba(16, 185, 129, 0.15)', padding: '3px 8px', borderRadius: 6, fontSize: '0.75rem' }}>✓ OPERATIONAL</span>
+                              <span style={{ color: '#059669', fontWeight: 700, background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: 6, fontSize: '0.75rem' }}>✓ OPERATIONAL</span>
                             </td>
                           </tr>
                         </tbody>
@@ -4318,34 +4318,34 @@ export default function AppUser() {
                   </div>
 
                   {/* Protected Patients Shielding Manifest */}
-                  <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: 24 }}>
-                    <h4 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: '#f8fafc', fontWeight: 700 }}>
+                  <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
+                    <h4 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: '#0f172a', fontWeight: 700 }}>
                       👥 Protected Inpatient Shielding & Decoy Substitution Ledger
                     </h4>
                     <div style={{ display: 'grid', gap: 10 }}>
                       {patients.length === 0 ? (
-                        <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', background: 'rgba(255,255,255,0.02)', borderRadius: 12 }}>
+                        <div style={{ padding: '16px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: 12 }}>
                           No active patient records registered in vault. Add a patient to populate the Shielding Ledger.
                         </div>
                       ) : (
                         patients.map((p) => {
                           const syn = generateSyntheticTwinName(p.name, p.patient_id || p.id)
                           return (
-                            <div key={p.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                            <div key={p.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc' }}>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>
                                   P-{p.patient_id || p.id}: {p.name} ({p.age || 30} yrs)
                                 </span>
-                                <span style={{ fontSize: '0.74rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: 999, fontWeight: 700 }}>
+                                <span style={{ fontSize: '0.74rem', color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: 999, fontWeight: 700 }}>
                                   🛡️ 100% Protected Vault
                                 </span>
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: '0.8rem' }}>
-                                <span style={{ color: '#94a3b8' }}>
-                                  Decoy Served: <code style={{ color: '#c084fc', fontWeight: 700 }}>{syn.decoyId} ({syn.decoyName})</code>
+                                <span style={{ color: '#64748b' }}>
+                                  Decoy Served: <code style={{ color: '#7c3aed', fontWeight: 700 }}>{syn.decoyId} ({syn.decoyName})</code>
                                 </span>
-                                <span style={{ color: '#64748b' }}>•</span>
-                                <span style={{ color: '#38bdf8', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                                <span style={{ color: '#cbd5e1' }}>•</span>
+                                <span style={{ color: '#0284c7', fontFamily: 'monospace', fontSize: '0.75rem' }}>
                                   WM-AI-SECURITY-ACTIVE
                                 </span>
                               </div>
@@ -4357,13 +4357,13 @@ export default function AppUser() {
                   </div>
 
                   {/* Cryptographic Seal Footer */}
-                  <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, fontSize: '0.78rem', color: '#94a3b8' }}>
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, fontSize: '0.78rem', color: '#64748b' }}>
                     <div>
-                      <strong>Audit Ref ID:</strong> <span style={{ color: '#cbd5e1' }}>{reportRefId}</span> | <strong>Generated:</strong> {dateStr} {timeStr}
+                      <strong>Audit Ref ID:</strong> <span style={{ color: '#0f172a' }}>{reportRefId}</span> | <strong>Generated:</strong> {dateStr} {timeStr}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span>Digital Seal:</span>
-                      <code style={{ color: '#38bdf8', fontSize: '0.72rem', background: 'rgba(56, 189, 248, 0.08)', padding: '2px 8px', borderRadius: 4 }}>
+                      <code style={{ color: '#0284c7', fontSize: '0.72rem', background: '#e0f2fe', padding: '2px 8px', borderRadius: 4 }}>
                         {shaSeal}
                       </code>
                     </div>
@@ -4381,12 +4381,12 @@ export default function AppUser() {
 
             {/* TAB 11: PROFILE */}
             {activeTab === 'profile' ? (
-              <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: 24, maxWidth: 600 }}>
-                <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', color: '#f8fafc' }}>👤 Account Profile</h3>
-                <div style={{ display: 'grid', gap: 10, fontSize: '0.88rem', color: '#cbd5e1' }}>
+              <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, maxWidth: 600, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
+                <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', color: '#0f172a', fontWeight: 800 }}>👤 Account Profile</h3>
+                <div style={{ display: 'grid', gap: 10, fontSize: '0.88rem', color: '#334155' }}>
                   <div><strong>Full Name:</strong> {user?.full_name}</div>
                   <div><strong>Username:</strong> {user?.username}</div>
-                  <div><strong>Assigned Role:</strong> <span style={{ color: '#38bdf8', fontWeight: 700 }}>{user?.role}</span></div>
+                  <div><strong>Assigned Role:</strong> <span style={{ color: '#0284c7', fontWeight: 700 }}>{user?.role}</span></div>
                   <div><strong>Email Address:</strong> {user?.email || 'doctor@stjude.org'}</div>
                   <div><strong>Session Node:</strong> HOSPITAL-001 (Main Health Facility)</div>
                 </div>
@@ -4395,50 +4395,50 @@ export default function AppUser() {
 
             {/* FORENSIC ATTRIBUTION DOSSIER MODAL (OBJECTIVE 3) */}
             {isDossierModalOpen && selectedDossier ? (
-              <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(10px)', display: 'grid', placeItems: 'center', zIndex: 100, padding: 20 }}>
-                <div style={{ background: '#0f172a', border: '2px solid #38bdf8', borderRadius: 24, padding: 32, maxWidth: 840, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 60px rgba(0,0,0,0.8)', color: '#f8fafc' }}>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 100, padding: 20 }}>
+                <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 20, padding: 32, maxWidth: 840, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 60px -15px rgba(0,0,0,0.25)', color: '#0f172a' }}>
                   {/* Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16, marginBottom: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: 16, marginBottom: 20 }}>
                     <div>
-                      <span style={{ fontSize: '0.78rem', color: '#34d399', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         🔬 Digital Forensic Attribution Dossier
                       </span>
-                      <h2 style={{ margin: '4px 0 0', fontSize: '1.5rem', fontWeight: 800 }}>
+                      <h2 style={{ margin: '4px 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>
                         Data Leak Timeline & Provenance Certificate
                       </h2>
                     </div>
                     <button
                       onClick={() => setIsDossierModalOpen(false)}
-                      style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', color: '#fca5a5', width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', fontWeight: 800, fontSize: 16, display: 'grid', placeItems: 'center' }}
+                      style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#b91c1c', width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', fontWeight: 800, fontSize: 16, display: 'grid', placeItems: 'center' }}
                     >
                       ✕
                     </button>
                   </div>
 
                   {/* Summary Provenance Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, background: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 14, border: '1px solid rgba(255,255,255,0.06)', marginBottom: 20, fontSize: '0.85rem' }}>
-                    <div><strong style={{ color: '#94a3b8' }}>Watermark ID:</strong> <code style={{ color: '#38bdf8' }}>{selectedDossier.watermark_id}</code></div>
-                    <div><strong style={{ color: '#94a3b8' }}>Attributed Session:</strong> <span style={{ color: '#ef4444', fontWeight: 700 }}>{selectedDossier.session_id}</span></div>
-                    <div><strong style={{ color: '#94a3b8' }}>Originating Node:</strong> {selectedDossier.hospital_id}</div>
-                    <div><strong style={{ color: '#94a3b8' }}>Record Class:</strong> <span style={{ color: '#34d399', fontWeight: 700 }}>100% Synthetic Decoy Twin</span></div>
-                    <div><strong style={{ color: '#94a3b8' }}>Real Patient PII:</strong> <span style={{ color: '#34d399', fontWeight: 800 }}>0% EXPOSED (100% SAFE)</span></div>
-                    <div><strong style={{ color: '#94a3b8' }}>Confidence:</strong> <span style={{ color: '#34d399', fontWeight: 800 }}>99.8% Certainty</span></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, background: '#f8fafc', padding: 16, borderRadius: 14, border: '1px solid #e2e8f0', marginBottom: 20, fontSize: '0.85rem' }}>
+                    <div><strong style={{ color: '#64748b' }}>Watermark ID:</strong> <code style={{ color: '#0284c7', background: '#f1f5f9', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>{selectedDossier.watermark_id}</code></div>
+                    <div><strong style={{ color: '#64748b' }}>Attributed Session:</strong> <span style={{ color: '#dc2626', fontWeight: 700 }}>{selectedDossier.session_id}</span></div>
+                    <div><strong style={{ color: '#64748b' }}>Originating Node:</strong> <span style={{ color: '#0f172a', fontWeight: 600 }}>{selectedDossier.hospital_id}</span></div>
+                    <div><strong style={{ color: '#64748b' }}>Record Class:</strong> <span style={{ color: '#059669', fontWeight: 700 }}>100% Synthetic Decoy Twin</span></div>
+                    <div><strong style={{ color: '#64748b' }}>Real Patient PII:</strong> <span style={{ color: '#059669', fontWeight: 800 }}>0% EXPOSED (100% SAFE)</span></div>
+                    <div><strong style={{ color: '#64748b' }}>Confidence:</strong> <span style={{ color: '#059669', fontWeight: 800 }}>99.8% Certainty</span></div>
                   </div>
 
                   {/* Chronological Attack Timeline */}
                   <div style={{ marginBottom: 20 }}>
-                    <h4 style={{ margin: '0 0 12px', color: '#38bdf8', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <h4 style={{ margin: '0 0 12px', color: '#0369a1', fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
                       ⏳ Chronological Attack Progression Timeline
                     </h4>
                     <div style={{ display: 'grid', gap: 10 }}>
                       {(selectedDossier.timeline || []).map((t: any, idx: number) => (
-                        <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: 12, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                          <span style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', padding: '2px 8px', borderRadius: 6, fontSize: '0.72rem', fontWeight: 700 }}>
+                        <div key={idx} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 10, padding: 12, display: 'flex', gap: 14, alignItems: 'flex-start', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                          <span style={{ background: '#e0f2fe', color: '#0284c7', padding: '2px 8px', borderRadius: 6, fontSize: '0.72rem', fontWeight: 700 }}>
                             {t.phase || `Phase ${idx+1}`}
                           </span>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '0.85rem', color: '#f8fafc', fontWeight: 600 }}>{t.description || t.event_type}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>{t.timestamp} • Actor: {t.actor || 'Adversary'}</div>
+                            <div style={{ fontSize: '0.85rem', color: '#0f172a', fontWeight: 600 }}>{t.description || t.event_type}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 2 }}>{t.timestamp} • Actor: {t.actor || 'Adversary'}</div>
                           </div>
                         </div>
                       ))}
@@ -4446,9 +4446,9 @@ export default function AppUser() {
                   </div>
 
                   {/* Digital Forensic Certificate */}
-                  <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px dashed rgba(56, 189, 248, 0.4)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
-                    <div style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 800, textTransform: 'uppercase', marginBottom: 6 }}>📜 Digital Forensic Certificate</div>
-                    <pre style={{ margin: 0, fontSize: '0.78rem', color: '#cbd5e1', fontFamily: 'monospace', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>
+                  <div style={{ background: '#f8fafc', border: '1px dashed #93c5fd', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                    <div style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 800, textTransform: 'uppercase', marginBottom: 6 }}>📜 Digital Forensic Certificate</div>
+                    <pre style={{ margin: 0, fontSize: '0.78rem', color: '#334155', fontFamily: 'monospace', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>
                       {selectedDossier.forensic_certificate}
                     </pre>
                   </div>
@@ -4456,7 +4456,7 @@ export default function AppUser() {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
                     <button
                       onClick={() => setIsDossierModalOpen(false)}
-                      style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer' }}
+                      style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
                     >
                       Close Dossier Window ✓
                     </button>
@@ -4472,8 +4472,8 @@ export default function AppUser() {
 
       {/* DYNAMIC OTP FORGOT PASSWORD MODAL */}
       {isForgotModalOpen ? (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 100, padding: 24 }}>
-          <div style={{ width: '100%', maxWidth: 460, background: '#0f172a', borderRadius: 24, padding: 32, border: '1px solid rgba(255, 255, 255, 0.12)', boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)', position: 'relative' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 100, padding: 24 }}>
+          <div style={{ width: '100%', maxWidth: 460, background: '#ffffff', borderRadius: 20, padding: 32, border: '1px solid #cbd5e1', boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.25)', position: 'relative', color: '#0f172a' }}>
             
             {/* Close Button */}
             <button
@@ -4483,7 +4483,7 @@ export default function AppUser() {
                 setForgotStatus('')
                 setForgotError('')
               }}
-              style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', color: '#94a3b8', fontSize: 20, cursor: 'pointer' }}
+              style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', color: '#64748b', fontSize: 20, cursor: 'pointer' }}
             >
               ✕
             </button>
@@ -4491,29 +4491,29 @@ export default function AppUser() {
             {/* STEP 1: SELECT USERNAME & ENTER EMAIL TO SEND DYNAMIC OTP */}
             {forgotStep === 'step1' ? (
               <div>
-                <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                   Forgot Password - Step 1 of 2
                 </span>
-                <h2 style={{ margin: '4px 0 6px', fontSize: '1.5rem', fontWeight: 700 }}>Request OTP Verification</h2>
-                <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 20px', lineHeight: 1.5 }}>
+                <h2 style={{ margin: '4px 0 6px', fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>Request OTP Verification</h2>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 20px', lineHeight: 1.5 }}>
                   Select your username and enter your email address. A <strong>new dynamic 6-digit OTP code</strong> will be generated every time.
                 </p>
 
                 <form onSubmit={handleSendOtp} style={{ display: 'grid', gap: 16 }}>
                   
-                  <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
                     Select Account / Username
                     <select
                       value={forgotUsername}
                       onChange={(e) => handleForgotUsernameChange(e.target.value)}
-                      style={{ padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: '#1e293b', color: '#fff', fontSize: '0.95rem' }}
+                      style={{ padding: '12px 16px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.95rem' }}
                     >
                       <option value="doctor">Doctor (doctor)</option>
                       <option value="admin">Administrator (admin)</option>
                     </select>
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
                     Registered Email Address
                     <input
                       required
@@ -4521,16 +4521,16 @@ export default function AppUser() {
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
                       placeholder="e.g. doctor@stjude.org"
-                      style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                      style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }}
                     />
                   </label>
 
-                  {forgotError ? <p style={{ color: '#fca5a5', fontSize: '0.85rem', margin: 0 }}>{forgotError}</p> : null}
+                  {forgotError ? <p style={{ color: '#dc2626', fontSize: '0.85rem', margin: 0 }}>{forgotError}</p> : null}
 
                   <button
                     type="submit"
                     disabled={isForgotSubmitting}
-                    style={{ padding: '14px', borderRadius: 12, border: 'none', background: '#0284c7', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', marginTop: 4 }}
+                    style={{ padding: '14px', borderRadius: 12, border: 'none', background: '#0284c7', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
                   >
                     {isForgotSubmitting ? 'Generating OTP…' : 'Send Verification OTP →'}
                   </button>
@@ -4541,31 +4541,27 @@ export default function AppUser() {
             {/* STEP 2: ENTER OTP & NEW PASSWORD */}
             {forgotStep === 'step2' ? (
               <div>
-                <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                   Forgot Password - Step 2 of 2
                 </span>
-                <h2 style={{ margin: '4px 0 6px', fontSize: '1.5rem', fontWeight: 700 }}>Enter OTP & Set New Password</h2>
-                <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 20px', lineHeight: 1.5 }}>
+                <h2 style={{ margin: '4px 0 6px', fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>Enter OTP & Set New Password</h2>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 20px', lineHeight: 1.5 }}>
                   A verification OTP code was sent to <strong>{forgotEmail}</strong>. Please enter the code below to reset your password.
                 </p>
 
-
-
-
-
                 <form onSubmit={handleVerifyOtpAndReset} style={{ display: 'grid', gap: 14 }}>
-                  <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
                     Enter 6-Digit OTP Code *
                     <input
                       required
                       value={forgotOtp}
                       onChange={(e) => setForgotOtp(e.target.value)}
                       placeholder="e.g. 9A4F12"
-                      style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff', letterSpacing: '0.15em', fontWeight: 700 }}
+                      style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', letterSpacing: '0.15em', fontWeight: 700 }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
                     New Password *
                     <input
                       required
@@ -4573,11 +4569,11 @@ export default function AppUser() {
                       value={forgotNewPassword}
                       onChange={(e) => setForgotNewPassword(e.target.value)}
                       placeholder="Enter new password"
-                      style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                      style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
                     Confirm New Password *
                     <input
                       required
@@ -4585,16 +4581,16 @@ export default function AppUser() {
                       value={forgotConfirmPassword}
                       onChange={(e) => setForgotConfirmPassword(e.target.value)}
                       placeholder="Confirm new password"
-                      style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                      style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }}
                     />
                   </label>
 
-                  {forgotError ? <p style={{ color: '#fca5a5', fontSize: '0.85rem', margin: 0 }}>{forgotError}</p> : null}
+                  {forgotError ? <p style={{ color: '#dc2626', fontSize: '0.85rem', margin: 0 }}>{forgotError}</p> : null}
 
                   <button
                     type="submit"
                     disabled={isForgotSubmitting}
-                    style={{ padding: '14px', borderRadius: 12, border: 'none', background: '#10b981', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', marginTop: 4 }}
+                    style={{ padding: '14px', borderRadius: 12, border: 'none', background: '#059669', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: '0 2px 8px rgba(5, 150, 105, 0.3)' }}
                   >
                     {isForgotSubmitting ? 'Verifying OTP…' : 'Verify OTP & Reset Password ✓'}
                   </button>
@@ -4602,7 +4598,7 @@ export default function AppUser() {
                   <button
                     type="button"
                     onClick={() => setForgotStep('step1')}
-                    style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.85rem', cursor: 'pointer' }}
+                    style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.85rem', cursor: 'pointer' }}
                   >
                     ← Back to Step 1 (Request New OTP)
                   </button>
@@ -4613,11 +4609,11 @@ export default function AppUser() {
             {/* STEP 3: FORGOT PASSWORD SUCCESS */}
             {forgotStep === 'success' ? (
               <div style={{ textAlign: 'center', padding: '12px 0' }}>
-                <div style={{ width: 64, height: 64, borderRadius: 999, background: 'rgba(16, 185, 129, 0.2)', border: '2px solid #10b981', color: '#34d399', fontSize: 32, display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
+                <div style={{ width: 64, height: 64, borderRadius: 999, background: '#ecfdf5', border: '2px solid #10b981', color: '#059669', fontSize: 32, display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
                   ✓
                 </div>
-                <h2 style={{ margin: '0 0 8px', fontSize: '1.5rem', color: '#f8fafc' }}>Password Reset Successful!</h2>
-                <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: 1.5, margin: '0 0 24px' }}>
+                <h2 style={{ margin: '0 0 8px', fontSize: '1.5rem', color: '#0f172a' }}>Password Reset Successful!</h2>
+                <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: 1.5, margin: '0 0 24px' }}>
                   Your password has been updated. You can now log in with your username <strong>{forgotUsername}</strong> and new password.
                 </p>
 
@@ -4628,7 +4624,7 @@ export default function AppUser() {
                     setIsForgotModalOpen(false)
                     setGeneratedOtpBanner(null)
                   }}
-                  style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
                 >
                   Proceed to Sign In →
                 </button>
@@ -4641,11 +4637,11 @@ export default function AppUser() {
 
       {/* 🚨 HIGH-PRIORITY CYBER SECURITY INTRUSION ALERT MODAL & BURGLAR ALARM OVERLAY */}
       {hackerAlert ? (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(10px)', display: 'grid', placeItems: 'center', padding: 24 }}>
-          <div style={{ width: '100%', maxWidth: 640, background: '#0f172a', border: '2px solid #ef4444', borderRadius: 24, boxShadow: '0 0 50px rgba(239, 68, 68, 0.6)', color: '#fff', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', padding: 24 }}>
+          <div style={{ width: '100%', maxWidth: 640, background: '#ffffff', border: '2px solid #ef4444', borderRadius: 20, boxShadow: '0 25px 60px -15px rgba(239, 68, 68, 0.4)', color: '#0f172a', overflow: 'hidden' }}>
             
             {/* Pulsing Red Header Banner */}
-            <div style={{ background: 'linear-gradient(135deg, #991b1b, #dc2626)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
+            <div style={{ background: 'linear-gradient(135deg, #b91c1c, #dc2626)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(255,255,255,0.2)', display: 'grid', placeItems: 'center', fontSize: '1.8rem', boxShadow: '0 0 20px rgba(255,255,255,0.4)' }}>
                   🚨
@@ -4654,7 +4650,7 @@ export default function AppUser() {
                   <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', letterSpacing: '0.02em' }}>
                     CRITICAL CYBER INTRUSION & DATA THEFT ATTEMPT
                   </h3>
-                  <p style={{ margin: '3px 0 0', fontSize: '0.82rem', color: '#fca5a5', fontWeight: 700 }}>
+                  <p style={{ margin: '3px 0 0', fontSize: '0.82rem', color: '#fee2e2', fontWeight: 700 }}>
                     Threat Score: {hackerAlert.threatScore}/100 • Active Hostile Exfiltration Intercepted
                   </p>
                 </div>
@@ -4671,7 +4667,7 @@ export default function AppUser() {
                       setIsAlarmMuted(true)
                     }
                   }}
-                  style={{ padding: '8px 14px', borderRadius: 10, background: isAlarmMuted ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                  style={{ padding: '8px 14px', borderRadius: 10, background: isAlarmMuted ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                 >
                   {isAlarmMuted ? '🔇 Alarm Muted' : '🔊 Mute Alarm'}
                 </button>
@@ -4693,36 +4689,36 @@ export default function AppUser() {
             <div style={{ padding: '24px', display: 'grid', gap: 16 }}>
               
               {/* STOLEN DATA SPECIFICATION SECTION */}
-              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.35)', borderRadius: 16, padding: 18 }}>
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: 18 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <span style={{ fontSize: '1.1rem' }}>⚠️</span>
-                  <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#fca5a5', fontWeight: 800 }}>
+                  <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#b91c1c', fontWeight: 800 }}>
                     WHAT KIND OF DATA THE HACKER IS TRYING TO STEAL:
                   </div>
                 </div>
 
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc', marginBottom: 12 }}>
-                  Target Patient Scope: <span style={{ color: '#ef4444', textDecoration: 'underline' }}>{hackerAlert.targetPatientName} ({hackerAlert.targetPatientId})</span>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0f172a', marginBottom: 12 }}>
+                  Target Patient Scope: <span style={{ color: '#dc2626', textDecoration: 'underline' }}>{hackerAlert.targetPatientName} ({hackerAlert.targetPatientId})</span>
                 </div>
 
                 {/* Stolen Data Categories Grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 8 }}>
-                  <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#fff', fontWeight: 700 }}>
+                  <div style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                     🆔 Aadhaar Card Number & Govt ID
                   </div>
-                  <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#fff', fontWeight: 700 }}>
+                  <div style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                     📞 Mobile Phone & Home Address
                   </div>
-                  <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#fff', fontWeight: 700 }}>
+                  <div style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                     🩺 Clinical Diagnosis & Symptoms
                   </div>
-                  <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#fff', fontWeight: 700 }}>
+                  <div style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                     💊 Prescription Medicines & Dosages
                   </div>
-                  <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#fff', fontWeight: 700 }}>
+                  <div style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                     🏥 Attending Doctor & Department
                   </div>
-                  <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#fff', fontWeight: 700 }}>
+                  <div style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                     🏦 Insurance Policy & Emergency Contacts
                   </div>
                 </div>
@@ -4730,13 +4726,13 @@ export default function AppUser() {
 
               {/* Attack Query / Vector & Attacker Session Details */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div style={{ background: 'rgba(255,255,255,0.04)', padding: 14, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Attacker Session / IP</div>
-                  <div style={{ fontSize: '0.88rem', color: '#38bdf8', fontWeight: 700, wordBreak: 'break-all', marginTop: 4 }}>{hackerAlert.sessionId}</div>
+                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Attacker Session / IP</div>
+                  <div style={{ fontSize: '0.88rem', color: '#0369a1', fontWeight: 700, wordBreak: 'break-all', marginTop: 4 }}>{hackerAlert.sessionId}</div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.04)', padding: 14, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Attack Query / Action</div>
-                  <div style={{ fontSize: '0.88rem', color: '#f43f5e', fontWeight: 700, wordBreak: 'break-all', marginTop: 4 }}>{hackerAlert.action}</div>
+                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Attack Query / Action</div>
+                  <div style={{ fontSize: '0.88rem', color: '#dc2626', fontWeight: 700, wordBreak: 'break-all', marginTop: 4 }}>{hackerAlert.action}</div>
                 </div>
               </div>
 
@@ -4748,7 +4744,7 @@ export default function AppUser() {
                     setHackerAlert(null)
                     setActiveTab('overview')
                   }}
-                  style={{ flex: '1 1 200px', padding: '14px 20px', borderRadius: 14, border: '1px solid #38bdf8', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  style={{ flex: '1 1 200px', padding: '14px 20px', borderRadius: 12, border: 'none', background: '#0284c7', color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 >
                   ← Back to Dashboard Overview
                 </button>
@@ -4759,7 +4755,7 @@ export default function AppUser() {
                     setHackerAlert(null)
                     setActiveTab('patients')
                   }}
-                  style={{ flex: '1 1 180px', padding: '14px 16px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.08)', color: '#f8fafc', fontSize: '0.92rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  style={{ flex: '1 1 180px', padding: '14px 16px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.92rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
                   👥 View Patient Records
                 </button>
@@ -4769,7 +4765,7 @@ export default function AppUser() {
                     stopBurglarAlarm()
                     setHackerAlert(null)
                   }}
-                  style={{ flex: '1 1 100%', padding: '12px', borderRadius: 12, border: 'none', background: 'rgba(239, 68, 68, 0.25)', color: '#fca5a5', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ flex: '1 1 100%', padding: '12px', borderRadius: 12, border: '1px solid #fecaca', background: '#fef2f2', color: '#b91c1c', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Dismiss Alarm & Acknowledge Threat Security Alert ✓
                 </button>
