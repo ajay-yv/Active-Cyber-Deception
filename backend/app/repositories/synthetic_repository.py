@@ -4,7 +4,7 @@ from hashlib import sha256
 from dataclasses import dataclass, field
 
 from app.db.engines import SyntheticSessionLocal
-from app.models.synthetic import SyntheticPatient
+from app.models.synthetic import Honeytoken, SyntheticPatient, SyntheticReport
 from app.schemas import TwinRecord
 
 
@@ -91,6 +91,7 @@ def _to_record(row: SyntheticPatient) -> TwinRecord:
 
 
 _SAFE_SYNTHETIC_ID = re.compile(r"^(?:SYN|PID|P)-[A-Za-z0-9][A-Za-z0-9_-]*$")
+_HIDDEN_CATALOG_SYNTHETIC_IDS = {"SYN-03"}
 
 
 def is_valid_synthetic_id(value: object) -> bool:
@@ -201,7 +202,12 @@ class SyntheticRepository:
 
     def valid_catalog(self) -> list[TwinRecord]:
         """Return persisted twins safe for catalog and attacker-facing output."""
-        return [twin for twin in self.list_all() if is_valid_synthetic_id(twin.synthetic_patient_id)]
+        return [
+            twin
+            for twin in self.list_all()
+            if is_valid_synthetic_id(twin.synthetic_patient_id)
+            and twin.synthetic_patient_id not in _HIDDEN_CATALOG_SYNTHETIC_IDS
+        ]
 
     def find_by_synthetic_id(self, synthetic_patient_id: str) -> SyntheticForensicRecord | None:
         with SyntheticSessionLocal() as session:
@@ -281,9 +287,31 @@ class SyntheticRepository:
             lure_type=getattr(row, "lure_type", "standard") or "standard",
         )
 
+    def delete_by_real_patient_id(self, real_patient_id: str) -> list[str]:
+        with SyntheticSessionLocal() as session:
+            twin_ids = [
+                row[0]
+                for row in session.query(SyntheticPatient.id)
+                .filter(SyntheticPatient.real_patient_id == real_patient_id)
+                .all()
+            ]
+            if not twin_ids:
+                return []
+
+            session.query(SyntheticReport).filter(SyntheticReport.patient_id.in_(twin_ids)).delete(
+                synchronize_session=False
+            )
+            session.query(Honeytoken).filter(Honeytoken.twin_id.in_(twin_ids)).delete(
+                synchronize_session=False
+            )
+            session.query(SyntheticPatient).filter(SyntheticPatient.id.in_(twin_ids)).delete(
+                synchronize_session=False
+            )
+            session.commit()
+            return twin_ids
+
     def purge_all(self) -> int:
         with SyntheticSessionLocal() as session:
             count = session.query(SyntheticPatient).delete()
             session.commit()
             return count
-

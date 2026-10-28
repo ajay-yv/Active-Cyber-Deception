@@ -1,15 +1,23 @@
+from datetime import datetime, timedelta, timezone
+from hashlib import sha256
 from uuid import uuid4
 from pathlib import Path
 
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from fastapi.testclient import TestClient
 
 from app.api import auth as auth_api
+from app.core import dependencies as dependency_module
+from app.core.users import hash_password
 from app.core.settings import Settings
+from app.db.engines import SecuritySessionLocal
 from app.main import app
+from app.models.security import FailedLoginAttempt, UserAccount
+from app.repositories.user_repository import UserRecord, user_repository
 from app.schemas import PatientRecord
 from app.services.registries import patient_repository
+from app.services import security as security_service
 from app.services.security import password_reset_store
 
 client = TestClient(app)
@@ -17,7 +25,7 @@ client = TestClient(app)
 
 def test_backend_settings_use_workspace_anchored_env_files() -> None:
     workspace_root = Path(__file__).resolve().parents[2]
-    configured_files = Settings.Config.env_file
+    configured_files = Settings.model_config["env_file"]
 
     assert isinstance(configured_files, (tuple, list))
     env_files = tuple(Path(path) for path in configured_files)
@@ -147,6 +155,153 @@ def test_login_with_incorrect_password_fails() -> None:
     assert response.json()["detail"] == "Invalid username or password"
 
 
+@pytest.mark.parametrize("known_account", [False, True])
+def test_failed_login_alert_uses_five_attempt_ip_username_threshold(
+    known_account: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    username = f"bruteforce-{uuid4().hex[:12]}"
+    session_prefix = f"threshold-session-{uuid4().hex}"
+    if known_account:
+        user_repository.create(UserRecord(
+            username=username,
+            password_hash=hash_password("correct-password-for-test"),
+            role="doctor",
+            full_name="Brute Force Test",
+        ))
+
+    emitted_events: list[tuple[str, dict]] = []
+    monkeypatch.setattr(
+        security_service,
+        "publish_event",
+        lambda event_type, payload: emitted_events.append((event_type, payload)),
+    )
+
+    other_username = f"other-{uuid4().hex[:12]}"
+    for attempt in range(4):
+        unrelated = client.post(
+            "/api/auth/login",
+            json={"username": other_username, "password": f"not-a-secret-{attempt}"},
+            headers={"X-Session-Id": f"unrelated-session-{attempt}"},
+        )
+        assert unrelated.status_code == 401
+
+        response = client.post(
+            "/api/auth/login",
+            json={
+                "username": username.upper() if attempt == 3 else username,
+                "password": f"wrong-password-{attempt}",
+            },
+            headers={
+                "X-Session-Id": f"{session_prefix}-{attempt}",
+                "X-Forwarded-For": "203.0.113.41",
+            },
+        )
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Invalid username or password"
+        assert not any(event_type == "FAILED_LOGIN_THRESHOLD_REACHED" for event_type, _ in emitted_events)
+
+    threshold_response = client.post(
+        "/api/auth/login",
+        json={"username": username, "password": "wrong-password-threshold"},
+        headers={"X-Session-Id": f"{session_prefix}-final", "X-Forwarded-For": "203.0.113.41"},
+    )
+    assert threshold_response.status_code == 401
+    assert threshold_response.json()["detail"] == "Invalid username or password"
+
+    alerts = [
+        payload for event_type, payload in emitted_events
+        if event_type == "FAILED_LOGIN_THRESHOLD_REACHED"
+    ]
+    assert len(alerts) == 1
+    assert alerts[0]["attempt_count"] == 5
+    assert alerts[0]["threshold"] == 5
+    assert alerts[0]["window_minutes"] == 5
+    assert alerts[0]["attempted_username"] == username
+    assert alerts[0]["ip_address"] != "203.0.113.41"
+    assert "wrong-password" not in str(alerts[0])
+    logged_attempts = [
+        event.details
+        for event in security_service.security_repository.find_by_event_type("login_failure")
+        if f"session={session_prefix}-" in event.details
+    ]
+    assert len(logged_attempts) == 5
+    assert all("wrong-password" not in details for details in logged_attempts)
+    assert all("ip=testclient" in details for details in logged_attempts)
+
+    for attempt in range(5):
+        repeated_response = client.post(
+            "/api/auth/login",
+            json={"username": username, "password": f"wrong-password-repeat-{attempt}"},
+            headers={"X-Session-Id": f"{session_prefix}-repeat"},
+        )
+        assert repeated_response.status_code == 401
+    assert len([
+        event for event in emitted_events
+        if event[0] == "FAILED_LOGIN_THRESHOLD_REACHED"
+    ]) == 2
+
+    repeated_response = client.post(
+        "/api/auth/login",
+        json={"username": username, "password": "wrong-password-after-alert"},
+        headers={"X-Session-Id": f"{session_prefix}-after-alert"},
+    )
+    assert repeated_response.status_code == 401
+    assert len([
+        event for event in emitted_events
+        if event[0] == "FAILED_LOGIN_THRESHOLD_REACHED"
+    ]) == 2
+
+
+def test_failed_login_window_excludes_attempts_older_than_five_minutes() -> None:
+    username = f"expired-window-{uuid4().hex}"
+    ip_address = "198.51.100.77"
+    old_attempt_time = datetime.now(timezone.utc) - timedelta(minutes=6)
+
+    for _ in range(4):
+        security_service.security_repository.record_failed_login(
+            username=username,
+            ip_address=ip_address,
+            threshold=5,
+            window=timedelta(minutes=5),
+            now=old_attempt_time,
+        )
+
+    count, should_alert = security_service.security_repository.record_failed_login(
+        username=username,
+        ip_address=ip_address,
+        threshold=5,
+        window=timedelta(minutes=5),
+    )
+
+    assert count == 1
+    assert not should_alert
+    with SecuritySessionLocal() as session:
+        remaining_attempts = session.query(FailedLoginAttempt).filter(
+            FailedLoginAttempt.ip_address == ip_address,
+            FailedLoginAttempt.username_key_hash == sha256(username.casefold().encode("utf-8")).hexdigest(),
+        ).count()
+    assert remaining_attempts == 1
+
+
+def test_forwarded_ip_is_used_only_for_configured_trusted_proxies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        dependency_module,
+        "get_settings",
+        lambda: Settings(trusted_proxy_cidrs="10.0.0.0/8"),
+    )
+    dependency_module._trusted_proxy_networks.cache_clear()
+    request = Request({
+        "type": "http",
+        "headers": [(b"x-forwarded-for", b"198.51.100.44, 10.2.3.4")],
+        "client": ("10.0.0.5", 12345),
+    })
+
+    assert dependency_module._request_ip_address(request) == "198.51.100.44"
+
+
 def test_google_sign_in_links_unique_email_and_scopes_patient_access(monkeypatch: pytest.MonkeyPatch) -> None:
     email = f"google-{uuid4().hex}@example.test"
     patient = _add_patient(email)
@@ -156,7 +311,7 @@ def test_google_sign_in_links_unique_email_and_scopes_patient_access(monkeypatch
 
     response = client.post("/api/auth/google", json={"id_token": "firebase-id-token"})
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     payload = response.json()
     assert payload["user"]["email"] == email
     assert payload["user"]["patient_record_id"] == patient.id
@@ -179,6 +334,181 @@ def test_google_sign_in_links_unique_email_and_scopes_patient_access(monkeypatch
     assert repeat_response.status_code == 200
     assert repeat_response.json()["user"]["username"] == payload["user"]["username"]
     assert repeat_response.json()["user"]["patient_record_id"] == patient.id
+
+
+def test_google_sign_in_uses_selected_verified_email_when_uid_has_stale_patient_link(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    old_email = f"old-{uuid4().hex}@example.test"
+    selected_email = f"selected-{uuid4().hex}@example.test"
+    old_patient = _add_patient(old_email, "Previously Linked Patient")
+    selected_patient = _add_patient(selected_email, "Selected Email Patient")
+    uid = uuid4().hex
+    username = f"google:{uid}"
+    user_repository.link_google_patient(
+        firebase_uid=uid,
+        patient_record_id=old_patient.id,
+        email=old_email,
+        full_name=old_patient.name,
+        password_hash=hash_password("test-only-password"),
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "verify_google_id_token",
+        lambda _: _google_claims(selected_email.upper(), uid),
+    )
+
+    try:
+        response = client.post("/api/auth/google", json={"id_token": "firebase-id-token"})
+
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["user"]["email"] == selected_email
+        assert payload["user"]["patient_record_id"] == selected_patient.id
+        assert user_repository.get_by_username(username).patient_record_id == selected_patient.id
+
+        headers = {"Authorization": "Bearer " + payload["access_token"]}
+        self_response = client.get("/api/patients/me", headers=headers)
+        assert self_response.status_code == 200
+        assert self_response.json()["patient"]["id"] == selected_patient.id
+        assert client.get(f"/api/patients/{old_patient.id}", headers=headers).status_code == 404
+    finally:
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(UserAccount.username == username).delete()
+            session.commit()
+
+
+def test_google_sign_in_does_not_take_patient_record_linked_to_another_google_account(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    email = f"owned-{uuid4().hex}@example.test"
+    patient = _add_patient(email, "Already Linked Patient")
+    original_uid = uuid4().hex
+    attempted_uid = uuid4().hex
+    user_repository.link_google_patient(
+        firebase_uid=original_uid,
+        patient_record_id=patient.id,
+        email=email,
+        full_name=patient.name,
+        password_hash=hash_password("test-only-password"),
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "verify_google_id_token",
+        lambda _: _google_claims(email, attempted_uid),
+    )
+
+    try:
+        response = client.post("/api/auth/google", json={"id_token": "firebase-id-token"})
+
+        assert response.status_code == 403
+        assert "already linked to another Google account" in response.json()["detail"]
+        assert user_repository.get_by_username(f"google:{original_uid}").patient_record_id == patient.id
+        assert user_repository.get_by_username(f"google:{attempted_uid}") is None
+    finally:
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(
+                UserAccount.username.in_([f"google:{original_uid}", f"google:{attempted_uid}"])
+            ).delete(synchronize_session=False)
+            session.commit()
+
+
+def test_unlinked_patient_cannot_read_another_patients_record_but_staff_can() -> None:
+    patient = _add_patient(f"scoped-{uuid4().hex}@example.test", "Scoped Patient")
+    patient_login = client.post(
+        "/api/auth/login",
+        json={"username": "patient", "password": "Patient@1432"},
+    )
+    assert patient_login.status_code == 200
+    patient_headers = {"Authorization": "Bearer " + patient_login.json()["access_token"]}
+
+    assert client.get("/api/patients/me", headers=patient_headers).json()["patient"] is None
+    assert client.get("/api/patients", headers=patient_headers).json()["patients"] == []
+    assert client.get(f"/api/patients/{patient.id}", headers=patient_headers).status_code == 404
+    assert client.get(f"/api/patients?patient_id={patient.id}", headers=patient_headers).status_code == 404
+
+    for credentials in (
+        {"username": "admin", "password": "Admin@8431"},
+        {"username": "doctor", "password": "Priya@10"},
+    ):
+        staff_login = client.post("/api/auth/login", json=credentials)
+        assert staff_login.status_code == 200
+        staff_headers = {"Authorization": "Bearer " + staff_login.json()["access_token"]}
+        response = client.get(f"/api/patients/{patient.id}", headers=staff_headers)
+        assert response.status_code == 200
+        assert response.json()["patient"]["name"] == "Scoped Patient"
+
+
+def test_seeded_patient_account_reads_only_record_matching_its_email() -> None:
+    patient_email = f"portal-{uuid4().hex}@example.test"
+    patient = _add_patient(patient_email, "Portal Linked Patient")
+    other_patient = _add_patient(f"other-{uuid4().hex}@example.test", "Unrelated Patient")
+    original_account = user_repository.get_by_username("patient")
+    assert original_account is not None
+    user_repository.update_email("patient", patient_email)
+    try:
+        login_response = client.post(
+            "/api/auth/login",
+            json={"username": "patient", "password": "Patient@1432"},
+        )
+        assert login_response.status_code == 200
+        headers = {"Authorization": "Bearer " + login_response.json()["access_token"]}
+
+        self_response = client.get("/api/patients/me", headers=headers)
+        assert self_response.status_code == 200
+        assert self_response.json()["patient"]["id"] == patient.id
+
+        list_response = client.get("/api/patients", headers=headers)
+        assert list_response.status_code == 200
+        assert [record["id"] for record in list_response.json()["patients"]] == [patient.id]
+        assert client.get(f"/api/patients/{other_patient.id}", headers=headers).status_code == 404
+    finally:
+        user_repository.update_email("patient", original_account.email or "patient@stjude.org")
+
+
+def test_registered_patient_sign_in_loads_admin_record_by_email() -> None:
+    email = f"registered-{uuid4().hex}@example.test"
+    patient = _add_patient(email, "Admin Entered Patient")
+    unrelated_patient = _add_patient(f"unrelated-{uuid4().hex}@example.test", "Unrelated Patient")
+    mobile = f"9{uuid4().int % 10**9:09d}"
+
+    registration = client.post(
+        "/api/auth/register-patient",
+        json={
+            "mobile_number": mobile,
+            "password": "registered-password",
+            "full_name": "Registered Patient Name",
+            "email": email.upper(),
+        },
+    )
+    assert registration.status_code == 200
+    assert registration.json()["user"]["username"] == mobile
+    assert registration.json()["user"]["full_name"] == "Registered Patient Name"
+    assert registration.json()["user"]["email"] == email
+
+    try:
+        login_response = client.post(
+            "/api/auth/login",
+            json={"username": mobile, "password": "registered-password"},
+        )
+        assert login_response.status_code == 200
+        assert login_response.json()["user"]["full_name"] == "Registered Patient Name"
+        headers = {"Authorization": "Bearer " + login_response.json()["access_token"]}
+
+        current_patient = client.get("/api/patients/me", headers=headers)
+        assert current_patient.status_code == 200
+        assert current_patient.json()["patient"]["id"] == patient.id
+        assert client.get(f"/api/patients/{unrelated_patient.id}", headers=headers).status_code == 404
+
+        generic_patient_login = client.post(
+            "/api/auth/login",
+            json={"username": "patient", "password": "Patient@1432"},
+        )
+        assert generic_patient_login.status_code == 200
+    finally:
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(UserAccount.username == mobile).delete()
+            session.commit()
 
 
 def test_google_sign_in_rejects_missing_or_ambiguous_patient_matches(monkeypatch: pytest.MonkeyPatch) -> None:

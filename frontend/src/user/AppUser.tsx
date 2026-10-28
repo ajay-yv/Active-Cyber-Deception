@@ -79,12 +79,25 @@ type Notification = {
   timestamp: string
 }
 
+function mergeAttackAlerts(current: AttackAlert[], incoming: AttackAlert[]): AttackAlert[] {
+  const alertsById = new Map(current.map((alert) => [alert.attack_id, alert]))
+  for (const alert of incoming) {
+    alertsById.set(alert.attack_id, { ...alertsById.get(alert.attack_id), ...alert })
+  }
+  return [...alertsById.values()]
+    .sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp))
+    .slice(0, 25)
+}
+
 function useRealtimeNotifications(
   token: string | null,
   onRealtimeEvent: (type: string, payload: any) => void,
   setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>,
   setConnected: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
+  const onRealtimeEventRef = useRef(onRealtimeEvent)
+  onRealtimeEventRef.current = onRealtimeEvent
+
   useEffect(() => {
     if (!token) return
 
@@ -146,7 +159,7 @@ function useRealtimeNotifications(
               ...current,
             ].slice(0, 15))
 
-            onRealtimeEvent(data.type ?? 'event', payload)
+            onRealtimeEventRef.current(data.type ?? 'event', payload)
           } catch (err) {
             console.warn('[Realtime Telemetry] Message parse warning:', err)
           }
@@ -393,6 +406,7 @@ export default function AppUser() {
   const [isPatientRegisterModalOpen, setIsPatientRegisterModalOpen] = useState(false)
   const [patientRegMobile, setPatientRegMobile] = useState('')
   const [patientRegFullName, setPatientRegFullName] = useState('')
+  const [patientRegEmail, setPatientRegEmail] = useState('')
   const [patientRegPassword, setPatientRegPassword] = useState('')
   const [patientRegConfirmPassword, setPatientRegConfirmPassword] = useState('')
   const [patientRegError, setPatientRegError] = useState('')
@@ -438,45 +452,8 @@ export default function AppUser() {
   // Tab State - Core Navigation Pages
   const [activeTab, setActiveTab] = useState<'overview' | 'patients' | 'twins' | 'gateway' | 'analytics' | 'watermarks' | 'reports' | 'settings' | 'profile' | 'register' | 'lab' | 'history'>('overview')
 
-  // Automated 1:1 Synthetic Decoy Twins derived dynamically from hospital vault patients or dashboard
-  const activeSyntheticRecords = useMemo(() => {
-    if (dashboard?.synthetic_records && dashboard.synthetic_records.length > 0) {
-      return dashboard.synthetic_records
-    }
-    return patients.map((p) => {
-      if (p.forensic_record?.synthetic_patient_id) {
-        return {
-          id: String(p.id || p.patient_id),
-          patient_id: String(p.id || p.patient_id),
-          synthetic_patient_id: p.forensic_record.synthetic_patient_id,
-          name: p.forensic_record.name || `Synthetic ${p.name}`,
-          disease: p.forensic_record.disease || p.disease,
-          diagnosis: p.forensic_record.diagnosis || p.diagnosis,
-          treatment_pattern: p.forensic_record.treatment_pattern || 'Standard Deception Protocol',
-          age_range: p.forensic_record.age_range || `${p.age || 30} yrs`,
-          aadhaar_number: p.forensic_record.aadhaar_number || 'Anonymized Decoy',
-          phone_number: p.forensic_record.phone_number || '+91 98888 00000',
-          email: p.forensic_record.email || 'decoy@decoy-health.org',
-          watermark_fingerprint: p.forensic_record.watermark_fingerprint || p.watermark_id || `WM-${p.id}`,
-        }
-      }
-      const syn = generateSyntheticTwinDetails(p.name, p.id || p.patient_id || '1', p.age)
-      return {
-        id: String(p.id || p.patient_id),
-        patient_id: String(p.id || p.patient_id),
-        synthetic_patient_id: syn.decoyId,
-        name: syn.decoyName,
-        disease: syn.disease,
-        diagnosis: syn.diagnosis,
-        treatment_pattern: syn.treatmentPattern,
-        age_range: syn.ageRange,
-        aadhaar_number: syn.aadhaar,
-        phone_number: syn.phone,
-        email: syn.email,
-        watermark_fingerprint: syn.fingerprint,
-      }
-    })
-  }, [dashboard?.synthetic_records, patients])
+  // Both the Admin catalog and simulator use the persisted backend decoy catalog.
+  const activeSyntheticRecords = dashboard?.synthetic_records ?? []
 
   // AI Telemetry & Security Defense State
   const [aiDecisions, setAiDecisions] = useState<any[]>([])
@@ -530,12 +507,18 @@ export default function AppUser() {
     targetPatientName: string
     syntheticPatientId?: string
     dataType: string
+    requestedFields: string[]
     stolenCategories?: string[]
+    ipAddress: string
     watermarkId: string
     timestamp: string
     threatScore: number
+    attackType?: string
+    alertKind?: 'failed-login' | 'attack'
+    failureCount?: number
   } | null>(null)
   const [isAlarmMuted, setIsAlarmMuted] = useState(false)
+  const isAlarmMutedRef = useRef(false)
   const [isBurglarAlarmActive, setIsBurglarAlarmActive] = useState(false)
   const alarmIntervalRef = useRef<any>(null)
   const audioContextRef = useRef<any>(null)
@@ -599,7 +582,7 @@ export default function AppUser() {
 
   function triggerBurglarAlarm() {
     setIsBurglarAlarmActive(true)
-    if (isAlarmMuted) return
+    if (isAlarmMutedRef.current) return
     stopBurglarAlarm(false) // stop existing interval without resetting active state
     try {
       const playCycle = async () => {
@@ -649,6 +632,11 @@ export default function AppUser() {
     } catch (err) {
       console.error('Audio alarm playback error:', err)
     }
+  }
+
+  function setAlarmMuted(muted: boolean) {
+    isAlarmMutedRef.current = muted
+    setIsAlarmMuted(muted)
   }
 
   function stopBurglarAlarm(clearActiveState: boolean = true) {
@@ -890,7 +878,7 @@ export default function AppUser() {
     if (adoRes.status === 'fulfilled') setAdoTelemetry(adoRes.value)
     if (evolutionRes.status === 'fulfilled') setEvolutionProfile(evolutionRes.value)
     if (forensicsRes.status === 'fulfilled' && (forensicsRes.value as any)?.records) {
-      setSecurityAlerts((forensicsRes.value as any).records)
+      setSecurityAlerts((current) => mergeAttackAlerts(current, (forensicsRes.value as any).records))
     }
   }
 
@@ -902,7 +890,45 @@ export default function AppUser() {
   }, [token, user?.role, user?.email])
 
   useRealtimeNotifications(token, async (type, payload: any) => {
-    if (type === 'ATTACK_DETECTED' && payload?.attack_id) {
+    if (type === 'FAILED_LOGIN_THRESHOLD_REACHED') {
+      const failureCount = Number(payload?.attempt_count || 0)
+      const attackId = String(payload?.attack_id || `failed-login-${payload?.session_id || Date.now()}`)
+      const failedLoginAlert: AttackAlert = {
+        attack_id: attackId,
+        attack_type: String(payload?.attack_type || 'BRUTE_FORCE'),
+        session_id: String(payload?.session_id || 'unknown-session'),
+        timestamp: String(payload?.timestamp || new Date().toISOString()),
+        risk_score: Number(payload?.threat_score || 90),
+        gateway_decision: 'MONITOR',
+        records_returned: 0,
+        records_requested: 0,
+        requested_fields: [],
+        blocked_status: false,
+      }
+      setSecurityAlerts((current) => mergeAttackAlerts(current, [failedLoginAlert]))
+      setActiveTab('gateway')
+      setHackerAlert({
+        alertKind: 'failed-login',
+        sessionId: String(payload?.session_id || 'unknown-session'),
+        hackerId: String(payload?.attempted_username || 'unknown'),
+        action: 'Brute-force attack: repeated failed sign-in attempts',
+        details: `${failureCount} failed sign-in attempts within ${Number(payload?.window_minutes || 5)} minutes`,
+        targetPatientId: 'N/A',
+        targetPatientName: `Account: ${String(payload?.attempted_username || 'unknown')}`,
+        dataType: 'Account sign-in',
+        requestedFields: [],
+        stolenCategories: [],
+        ipAddress: String(payload?.ip_address || 'Unavailable'),
+        watermarkId: '',
+        timestamp: String(payload?.timestamp || new Date().toISOString()),
+        threatScore: Number(payload?.threat_score || 90),
+        attackType: String(payload?.attack_type || 'BRUTE_FORCE'),
+        failureCount,
+      })
+      setAlarmMuted(false)
+      triggerBurglarAlarm()
+      loadDashboardData().catch(() => {})
+    } else if (type === 'ATTACK_DETECTED' && payload?.attack_id) {
       const alert: AttackAlert = {
         attack_id: String(payload.attack_id),
         attack_type: String(payload.attack_type || 'Unknown attack'),
@@ -925,7 +951,8 @@ export default function AppUser() {
         stolen_categories: Array.isArray(payload.stolen_categories) ? payload.stolen_categories.map(String) : [],
         blocked_status: Boolean(payload.blocked_status),
       }
-      setSecurityAlerts((current) => [alert, ...current.filter((item) => item.attack_id !== alert.attack_id)].slice(0, 25))
+      setSecurityAlerts((current) => mergeAttackAlerts(current, [alert]))
+      setActiveTab('gateway')
       playAlertBeep()
       if (alert.risk_score >= 70) {
         triggerBurglarAlarm()
@@ -1005,16 +1032,52 @@ export default function AppUser() {
       type === 'attack_alert'
     ) {
       console.log('🚨 [Adversary Alert Received] Triggering automated burglar alarm siren:', payload)
+      if (type === 'hacker_attack_alert' || type === 'attack_alert' || type === 'SQL_INJECTION') {
+        const sessionId = String(payload?.session_id || payload?.session || 'unknown-session')
+        const attackType = String(payload?.attack_type || payload?.action || payload?.query || type)
+        const timestamp = String(payload?.timestamp || new Date().toISOString())
+        const attackId = String(payload?.attack_id || `realtime-${sessionId}-${attackType}-${timestamp}`)
+        const fallbackAlert: AttackAlert = {
+          attack_id: attackId,
+          attack_type: attackType,
+          session_id: sessionId,
+          username: payload?.hacker_id || payload?.username,
+          ip_address: payload?.ip_address,
+          timestamp,
+          risk_score: Number(payload?.threat_score || payload?.risk_score || 90),
+          gateway_decision: String(payload?.gateway_decision || 'DECEIVE'),
+          records_returned: Number(payload?.records_returned || 0),
+          records_requested: Number(payload?.records_requested || 0),
+          requested_fields: Array.isArray(payload?.requested_fields) ? payload.requested_fields.map(String) : [],
+          data_type: payload?.data_type || payload?.details,
+          blocked_status: Boolean(payload?.blocked_status),
+        }
+        setSecurityAlerts((current) => {
+          const duplicate = current.some((item) =>
+            item.attack_id === fallbackAlert.attack_id ||
+            (item.session_id === sessionId &&
+              item.attack_type === attackType &&
+              item.timestamp === timestamp),
+          )
+          return duplicate ? current : mergeAttackAlerts(current, [fallbackAlert])
+        })
+        setActiveTab('gateway')
+      }
       const targetId = payload?.target_patient_id || payload?.patient_id || 'P-01'
       const alertData = {
         sessionId: payload?.session_id || payload?.session || 'hacker-session-001',
         hackerId: payload?.hacker_id || payload?.username || 'simulated_hacker',
-        action: payload?.action || payload?.attack_type || payload?.query || 'Adversary Patient Exfiltration Attack',
+        action: payload?.attack_type === 'SQL_INJECTION'
+          ? 'SQL Injection attempt detected'
+          : payload?.attack_type === 'PATIENT_ENUMERATION'
+            ? 'Single-patient record access attempt detected'
+            : payload?.action || payload?.attack_type || payload?.query || 'Adversary Patient Exfiltration Attack',
         details: payload?.details || 'Attacker probe against clinical patient database',
         targetPatientId: targetId,
         targetPatientName: payload?.target_patient_name || (targetId !== 'ALL_PATIENTS' ? `Target Scope: ${targetId}` : 'Hospital Patient Database (All Patients)'),
-        syntheticPatientId: payload?.synthetic_patient_id || 'SYN-01',
+        syntheticPatientId: payload?.synthetic_patient_id,
         dataType: payload?.data_type || 'Patient PII (Aadhaar Number, Mobile Phone, Residential Address, Clinical Diagnosis & Prescriptions)',
+        requestedFields: Array.isArray(payload?.requested_fields) ? payload.requested_fields.map(String) : [],
         stolenCategories: payload?.stolen_categories || [
           '🆔 Patient Aadhaar Number & Government Identification',
           '📞 Mobile Phone Number & Residential Address',
@@ -1023,12 +1086,14 @@ export default function AppUser() {
           '🏥 Attending Doctor & Department Allocation',
           '🏦 Insurance Policy Account & Emergency Family Contacts',
         ],
+        ipAddress: payload?.ip_address || 'Unavailable',
         watermarkId: payload?.watermark_id || 'WM-AI-SECURITY-ACTIVE',
         timestamp: payload?.timestamp || new Date().toISOString(),
         threatScore: payload?.threat_score || payload?.risk_score || 95,
+        attackType: payload?.attack_type,
       }
       setHackerAlert(alertData)
-      setIsAlarmMuted(false)
+      setAlarmMuted(false)
       triggerBurglarAlarm()
       loadDashboardData().catch(() => {})
     }
@@ -1070,8 +1135,15 @@ export default function AppUser() {
     setPatientRegError('')
 
     const cleanMobile = patientRegMobile.replace(/\D/g, '').trim()
+    const cleanName = patientRegFullName.trim()
+    const cleanEmail = patientRegEmail.trim().toLowerCase()
     const cleanPwd = patientRegPassword.trim()
     const cleanConfirm = patientRegConfirmPassword.trim()
+
+    if (!cleanName) {
+      setPatientRegError("Please enter the patient's full name.")
+      return
+    }
 
     if (!cleanMobile) {
       setPatientRegError('Please enter your 10-digit mobile number.')
@@ -1080,6 +1152,11 @@ export default function AppUser() {
 
     if (cleanMobile.length !== 10) {
       setPatientRegError('Mobile number must be exactly 10 digits.')
+      return
+    }
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setPatientRegError('Enter the same email address used on the hospital patient record.')
       return
     }
 
@@ -1103,15 +1180,16 @@ export default function AppUser() {
       const res = await registerPatient({
         mobile_number: cleanMobile,
         password: cleanPwd,
-        full_name: patientRegFullName.trim() || undefined,
+        full_name: cleanName,
+        email: cleanEmail,
       })
 
       setIsPatientRegisterModalOpen(false)
       setIsAdminLoginModalOpen(true)
-      setUsername('patient')
+      setUsername(res.user.username)
       setPassword('')
       setError('')
-      setMessage(`✓ Registration completed successfully for ${res.user.full_name || patientRegFullName.trim() || cleanMobile}! Please enter your password to login.`)
+      setMessage(`✓ Registration completed successfully for ${res.user.full_name || cleanName}! Sign in with your registered mobile number.`)
       window.dispatchEvent(new Event('patient_data_changed'))
     } catch (err) {
       setPatientRegError(err instanceof Error ? err.message : 'Registration failed. Please try again.')
@@ -1153,19 +1231,19 @@ export default function AppUser() {
         : ''
 
       if (errorCode === 'auth/popup-closed-by-user') {
-        setMessage('Google sign-in did not finish. Try the popup again or use redirect sign-in.')
+        setMessage('Google sign-in was cancelled. Please choose a Google account from the account picker or use redirect sign-in.')
         setShowGoogleRedirectFallback(true)
         return
       }
       if (errorCode === 'auth/popup-blocked') {
-        setError('Google sign-in was blocked. Allow pop-ups or use redirect sign-in instead.')
-        setShowGoogleRedirectFallback(true)
+        setMessage('Pop-up blocked. Continuing Google sign-in with a full-page redirect...')
+        await handleGoogleRedirectSignIn()
         return
       }
 
       console.warn('Google Sign-In cancelled or failed:', err)
       if (firebaseSignInCompleted) await signOutFromGoogle().catch(() => {})
-      setError(err instanceof Error ? err.message : 'Google Sign-In failed or was cancelled.')
+      setError(err instanceof Error ? err.message : 'Google Sign-In failed or was cancelled. Please choose the Google email that matches the patient record you want to access.')
     } finally {
       setPatientRegLoading(false)
     }
@@ -1181,6 +1259,7 @@ export default function AppUser() {
       await startGoogleRedirectSignIn()
     } catch (err) {
       window.sessionStorage.removeItem('ehr-google-redirect-pending')
+      setShowGoogleRedirectFallback(true)
       setError(err instanceof Error ? err.message : 'Google redirect sign-in could not be started.')
       setPatientRegLoading(false)
     }
@@ -1750,14 +1829,31 @@ export default function AppUser() {
 
                 <form onSubmit={handlePatientRegister} style={{ display: 'grid', gap: 14 }}>
                   <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
-                    Full Name
+                    Full Name *
                     <input
+                      required
                       type="text"
                       value={patientRegFullName}
                       onChange={(e) => setPatientRegFullName(e.target.value)}
                       placeholder="e.g. Ajay Y V"
                       style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.9rem' }}
                     />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
+                    Email on Hospital Patient Record *
+                    <input
+                      required
+                      type="email"
+                      autoComplete="email"
+                      value={patientRegEmail}
+                      onChange={(e) => setPatientRegEmail(e.target.value)}
+                      placeholder="e.g. patient@stjude.org"
+                      style={{ padding: '11px 14px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.9rem' }}
+                    />
+                    <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 500 }}>
+                      Use the same email the Administrator entered for your patient record.
+                    </span>
                   </label>
 
                   <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
@@ -1891,7 +1987,7 @@ export default function AppUser() {
         <PatientDashboardComponent token={token} user={user} onLogout={handleLogout} />
       ) : (
         /* AUTHENTICATED COMMAND CENTER LAYOUT FOR ADMIN */
-        <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+        <div className="admin-dashboard-layout" style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
           
           {/* STICKY LEFT SIDEBAR WITH 11 NAVIGATION LINKS */}
           <aside className="sticky-sidebar">
@@ -1996,6 +2092,7 @@ export default function AppUser() {
                       targetPatientName: 'Dr. Ramesh Nair (Cardiology Inpatient)',
                       syntheticPatientId: 'PID-45242',
                       dataType: 'Patient PII (Aadhaar Number, Mobile Phone, Residential Address, Clinical Diagnosis & Prescriptions)',
+                      requestedFields: ['aadhaar', 'phone', 'diagnosis', 'medicines'],
                       stolenCategories: [
                         '🆔 Patient Aadhaar Number & Government Identification',
                         '📞 Mobile Phone Number & Residential Address',
@@ -2004,12 +2101,13 @@ export default function AppUser() {
                         '🏥 Attending Doctor & Department Allocation',
                         '🏦 Insurance Policy Account & Emergency Family Contacts',
                       ],
+                      ipAddress: '127.0.0.1',
                       watermarkId: 'WM-AI-SECURITY-ACTIVE',
                       timestamp: new Date().toISOString(),
                       threatScore: 98,
                     }
                     setHackerAlert(sampleAlert)
-                    setIsAlarmMuted(false)
+                    setAlarmMuted(false)
                     triggerBurglarAlarm()
                   }}
                   style={{
@@ -2055,7 +2153,13 @@ export default function AppUser() {
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <span style={{ background: '#ef4444', color: '#fff', padding: '2px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase' }}>
-                            CRITICAL INTRUSION DETECTED
+                            {hackerAlert?.alertKind === 'failed-login'
+                              ? 'BRUTE-FORCE ATTACK DETECTED'
+                              : hackerAlert?.attackType === 'SQL_INJECTION'
+                                ? 'SQL INJECTION DETECTED'
+                                : hackerAlert?.attackType === 'PATIENT_ENUMERATION'
+                                  ? 'SINGLE-PATIENT ATTEMPT DETECTED'
+                                  : 'CRITICAL INTRUSION DETECTED'}
                           </span>
                           <span style={{ color: '#b91c1c', fontSize: '0.85rem', fontWeight: 700 }}>
                             Risk Score: {hackerAlert?.threatScore || 95}% HIGH THREAT
@@ -2082,6 +2186,7 @@ export default function AppUser() {
                               targetPatientName: 'Karthik Reddy (P-01)',
                               syntheticPatientId: 'SYN-01',
                               dataType: 'Patient PII (Aadhaar Number, Mobile Phone, Address, Diagnosis & Prescriptions)',
+                              requestedFields: ['aadhaar', 'phone', 'address', 'diagnosis', 'medicines'],
                               stolenCategories: [
                                 '🆔 Patient Aadhaar Number & Government Identification',
                                 '📞 Mobile Phone Number & Residential Address',
@@ -2090,6 +2195,7 @@ export default function AppUser() {
                                 '🏥 Attending Doctor & Department Allocation',
                                 '🏦 Insurance Policy Account & Emergency Family Contacts',
                               ],
+                              ipAddress: '127.0.0.1',
                               watermarkId: 'WM-AI-SECURITY-ACTIVE',
                               timestamp: new Date().toISOString(),
                               threatScore: 94,
@@ -3273,17 +3379,20 @@ export default function AppUser() {
                               <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Linked to Real: {syn.id || syn.patient_id || 'Vault'} ({linkedPatient?.name || 'Protected Inpatient'})</span>
                               <button
                                 onClick={() => {
-                                  const compTarget = linkedPatient || {
-                                    id: syn.id || syn.patient_id,
-                                    patient_id: syn.id || syn.patient_id,
-                                    name: syn.name.replace(/^Synthetic\s+/, ''),
-                                    age: 42,
-                                    gender: 'Male',
-                                    blood_group: 'B+',
-                                    disease: syn.disease,
-                                    diagnosis: syn.diagnosis,
-                                    watermark_id: syn.watermark_fingerprint,
+                                  const compTarget = {
+                                    ...(linkedPatient || {
+                                      id: syn.id || syn.patient_id,
+                                      patient_id: syn.id || syn.patient_id,
+                                      name: syn.name.replace(/^Synthetic\s+/, ''),
+                                      age: 42,
+                                      gender: 'Male',
+                                      blood_group: 'B+',
+                                      disease: syn.disease,
+                                      diagnosis: syn.diagnosis,
+                                      watermark_id: syn.watermark_fingerprint,
+                                    }),
                                     forensic_record: {
+                                      ...linkedPatient?.forensic_record,
                                       synthetic_patient_id: syn.synthetic_patient_id,
                                       name: syn.name,
                                       disease: syn.disease,
@@ -3294,7 +3403,7 @@ export default function AppUser() {
                                       phone_number: syn.phone_number,
                                       email: syn.email,
                                       watermark_fingerprint: syn.watermark_fingerprint,
-                                    }
+                                    },
                                   }
                                   setSelectedTwinComparison(compTarget)
                                   setIsCompareModalOpen(true)
@@ -3324,101 +3433,114 @@ export default function AppUser() {
                         📡 Live AI Gateway Decision & Traffic Evaluation Stream
                       </h3>
                       <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.82rem' }}>
-                        Real-time inspection decisions rendered by the Port 8001 AI Gateway engine.
+                        Live gateway decisions, attack detections, and persisted forensic records.
                       </p>
                     </div>
-                    <span style={{ background: '#f0f9ff', border: '1px solid #bae6fd', color: '#0284c7', padding: '5px 12px', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700 }}>
-                      ● Continuous Deep Packet Inspection
+                    <span style={{
+                      background: realtimeConnected ? '#f0fdf4' : '#fff7ed',
+                      border: `1px solid ${realtimeConnected ? '#bbf7d0' : '#fed7aa'}`,
+                      color: realtimeConnected ? '#15803d' : '#c2410c',
+                      padding: '5px 12px',
+                      borderRadius: 999,
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                    }}>
+                      {realtimeConnected ? '● LIVE STREAM CONNECTED' : '● RECONNECTING TO LIVE STREAM'}
                     </span>
                   </div>
 
                   <div style={{ display: 'grid', gap: 10 }}>
-                    {[
-                      {
-                        client: 'Adversary Probe (Terminal: .\\hack.bat 1)',
-                        query: 'GET /api/patients/1 (Single Patient Theft Attempt)',
-                        score: 88,
-                        decision: 'DIVERT ➡️ Served Decoy Twin: Devansh Desai (SYN-01)',
-                        realStatus: patients.length > 0 ? `Protected (${patients[0].name} untouched)` : 'Protected (Vault locked)',
-                        isThreat: true,
-                        time: 'Just now',
-                      },
-                      {
-                        client: 'Adversary Mass Exfiltration (.\\hack.bat exfiltration 3)',
-                        query: 'GET /api/patients (Bulk Database Exfiltration Probe)',
-                        score: 94,
-                        decision: 'DIVERT ➡️ Served 3 Watermarked Synthetic Twins',
-                        realStatus: 'Protected (3/3 vault records safe)',
-                        isThreat: true,
-                        time: '1 min ago',
-                      },
-                      {
-                        client: 'Malicious SQL Injection Vector',
-                        query: "SELECT * FROM patients WHERE id='1' OR 1=1 --",
-                        score: 99,
-                        decision: 'TRAP ➡️ Decoy Sandbox + Burglar Alarm Sounded',
-                        realStatus: 'Protected (Vault locked)',
-                        isThreat: true,
-                        time: '3 mins ago',
-                      },
-                      {
-                        client: 'Hospital Physician (Dr. Rohan Patel)',
-                        query: 'GET /api/patients (Legitimate Ward Patient Review)',
-                        score: 0,
-                        decision: 'ALLOW ➡️ Routed Directly to Real Clinical Vault',
-                        realStatus: 'Authorized Clinical Access',
-                        isThreat: false,
-                        time: '5 mins ago',
-                      },
-                    ].map((item, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          background: item.isThreat ? '#fff1f2' : '#f0fdf4',
-                          border: item.isThreat ? '1px solid #fecdd3' : '1px solid #bbf7d0',
-                          borderRadius: 12,
-                          padding: '14px 18px',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          flexWrap: 'wrap',
-                          gap: 12,
-                        }}
-                      >
-                        <div style={{ display: 'grid', gap: 4 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <strong style={{ color: '#0f172a', fontSize: '0.88rem' }}>{item.client}</strong>
-                            <span
-                              style={{
-                                background: item.isThreat ? '#fee2e2' : '#dcfce7',
-                                color: item.isThreat ? '#dc2626' : '#059669',
-                                fontSize: '0.72rem',
-                                fontWeight: 700,
-                                padding: '2px 8px',
-                                borderRadius: 6,
-                              }}
-                            >
-                              Threat Score: {item.score}%
-                            </span>
-                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{item.time}</span>
-                          </div>
-                          <div style={{ fontSize: '0.78rem', color: '#475569', fontFamily: 'monospace' }}>
-                            {item.query}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: item.isThreat ? '#7c3aed' : '#059669' }}>
-                              {item.decision}
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: 2, fontWeight: 600 }}>
-                              🛡️ Real Vault: {item.realStatus}
-                            </div>
-                          </div>
-                        </div>
+                    {securityAlerts.length === 0 ? (
+                      <div style={{ padding: '24px', textAlign: 'center', border: '1px dashed #cbd5e1', borderRadius: 12, color: '#64748b', background: '#f8fafc' }}>
+                        No gateway decisions or attack activity have been recorded yet. New events will appear here in real time.
                       </div>
-                    ))}
+                    ) : (
+                      securityAlerts.map((alert) => {
+                        const attackLabel = alert.attack_type === 'BRUTE_FORCE'
+                          ? 'Brute-force attack'
+                          : alert.attack_type === 'PATIENT_ENUMERATION'
+                            ? 'Single-patient access attempt'
+                            : alert.attack_type.replace(/_/g, ' ')
+                        const requestedFields = alert.requested_fields?.length
+                          ? alert.requested_fields.map((field) => field.replace(/_/g, ' ')).join(', ')
+                          : alert.data_type || 'Patient data'
+                        const linkedPatient = patients.find((patient) =>
+                          String(patient.id) === String(alert.patient_id) ||
+                          String(patient.patient_id) === String(alert.patient_id),
+                        )
+                        const target = alert.patient_id
+                          ? `${linkedPatient?.name || 'Patient'} (${alert.patient_id})`
+                          : 'All patient records'
+                        const decision = alert.gateway_decision.toUpperCase()
+                        const decisionMessage = decision === 'DECEIVE'
+                          ? `DIVERT ➡️ Served synthetic decoy${alert.synthetic_patient_id ? ` (${alert.synthetic_patient_id})` : ''}`
+                          : alert.blocked_status || decision === 'BLOCK'
+                            ? 'BLOCK ➡️ Request blocked by the gateway'
+                            : decision === 'ALLOW'
+                              ? 'ALLOW ➡️ Verified request passed through the gateway'
+                            : `${decision} ➡️ ${alert.records_returned ? `Returned ${alert.records_returned} synthetic record(s)` : 'Suspicious request logged for review'}`
+                        const isThreat = alert.risk_score >= 60 || alert.blocked_status || decision === 'DECEIVE'
+                        const timestamp = new Date(alert.timestamp)
+                        const timeLabel = Number.isNaN(timestamp.getTime())
+                          ? alert.timestamp
+                          : timestamp.toLocaleString()
+
+                        return (
+                          <div
+                            key={alert.attack_id}
+                            style={{
+                              background: isThreat ? '#fff1f2' : '#f0fdf4',
+                              border: isThreat ? '1px solid #fecdd3' : '1px solid #bbf7d0',
+                              borderRadius: 12,
+                              padding: '14px 18px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              flexWrap: 'wrap',
+                              gap: 12,
+                            }}
+                          >
+                            <div style={{ display: 'grid', gap: 4 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                                <strong style={{ color: '#0f172a', fontSize: '0.88rem' }}>
+                                  {attackLabel}
+                                </strong>
+                                <span
+                                  style={{
+                                    background: isThreat ? '#fee2e2' : '#dcfce7',
+                                    color: isThreat ? '#dc2626' : '#059669',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    padding: '2px 8px',
+                                    borderRadius: 6,
+                                  }}
+                                >
+                                  Threat Score: {Math.round(alert.risk_score)}%
+                                </span>
+                                <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{timeLabel}</span>
+                              </div>
+                              <div style={{ fontSize: '0.78rem', color: '#475569', fontFamily: 'monospace', overflowWrap: 'anywhere' }}>
+                                Target: {target} · Requested: {requestedFields}
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                Session: {alert.session_id} · Source IP: {alert.ip_address || 'Unavailable'}
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                              <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: isThreat ? '#7c3aed' : '#059669' }}>
+                                  {decisionMessage}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: 2, fontWeight: 600 }}>
+                                  🛡️ Real Vault: Protected
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
                   </div>
                 </div>
 
@@ -3915,14 +4037,14 @@ export default function AppUser() {
             {activeTab === 'reports' ? (() => {
               const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
               const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-              const reportRefId = `AUDIT-STJUDE-${new Date().getFullYear()}-094`
+              const reportRefId = `AUDIT-EHR-${new Date().getFullYear()}-094`
               const shaSeal = 'SHA256: 7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069'
 
               const getReportHtml = () => `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Executive Forensic Deception & Compliance Audit Report - St. Jude Healthcare</title>
+  <title>Executive Forensic Deception & Compliance Audit Report - Healthcare Enclave</title>
   <style>
     @media print {
       body { background: #fff !important; color: #000 !important; padding: 20px !important; }
@@ -3966,7 +4088,7 @@ export default function AppUser() {
   <div class="container">
     <div class="header">
       <div class="title-area">
-        <h1>St. Jude Healthcare Cyber Deception Enclave</h1>
+        <h1>Healthcare Cyber Deception Enclave</h1>
         <p>Office of Information Security, Privacy & HIPAA Compliance • Official Forensic Audit Dossier</p>
       </div>
       <div class="badge-stamp">
@@ -3977,7 +4099,7 @@ export default function AppUser() {
     <div class="cert-box">
       <h3>Official Legal & Technical Certification</h3>
       <p>
-        This forensic report certifies that throughout the operational audit period ending <strong>${dateStr} (${timeStr})</strong>, the St. Jude Cyber Deception Gateway operated with <strong>100% Enclave Isolation</strong>. All unauthorized SQL injections, IDOR enumeration attempts, and exfiltration probes originating from adversary nodes were dynamically intercepted and redirected to synthetic decoy twins. <strong>Zero bytes of genuine patient Protected Health Information (PHI) were compromised or leaked.</strong>
+        This forensic report certifies that throughout the operational audit period ending <strong>${dateStr} (${timeStr})</strong>, the Cyber Deception Gateway operated with <strong>100% Enclave Isolation</strong>. All unauthorized SQL injections, IDOR enumeration attempts, and exfiltration probes originating from adversary nodes were dynamically intercepted and redirected to synthetic decoy twins. <strong>Zero bytes of genuine patient Protected Health Information (PHI) were compromised or leaked.</strong>
       </p>
     </div>
 
@@ -4074,7 +4196,7 @@ export default function AppUser() {
     <div class="footer">
       <div>
         <strong>Audit Generated:</strong> ${dateStr} ${timeStr}<br>
-        <strong>Issuing Authority:</strong> St. Jude Healthcare Network SOC & CISO Enclave
+        <strong>Issuing Authority:</strong> Healthcare Network SOC & CISO Enclave
       </div>
       <div class="sig-area">
         <strong>Digital Enclave Signature:</strong>
@@ -4091,7 +4213,7 @@ export default function AppUser() {
                 const url = window.URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
-                a.download = `St_Jude_Forensic_Compliance_Audit_Report_${Date.now()}.html`
+                a.download = `Forensic_Compliance_Audit_Report_${Date.now()}.html`
                 a.click()
                 window.URL.revokeObjectURL(url)
                 setMessage('📄 Executive Forensic Audit Report (.HTML / PDF-Ready) downloaded successfully.')
@@ -4101,7 +4223,7 @@ export default function AppUser() {
                 const evidence = {
                   audit_metadata: {
                     reference_id: reportRefId,
-                    institution: "St. Jude Healthcare Network",
+                    institution: "Healthcare Network",
                     department: "Office of Information Security & Privacy",
                     regulatory_standard: "HIPAA Security Rule (45 CFR §164.312) & NIST SP 800-53 Rev. 5 (SC-26)",
                     audit_timestamp: new Date().toISOString(),
@@ -4138,7 +4260,7 @@ export default function AppUser() {
                 const url = window.URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
-                a.download = `St_Jude_Forensic_Evidence_Manifest_${Date.now()}.json`
+                a.download = `Forensic_Evidence_Manifest_${Date.now()}.json`
                 a.click()
                 window.URL.revokeObjectURL(url)
                 setMessage('🔐 Cryptographic JSON Evidence Manifest exported successfully.')
@@ -4221,7 +4343,7 @@ export default function AppUser() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, borderBottom: '1px solid #e2e8f0', paddingBottom: 18, marginBottom: 20 }}>
                       <div>
                         <span style={{ fontSize: '0.74rem', color: '#0284c7', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                          🏥 ST. JUDE HEALTHCARE ENCLAVE • OFFICE OF CISO & REGULATORY COMPLIANCE
+                          🏥 HEALTHCARE ENCLAVE • OFFICE OF CISO & REGULATORY COMPLIANCE
                         </span>
                         <h2 style={{ margin: '6px 0 0', fontSize: '1.4rem', color: '#0f172a', fontWeight: 800 }}>
                           Certificate of Enclave Isolation & Non-Breach
@@ -4233,7 +4355,7 @@ export default function AppUser() {
                     </div>
 
                     <p style={{ margin: 0, color: '#334155', fontSize: '0.9rem', lineHeight: 1.6, maxWidth: 840 }}>
-                      This official compliance record certifies that throughout the active operational period, the St. Jude Cyber Deception Gateway operated with <strong>100% Enclave Isolation</strong>. All adversary queries, SQL injection payloads, and targeted single-patient exfiltration probes were intercepted and diverted into realistic synthetic decoy twins. <strong>Zero bytes of genuine patient Protected Health Information (PHI) were compromised or leaked.</strong>
+                      This official compliance record certifies that throughout the active operational period, the Cyber Deception Gateway operated with <strong>100% Enclave Isolation</strong>. All adversary queries, SQL injection payloads, and targeted single-patient exfiltration probes were intercepted and diverted into realistic synthetic decoy twins. <strong>Zero bytes of genuine patient Protected Health Information (PHI) were compromised or leaked.</strong>
                     </p>
 
                     {/* 4 Scorecard Metrics */}
@@ -4637,8 +4759,8 @@ export default function AppUser() {
 
       {/* 🚨 HIGH-PRIORITY CYBER SECURITY INTRUSION ALERT MODAL & BURGLAR ALARM OVERLAY */}
       {hackerAlert ? (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', padding: 24 }}>
-          <div style={{ width: '100%', maxWidth: 640, background: '#ffffff', border: '2px solid #ef4444', borderRadius: 20, boxShadow: '0 25px 60px -15px rgba(239, 68, 68, 0.4)', color: '#0f172a', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', padding: 24, overflowY: 'auto' }}>
+          <div style={{ width: '100%', maxWidth: 640, maxHeight: 'calc(100dvh - 48px)', background: '#ffffff', border: '2px solid #ef4444', borderRadius: 20, boxShadow: '0 25px 60px -15px rgba(239, 68, 68, 0.4)', color: '#0f172a', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             
             {/* Pulsing Red Header Banner */}
             <div style={{ background: 'linear-gradient(135deg, #b91c1c, #dc2626)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
@@ -4648,10 +4770,22 @@ export default function AppUser() {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', letterSpacing: '0.02em' }}>
-                    CRITICAL CYBER INTRUSION & DATA THEFT ATTEMPT
+                    {hackerAlert.alertKind === 'failed-login'
+                      ? 'BRUTE-FORCE SIGN-IN ALERT'
+                      : hackerAlert.attackType === 'SQL_INJECTION'
+                        ? 'SQL INJECTION DETECTED'
+                        : hackerAlert.attackType === 'PATIENT_ENUMERATION'
+                          ? 'SINGLE-PATIENT ATTEMPT DETECTED'
+                          : 'CRITICAL CYBER INTRUSION & DATA THEFT ATTEMPT'}
                   </h3>
                   <p style={{ margin: '3px 0 0', fontSize: '0.82rem', color: '#fee2e2', fontWeight: 700 }}>
-                    Threat Score: {hackerAlert.threatScore}/100 • Active Hostile Exfiltration Intercepted
+                    {hackerAlert.alertKind === 'failed-login'
+                      ? `${hackerAlert.failureCount || 0} failed sign-in attempts detected`
+                      : hackerAlert.attackType === 'SQL_INJECTION'
+                        ? `Threat Score: ${hackerAlert.threatScore}/100 • SQL injection probe intercepted`
+                        : hackerAlert.attackType === 'PATIENT_ENUMERATION'
+                          ? `Threat Score: ${hackerAlert.threatScore}/100 • Single-patient request intercepted`
+                          : `Threat Score: ${hackerAlert.threatScore}/100 • Active Hostile Exfiltration Intercepted`}
                   </p>
                 </div>
               </div>
@@ -4659,12 +4793,12 @@ export default function AppUser() {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <button
                   onClick={() => {
-                    if (isAlarmMuted) {
-                      setIsAlarmMuted(false)
+                    if (isAlarmMutedRef.current) {
+                      setAlarmMuted(false)
                       triggerBurglarAlarm()
                     } else {
                       stopBurglarAlarm()
-                      setIsAlarmMuted(true)
+                      setAlarmMuted(true)
                     }
                   }}
                   style={{ padding: '8px 14px', borderRadius: 10, background: isAlarmMuted ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
@@ -4686,9 +4820,25 @@ export default function AppUser() {
             </div>
 
             {/* Intrusion Telemetry Body */}
-            <div style={{ padding: '24px', display: 'grid', gap: 16 }}>
+            <div style={{ padding: '24px', display: 'grid', gap: 16, overflowY: 'auto', minHeight: 0 }}>
               
-              {/* STOLEN DATA SPECIFICATION SECTION */}
+              {hackerAlert.alertKind === 'failed-login' ? (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: 18 }}>
+                  <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#b91c1c', fontWeight: 800 }}>
+                    REPEATED FAILED SIGN-IN ACTIVITY
+                  </div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0f172a', marginTop: 10 }}>
+                    Attempted username: <span style={{ color: '#dc2626', wordBreak: 'break-all' }}>{hackerAlert.hackerId}</span>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: '#334155', marginTop: 8 }}>
+                    {hackerAlert.failureCount} failed attempts from this source IP within the five-minute detection window.
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: 8 }}>
+                    Submitted passwords are not recorded.
+                  </div>
+                </div>
+              ) : (
+              /* STOLEN DATA SPECIFICATION SECTION */
               <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: 18 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <span style={{ fontSize: '1.1rem' }}>⚠️</span>
@@ -4701,38 +4851,38 @@ export default function AppUser() {
                   Target Patient Scope: <span style={{ color: '#dc2626', textDecoration: 'underline' }}>{hackerAlert.targetPatientName} ({hackerAlert.targetPatientId})</span>
                 </div>
 
-                {/* Stolen Data Categories Grid */}
+                {/* Requested fields are sent by the backend with the forensic alert. */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 8 }}>
-                  <div style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                    🆔 Aadhaar Card Number & Govt ID
-                  </div>
-                  <div style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                    📞 Mobile Phone & Home Address
-                  </div>
-                  <div style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                    🩺 Clinical Diagnosis & Symptoms
-                  </div>
-                  <div style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                    💊 Prescription Medicines & Dosages
-                  </div>
-                  <div style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                    🏥 Attending Doctor & Department
-                  </div>
-                  <div style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                    🏦 Insurance Policy & Emergency Contacts
-                  </div>
+                  {(hackerAlert.requestedFields.length
+                    ? hackerAlert.requestedFields
+                    : (hackerAlert.stolenCategories?.length ? hackerAlert.stolenCategories : [hackerAlert.dataType])
+                  ).map((field) => (
+                    <div key={field} style={{ background: '#ffffff', border: '1px solid #fca5a5', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#991b1b', fontWeight: 700, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                      {hackerAlert.requestedFields.includes(field) ? field.split('_').join(' ') : field}
+                    </div>
+                  ))}
                 </div>
               </div>
+              )}
 
               {/* Attack Query / Vector & Attacker Session Details */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12 }}>
                 <div style={{ background: '#f8fafc', padding: 14, borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Attacker Session / IP</div>
-                  <div style={{ fontSize: '0.88rem', color: '#0369a1', fontWeight: 700, wordBreak: 'break-all', marginTop: 4 }}>{hackerAlert.sessionId}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Attacker IP / Session</div>
+                  <div style={{ fontSize: '0.88rem', color: '#0369a1', fontWeight: 700, wordBreak: 'break-all', marginTop: 4 }}>{hackerAlert.ipAddress}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4 }}>{hackerAlert.sessionId}</div>
                 </div>
                 <div style={{ background: '#f8fafc', padding: 14, borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Attack Query / Action</div>
-                  <div style={{ fontSize: '0.88rem', color: '#dc2626', fontWeight: 700, wordBreak: 'break-all', marginTop: 4 }}>{hackerAlert.action}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
+                    {hackerAlert.alertKind === 'failed-login' ? 'Attempted Account' : 'Attack Query / Action'}
+                  </div>
+                  <div style={{ fontSize: '0.88rem', color: '#dc2626', fontWeight: 700, wordBreak: 'break-all', marginTop: 4 }}>
+                    {hackerAlert.alertKind === 'failed-login' ? hackerAlert.hackerId : hackerAlert.action}
+                  </div>
+                </div>
+                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Attempt Timestamp (UTC)</div>
+                  <div style={{ fontSize: '0.82rem', color: '#334155', fontWeight: 700, wordBreak: 'break-word', marginTop: 4 }}>{hackerAlert.timestamp}</div>
                 </div>
               </div>
 

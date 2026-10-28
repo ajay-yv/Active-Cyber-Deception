@@ -102,10 +102,11 @@ class UserRepository:
     ) -> UserRecord:
         username = f"google:{firebase_uid}"
         with SecuritySessionLocal() as session:
-            linked_account = session.query(UserAccount).filter(
-                UserAccount.patient_record_id == patient_record_id
+            linked_by_another_account = session.query(UserAccount.username).filter(
+                UserAccount.patient_record_id == patient_record_id,
+                UserAccount.username != username,
             ).first()
-            if linked_account is not None and linked_account.username != username:
+            if linked_by_another_account is not None:
                 raise ValueError("This patient record is already linked to another Google account")
 
             row = session.get(UserAccount, username)
@@ -125,8 +126,6 @@ class UserRepository:
                     raise ValueError("This Google account is not registered as a patient")
                 if _normalize_bool(getattr(row, "is_blocked", False)):
                     raise ValueError("This patient account is blocked")
-                if row.patient_record_id and row.patient_record_id != patient_record_id:
-                    raise ValueError("This Google account is already linked to another patient record")
                 row.patient_record_id = patient_record_id
                 row.email = email
                 row.full_name = full_name

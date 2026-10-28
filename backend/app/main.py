@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 from uuid import uuid4
 
@@ -17,12 +18,29 @@ from app.api.patients import router as patients_router
 from app.api.audit import router as audit_router
 from app.api.analytics import router as analytics_router
 from app.db.bootstrap import create_all_tables
+from app.core.settings import get_settings
 
-app = FastAPI(title="Healthcare Cyber Deception Platform")
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    import asyncio
+    from app.services.realtime import manager
+
+    manager.loop = asyncio.get_running_loop()
+    yield
+
+
+app = FastAPI(title="Healthcare Cyber Deception Platform", lifespan=lifespan)
+cors_allowed_origins = [
+    origin.strip()
+    for origin in get_settings().cors_allowed_origins.split(",")
+    if origin.strip()
+]
+if "*" in cors_allowed_origins:
+    raise ValueError("CORS_ALLOWED_ORIGINS must not contain a wildcard when credentials are enabled")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,16 +59,6 @@ app.include_router(audit_router, prefix="/api")
 
 create_all_tables()
  
-@app.on_event("startup")
-async def startup_event():
-    import asyncio
-    from app.services.realtime import manager
-    try:
-        manager.loop = asyncio.get_running_loop()
-    except Exception:
-        pass
-
-
 @app.middleware("http")
 async def gateway_middleware(request, call_next):
     if request.method == "OPTIONS":
@@ -167,4 +175,3 @@ def download_attack_bat() -> FileResponse:
 @app.get("/tools/security_simulator.py")
 def download_security_simulator() -> FileResponse:
     return FileResponse(root_dir / "tools" / "security_simulator.py", media_type="text/plain", filename="security_simulator.py")
-

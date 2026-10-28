@@ -1,8 +1,8 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic_settings import BaseSettings
 from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
 SETTINGS_ENV_FILES = (
@@ -13,20 +13,31 @@ SETTINGS_ENV_FILES = (
 
 
 class Settings(BaseSettings):
-    secret_key: str = Field(default="dev-secret-key-change-me", env="SECRET_KEY")
-    algorithm: str = Field(default="HS256", env="ALGORITHM")
-    access_token_expire_minutes: int = Field(default=1440, env="ACCESS_TOKEN_EXPIRE_MINUTES")
-    app_env: str = Field(default="development", env="APP_ENV")
-    firebase_project_id: str | None = Field(default=None, env="FIREBASE_PROJECT_ID")
-    simulator_max_requests: int = Field(default=100, env="SIMULATOR_MAX_REQUESTS")
-    simulator_max_records: int = Field(default=25, env="SIMULATOR_MAX_RECORDS")
-    simulator_min_interval_ms: int = Field(default=50, env="SIMULATOR_MIN_INTERVAL_MS")
+    secret_key: str = "dev-secret-key-change-me"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 1440
+    app_env: str = "development"
+    firebase_project_id: str | None = None
+    simulator_max_requests: int = 100
+    simulator_max_records: int = 25
+    simulator_min_interval_ms: int = 50
+    trusted_proxy_cidrs: str = ""
+    simulation_demo_enabled: bool = False
+    simulation_allowed_hosts: str = ""
+    cors_allowed_origins: str = Field(
+        default=(
+            "http://localhost:3000,http://127.0.0.1:3000,"
+            "http://localhost:5173,http://127.0.0.1:5173,"
+            "http://localhost:5174,http://127.0.0.1:5174"
+        )
+    )
 
-    class Config:
-        env_file = SETTINGS_ENV_FILES
-        env_file_encoding = "utf-8"
-        validate_assignment = True
-        extra = "ignore"
+    model_config = SettingsConfigDict(
+        env_file=SETTINGS_ENV_FILES,
+        env_file_encoding="utf-8",
+        validate_assignment=True,
+        extra="ignore",
+    )
 
 
 @lru_cache(maxsize=1)

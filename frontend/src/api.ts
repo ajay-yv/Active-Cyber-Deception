@@ -724,11 +724,13 @@ export async function exchangeGoogleToken(idToken: string): Promise<LoginRespons
     })
   } catch (error) {
     const reason = error instanceof Error ? `: ${error.message}` : ''
-    throw new Error(`Unable to reach the hospital authentication service${reason}`)
+    throw new Error(
+      `Unable to reach the hospital authentication service. Verify that the /api serverless function is deployed and HOSPITAL_API_BASE_URL points to a running HTTPS backend${reason}`,
+    )
   }
 
   if (response.headers.get('content-type')?.includes('text/html')) {
-    throw new Error('The hospital authentication API is not connected. Configure VITE_API_BASE_URL for this deployment.')
+    throw new Error('The hospital API route is not deployed. Deploy the Vercel API function and configure HOSPITAL_API_BASE_URL.')
   }
 
   const data = await response.json().catch(() => ({})) as {
@@ -748,77 +750,22 @@ export async function exchangeGoogleToken(idToken: string): Promise<LoginRespons
 export type PatientRegisterPayload = {
   mobile_number: string
   password: string
-  full_name?: string
-  email?: string
+  full_name: string
+  email: string
 }
 
 export async function registerPatient(payload: PatientRegisterPayload): Promise<LoginResponse> {
   const mobile = payload.mobile_number.trim()
   const password = payload.password.trim()
-  let cleanDigits = mobile.replace(/\D/g, '')
-  if (cleanDigits.length === 12 && cleanDigits.startsWith('91')) {
-    cleanDigits = cleanDigits.slice(2)
-  } else if (cleanDigits.length === 11 && cleanDigits.startsWith('0')) {
-    cleanDigits = cleanDigits.slice(1)
-  }
-  cleanDigits = cleanDigits.slice(0, 10) || mobile
-  const fullName = payload.full_name?.trim() || 'Patient'
-  const email = payload.email?.trim() || `${cleanDigits}@patient.health`
-
-  // Store password locally in fallback storage so offline login works seamlessly
-  try {
-    const raw = localStorage.getItem('ehr_fallback_passwords') || '{}'
-    const stored = JSON.parse(raw)
-    stored[cleanDigits.toLowerCase()] = password
-    stored[mobile.toLowerCase()] = password
-    stored['patient'] = password
-    stored[fullName.toLowerCase()] = password
-    localStorage.setItem('ehr_fallback_passwords', JSON.stringify(stored))
-
-    // Persist registered patient record for instant offline login matching
-    const rawPatients = localStorage.getItem('ehr_registered_patients') || '[]'
-    const regList = JSON.parse(rawPatients)
-    const patientObj = {
-      username: cleanDigits,
-      mobile_number: mobile,
-      full_name: fullName,
-      email: email,
-      password: password,
-      registered_at: new Date().toISOString(),
-    }
-    const filtered = Array.isArray(regList) ? regList.filter((p: any) => p && p.mobile_number !== mobile && p.username !== cleanDigits) : []
-    filtered.unshift(patientObj)
-    localStorage.setItem('ehr_registered_patients', JSON.stringify(filtered))
-    localStorage.setItem('ehr_last_registered_patient', JSON.stringify(patientObj))
-
-    // Also sync with enclave patients so patient profile displays this exact name
-    const enclave = getEnclavePatients()
-    const alreadyInEnclave = enclave.some((p) => (payload.full_name && p.name.toLowerCase() === fullName.toLowerCase()) || (p.phone && p.phone.includes(cleanDigits)))
-    if (!alreadyInEnclave && payload.full_name) {
-      const newRec: PatientRecord = {
-        id: `P-${enclave.length + 1001}`,
-        patient_id: enclave.length + 1001,
-        name: fullName,
-        age: 28,
-        disease: 'Clinical Evaluation',
-        diagnosis: 'General Health Checkup & Routine Clinical Observation',
-        medicines: ['Multivitamin Minerals 1 Tab OD', 'Hydration Regimen'],
-        gender: 'Not specified',
-        phone: `+91 ${cleanDigits}`,
-        email: payload.email?.trim() || undefined,
-        doctor_assigned: 'Dr. Priya Nair',
-        department: 'General Medicine',
-        admission_date: new Date().toISOString().split('T')[0],
-      }
-      saveEnclavePatients([newRec, ...enclave])
-    }
-  } catch (err) {
-    console.warn('Could not save to localStorage:', err)
+  const fullName = payload.full_name.trim()
+  const email = payload.email.trim().toLowerCase()
+  if (!fullName || !email.includes('@')) {
+    throw new Error("Enter the patient's full name and the email used on their hospital record.")
   }
 
-  // Also try backend registration endpoint
+  let response: Response
   try {
-    const response = await fetch(`${apiBaseUrl}/api/auth/register-patient`, {
+    response = await fetch(`${apiBaseUrl}/api/auth/register-patient`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -830,26 +777,22 @@ export async function registerPatient(payload: PatientRegisterPayload): Promise<
         email: email,
       }),
     })
-    if (response.ok) {
-      const data = await response.json()
-      if (data && data.access_token) {
-        return data as LoginResponse
-      }
-    }
   } catch (err) {
-    console.warn('Backend register-patient unavailable, using enclave fallback:', err)
+    const reason = err instanceof Error ? `: ${err.message}` : ''
+    throw new Error(`Unable to reach the hospital registration service${reason}`)
   }
 
-  return {
-    access_token: `demo-patient-token-${Date.now()}`,
-    token_type: 'bearer',
-    user: {
-      username: cleanDigits,
-      role: 'patient',
-      full_name: fullName,
-      email: email,
-    },
+  const data = await response.json().catch(() => ({})) as {
+    access_token?: unknown
+    user?: unknown
+    detail?: unknown
   }
+  if (response.ok && typeof data.access_token === 'string' && data.user && typeof data.user === 'object') {
+    return data as LoginResponse
+  }
+
+  const detail = typeof data.detail === 'string' ? data.detail : ''
+  throw new Error(detail || `Patient registration failed (HTTP ${response.status}).`)
 }
 
 
@@ -1058,7 +1001,7 @@ export async function fetchPatients(token: string): Promise<{ patients: PatientR
   return { patients: localPatients }
 }
 
-export async function fetchCurrentPatient(token: string): Promise<PatientRecord> {
+export async function fetchCurrentPatient(token: string): Promise<PatientRecord | null> {
   try {
     const response = await fetch(`${apiBaseUrl}/api/patients/me`, {
       headers: {
@@ -1068,19 +1011,18 @@ export async function fetchCurrentPatient(token: string): Promise<PatientRecord>
         'X-Browser': 'chrome',
       },
     })
-    const data = await response.json().catch(() => ({}))
-    if (response.ok && data.patient) {
-      return data.patient as PatientRecord
+    if (!response.ok) {
+      throw new Error(`Patient record request failed (HTTP ${response.status})`)
     }
+
+    const data = await response.json()
+    if (data && (data.patient === null || data.patient === undefined)) return null
+    if (data?.patient && typeof data.patient === 'object') return data.patient as PatientRecord
+    throw new Error('Patient record response did not contain a valid patient record')
   } catch (err) {
     console.warn('Backend fetchCurrentPatient failed:', err)
+    throw err
   }
-
-  const localPatients = getEnclavePatients()
-  if (localPatients.length > 0) {
-    return localPatients[0]
-  }
-  throw new Error('Unable to load the linked patient record')
 }
 
 const LOCAL_HISTORY_KEY = 'ehr_enclave_history_v2'
@@ -1680,7 +1622,7 @@ export async function requestPasswordReset(email: string, username?: string): Pr
     otp: generatedOtp,
     email_dispatch: {
       to: email,
-      subject: 'St. Jude Security - Dynamic Password Reset OTP',
+      subject: 'Healthcare Security - Dynamic Password Reset OTP',
       body: `Your dynamic OTP verification code is ${generatedOtp}. Valid for 10 minutes.`,
       otp: generatedOtp,
     },

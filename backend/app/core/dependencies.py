@@ -1,15 +1,58 @@
 from collections.abc import Callable
+from functools import lru_cache
+from ipaddress import IPv4Network, IPv6Network, ip_address, ip_network
 from uuid import uuid4
 
 from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.security import decode_token
+from app.core.settings import get_settings
 from app.core.users import User, verify_password, hash_password
 from app.repositories.user_repository import user_repository
 from app.services.security import is_session_blocked, record_forensic_attack
 
 bearer_scheme = HTTPBearer(auto_error=False)
+
+
+@lru_cache(maxsize=8)
+def _trusted_proxy_networks(value: str) -> tuple[IPv4Network | IPv6Network, ...]:
+    networks: list[IPv4Network | IPv6Network] = []
+    for item in filter(None, (entry.strip() for entry in value.split(","))):
+        try:
+            networks.append(ip_network(item, strict=False))
+        except ValueError as exc:
+            raise RuntimeError(f"Invalid CIDR in TRUSTED_PROXY_CIDRS: {item}") from exc
+    return tuple(networks)
+
+
+def _request_ip_address(request: Request) -> str:
+    peer_host = request.client.host if request.client else "unknown"
+    settings = get_settings()
+    trusted_networks = _trusted_proxy_networks(settings.trusted_proxy_cidrs)
+
+    try:
+        peer_ip = ip_address(peer_host)
+    except ValueError:
+        return peer_host
+
+    if not any(peer_ip in network for network in trusted_networks):
+        return str(peer_ip)
+
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    forwarded_addresses = []
+    for address in forwarded_for.split(","):
+        try:
+            forwarded_addresses.append(ip_address(address.strip()))
+        except ValueError:
+            return str(peer_ip)
+
+    resolved_ip = peer_ip
+    for address in reversed(forwarded_addresses):
+        if not any(resolved_ip in network for network in trusted_networks):
+            break
+        resolved_ip = address
+    return str(resolved_ip)
 
 
 def authenticate_user(username: str, password: str) -> User | None:
@@ -158,11 +201,11 @@ def require_roles_or_deceive(*allowed_roles: str) -> Callable:
 
 
 def request_context_headers(
+    request: Request,
     session_id: str | None = Header(default=None, alias="X-Session-Id"),
     device: str = Header(default="trusted", alias="X-Device"),
     browser: str = Header(default="chrome", alias="X-Browser"),
     operating_system: str = Header(default="windows", alias="X-OS"),
-    ip_address: str = Header(default="0.0.0.0", alias="X-Forwarded-For"),
     country: str = Header(default="unknown", alias="X-Country"),
 ) -> dict[str, str]:
     if not session_id:
@@ -173,6 +216,6 @@ def request_context_headers(
         "device": device,
         "browser": browser,
         "operating_system": operating_system,
-        "ip_address": ip_address,
+        "ip_address": _request_ip_address(request),
         "country": country,
     }

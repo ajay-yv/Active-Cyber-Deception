@@ -126,6 +126,14 @@ class WatermarkRepository:
             watermark_fingerprint=row.watermark_fingerprint,
         )
 
+    def delete_by_source_id(self, source_id: str, source_type: str | None = None) -> int:
+        with self._session_factory() as session:
+            query = session.query(WatermarkModel).filter(WatermarkModel.source_id == source_id)
+            if source_type is not None:
+                query = query.filter(WatermarkModel.source_type == source_type)
+            deleted_count = query.delete(synchronize_session=False)
+            session.commit()
+            return deleted_count
 
 
 

@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.api.security_extra import security_test_marker
 from app.main import app
+from app.services import breach as breach_service
 from app.services.registries import patient_repository, synthetic_repository
 from app.services.security import reset_security_state, security_repository
 from app.services.gateway import reset_gateway_state
@@ -26,7 +28,7 @@ def login(username: str, password: str) -> str:
 
 # Test 1: Brute-force simulation is detected
 def test_01_brute_force_detected() -> None:
-    session_id = "test-brute-force-session"
+    session_id = f"test-brute-force-session-{uuid4().hex}"
     for i in range(5):
         resp = client.post(
             "/api/auth/login",
@@ -35,11 +37,12 @@ def test_01_brute_force_detected() -> None:
         )
         assert resp.status_code == 401
 
-    # Check forensic records for BRUTE_FORCE
-    records = security_repository.list_forensic_records(limit=10)
-    bf_records = [r for r in records if r["attack_type"] == "BRUTE_FORCE" and r["session_id"] == session_id]
-    assert len(bf_records) >= 1
-    assert max(r["risk_score"] for r in bf_records) >= 80
+    alerts = [
+        event for event in security_repository.find_by_event_type("failed_login_alert")
+        if f"session={session_id}" in event.details
+    ]
+    assert len(alerts) == 1
+    assert "attempts=5" in alerts[0].details
 
 
 # Test 2: Enumeration is detected
@@ -146,10 +149,12 @@ def test_07_credential_stuffing_detected() -> None:
         )
         assert resp.status_code == 401
 
-    records = security_repository.list_forensic_records(limit=20)
-    stuff_records = [r for r in records if r["attack_type"] == "CREDENTIAL_STUFFING" and r["session_id"] == session_id]
-    assert len(stuff_records) >= 1
-    assert stuff_records[0]["risk_score"] >= 85
+    blocked_events = [
+        event for event in security_repository.find_by_event_type("session_block")
+        if f"session={session_id}" in event.details
+    ]
+    assert blocked_events
+    assert "CREDENTIAL_STUFFING" in blocked_events[0].details
 
 
 # Test 8: Session abuse is detected
@@ -305,6 +310,79 @@ def test_dashboard_catalog_count_matches_hacker_bulk_output(monkeypatch: pytest.
     assert admin.json()["synthetic_records"][0]["synthetic_patient_id"] == "SYN-CATALOG"
 
 
+def test_hacker_outputs_only_twins_present_in_active_catalog(monkeypatch: pytest.MonkeyPatch) -> None:
+    visible_twins = [
+        TwinRecord(
+            real_patient_id=f"P-0{index}",
+            synthetic_patient_id=f"SYN-0{index}",
+            name=f"Catalog Twin {index}",
+            address="Address",
+            phone_number=f"+1-555-030{index}",
+            aadhaar_number=f"1111-1111-111{index}",
+            email=f"catalog{index}@example.test",
+            insurance_details="Insurance",
+            emergency_contact=f"+1-555-040{index}",
+            disease="Condition",
+            diagnosis="Diagnosis",
+        )
+        for index in (1, 2)
+    ]
+    hidden_twin = TwinRecord(
+        real_patient_id="P-03",
+        synthetic_patient_id="SYN-03",
+        name="Hidden Catalog Twin",
+        address="Address",
+        phone_number="+1-555-0303",
+        aadhaar_number="1111-1111-1113",
+        email="catalog3@example.test",
+        insurance_details="Insurance",
+        emergency_contact="+1-555-0403",
+        disease="Condition",
+        diagnosis="Diagnosis",
+    )
+    catalog_twins = [*visible_twins, hidden_twin]
+    monkeypatch.setattr(synthetic_repository, "list_all", lambda: catalog_twins)
+    assert [twin.synthetic_patient_id for twin in synthetic_repository.valid_catalog()] == [
+        "SYN-01",
+        "SYN-02",
+    ]
+
+    available_twins = visible_twins
+    twins_by_patient_id = {twin.real_patient_id: twin for twin in catalog_twins}
+    monkeypatch.setattr(breach_service.synthetic_repository, "valid_catalog", lambda: available_twins)
+    monkeypatch.setattr(
+        breach_service.synthetic_repository,
+        "find_by_real_patient_id",
+        lambda patient_id: twins_by_patient_id.get(patient_id),
+    )
+    monkeypatch.setattr(
+        breach_service.synthetic_repository,
+        "find_by_synthetic_id",
+        lambda _synthetic_id: None,
+    )
+
+    bulk_response = breach_service.handle_hacker_breach_request(
+        session_id="catalog-bulk-test",
+        hacker_id="hacker",
+        query="Authorized catalog parity test",
+        target_patient_id="ALL_PATIENTS",
+        requested_payload={"requested_fields": ["name", "disease"]},
+    )
+    single_response = breach_service.handle_hacker_breach_request(
+        session_id="catalog-single-test",
+        hacker_id="hacker",
+        query="Authorized catalog parity test",
+        target_patient_id="P-03",
+        requested_payload={"requested_fields": ["name", "disease"]},
+    )
+
+    assert [record["name"].split("\ufeff", 1)[0] for record in bulk_response["decoy_records"]] == [
+        "Catalog Twin 1",
+        "Catalog Twin 2",
+    ]
+    assert single_response["records_returned"] == 0
+
+
 def test_sqli_input_does_not_create_twin_or_emit_raw_synthetic_id() -> None:
     token = login("hacker", "hacker123")
     before = {t.synthetic_patient_id for t in synthetic_repository.list_all()}
@@ -336,23 +414,36 @@ def test_security_marker_uses_valid_catalog_only(monkeypatch: pytest.MonkeyPatch
         diagnosis="Diagnosis",
     )
     malformed = valid.model_copy(update={"synthetic_patient_id": "SYN-01' OR 1=1 --"})
-    monkeypatch.setattr(synthetic_repository, "list_all", lambda: [malformed, valid])
-    monkeypatch.setattr("app.api.security_extra.require_simulation_enabled", lambda: None)
+    public_decoy = {
+        "synthetic_patient_id": "SYN-VALID",
+        "name": "Valid Twin",
+        "disease": "Condition",
+        "diagnosis": "Diagnosis",
+        "treatment_pattern": "Standard",
+        "age_range": "30-45 yrs",
+        "phone_number": "+1-555-0100",
+        "aadhaar_number": "0000-0000-0000",
+        "email": "valid@example.test",
+        "watermark_fingerprint": "",
+        "is_synthetic": True,
+    }
+    monkeypatch.setattr("app.api.security_extra.get_attacker_decoy_catalog", lambda: [public_decoy])
+    monkeypatch.setattr("app.api.security_extra.require_simulation_enabled", lambda _request: None)
     monkeypatch.setattr(
         "app.api.security_extra.evaluate_request",
         lambda **kwargs: SimpleNamespace(threat_score=90.0, attack_probability=90.0, action="deceive"),
     )
     monkeypatch.setattr("app.api.security_extra.record_forensic_attack", lambda **kwargs: {"ok": True})
-    monkeypatch.setattr("app.repositories.watermark_repository.watermark_repository.find_by_source_id", lambda *_args, **_kwargs: None)
-
     response = security_test_marker(
         payload=SimpleNamespace(marker="TEST_SQL_INJECTION"),
+        request=SimpleNamespace(url=SimpleNamespace(hostname="testserver")),
         current_user=SimpleNamespace(role="hacker", username="hacker"),
         context={"session_id": "session-marker", "ip_address": "127.0.0.1", "browser": ""},
     )
 
-    assert response["deceptive_payload"]["sample_decoy"]["synthetic_patient_id"] == "SYN-VALID"
-    assert "OR 1=1" not in response["deceptive_payload"]["sample_decoy"]["synthetic_patient_id"]
+    records = response["deceptive_payload"]["synthetic_records"]
+    assert records == [public_decoy]
+    assert all("real_patient_id" not in record and "patient_id" not in record for record in records)
 
 
 def test_dashboard_alert_uses_unresolved_target_fallback(monkeypatch: pytest.MonkeyPatch) -> None:

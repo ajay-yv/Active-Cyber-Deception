@@ -1,6 +1,10 @@
 from app.api.patients import service
 from app.db.bootstrap import create_all_tables
+from app.db.engines import SyntheticSessionLocal
+from app.models.synthetic import Honeytoken, SyntheticReport, SyntheticPatient
+from app.repositories.watermark_repository import watermark_repository
 from app.schemas import PatientCreate
+from app.services.registries import patient_repository, synthetic_repository
 
 create_all_tables()
 
@@ -90,3 +94,48 @@ def test_update_patient_regenerates_synthetic_twin_with_new_identifiers() -> Non
     assert updated_twin.phone_number != initial_twin.phone_number
     assert updated_twin.email != initial_twin.email
     assert updated_twin.diagnosis.lower() == updated_patient.diagnosis.lower()
+
+
+def test_delete_patient_removes_linked_synthetic_twin_and_watermark() -> None:
+    patient, twin = service.create_patient(
+        PatientCreate(
+            name="Meera Shah",
+            age=39,
+            disease="Asthma",
+            diagnosis="Moderate asthma",
+            medicines=["Inhaler"],
+            treatment_pattern="Maintenance",
+        )
+    )
+    with SyntheticSessionLocal() as session:
+        session.add(
+            SyntheticReport(
+                id=f"REPORT-{twin.synthetic_patient_id}",
+                patient_id=twin.synthetic_patient_id,
+                report_type="Lab",
+                report_content="Synthetic report",
+            )
+        )
+        session.add(
+            Honeytoken(
+                id=f"TOKEN-{twin.synthetic_patient_id}",
+                token_type="email",
+                value="synthetic@example.test",
+                session_id="delete-patient-test",
+                twin_id=twin.synthetic_patient_id,
+            )
+        )
+        session.commit()
+
+    deleted, generated_twin = service.delete_patient(patient.id, route="real")
+
+    assert deleted is not None
+    assert deleted.id == patient.id
+    assert generated_twin is None
+    assert patient_repository.find_by_id(patient.id) is None
+    assert synthetic_repository.find_by_real_patient_id(patient.id) is None
+    assert watermark_repository.find_by_source_id(twin.synthetic_patient_id, source_type="synthetic") is None
+    with SyntheticSessionLocal() as session:
+        assert session.query(SyntheticPatient).filter(SyntheticPatient.id == twin.synthetic_patient_id).first() is None
+        assert session.query(SyntheticReport).filter(SyntheticReport.patient_id == twin.synthetic_patient_id).first() is None
+        assert session.query(Honeytoken).filter(Honeytoken.twin_id == twin.synthetic_patient_id).first() is None

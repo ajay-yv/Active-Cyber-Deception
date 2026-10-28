@@ -34,7 +34,11 @@ function createGoogleProvider(): GoogleAuthProvider {
   const provider = new GoogleAuthProvider()
   provider.addScope('email')
   provider.addScope('profile')
-  provider.setCustomParameters({ prompt: 'select_account' })
+  provider.setCustomParameters({
+    prompt: 'select_account',
+    include_granted_scopes: 'true',
+    access_type: 'offline',
+  })
   return provider
 }
 

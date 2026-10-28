@@ -6,19 +6,28 @@ from app.repositories.breach_repository import BreachLogRecord, BreachRepository
 from app.repositories.synthetic_repository import SyntheticRepository, is_valid_synthetic_id
 from app.services.audit import record_audit
 from app.services.deception import deception_orchestrator
-from app.services.realtime import publish_event
-from app.services.security import security_repository
+from app.services.security import record_forensic_attack
 from app.services.watermark import create_watermark, poison_synthetic_payload, watermark_repository
 
 breach_repository = BreachRepository()
 synthetic_repository = SyntheticRepository()
 
 
-def _get_existing_synthetic_twin(real_patient_id: str) -> tuple[dict, str] | None:
+def _get_existing_synthetic_twin(
+    real_patient_id: str,
+    available_synthetic_ids: set[str] | None = None,
+) -> tuple[dict, str] | None:
+    if available_synthetic_ids is None:
+        available_synthetic_ids = {
+            twin.synthetic_patient_id for twin in synthetic_repository.valid_catalog()
+        }
     existing_twin = synthetic_repository.find_by_real_patient_id(real_patient_id)
     if existing_twin is None:
         existing_twin = synthetic_repository.find_by_synthetic_id(real_patient_id)
-    if existing_twin is not None and not is_valid_synthetic_id(existing_twin.synthetic_patient_id):
+    if existing_twin is not None and (
+        not is_valid_synthetic_id(existing_twin.synthetic_patient_id)
+        or existing_twin.synthetic_patient_id not in available_synthetic_ids
+    ):
         return None
     if existing_twin is not None:
         wm = watermark_repository.find_by_source_id(existing_twin.synthetic_patient_id, source_type="synthetic")
@@ -68,20 +77,50 @@ def _get_existing_synthetic_twin(real_patient_id: str) -> tuple[dict, str] | Non
     return None
 
 
-def handle_hacker_breach_request(session_id: str, hacker_id: str, query: str, target_patient_id: str, requested_payload: dict) -> dict:
+def handle_hacker_breach_request(
+    session_id: str,
+    hacker_id: str,
+    query: str,
+    target_patient_id: str,
+    requested_payload: dict,
+    ip_address: str = "127.0.0.1",
+    user_agent: str = "",
+) -> dict:
     is_bulk = target_patient_id in {"ALL_PATIENTS", "*", "ALL", ""} or "," in target_patient_id
-    
-    # AI Risk Score calculation
-    if is_bulk:
-        threat_score = 98
-    elif any(kw in query.upper() for kw in ["SELECT", "UNION", "DROP", "OR 1=1", "DUMP", "EXFILTRATE"]):
-        threat_score = 96
-    else:
-        threat_score = 94
+    requested_fields = requested_payload.get("requested_fields") or requested_payload.get("fields") or []
+    if not isinstance(requested_fields, list):
+        requested_fields = []
+    requested_fields = [str(field).strip() for field in requested_fields[:25] if str(field).strip()]
+    sensitive_fields = {
+        "aadhaar",
+        "aadhaar_number",
+        "address",
+        "diagnosis",
+        "disease",
+        "email",
+        "insurance",
+        "insurance_details",
+        "medicines",
+        "phone",
+        "phone_number",
+        "prescriptions",
+        "symptoms",
+    }
+    normalized_fields = {field.lower() for field in requested_fields}
+    query_upper = query.upper()
+    contains_attack_syntax = any(
+        keyword in query_upper for keyword in ("SELECT", "UNION", "DROP", "OR 1=1", "DUMP", "EXFILTRATE")
+    )
+    threat_score = min(
+        100,
+        60
+        + (20 if is_bulk else 0)
+        + (20 if contains_attack_syntax else 0)
+        + min(5 * len(normalized_fields & sensitive_fields), 20)
+        + (10 if requested_payload.get("dump_pii") else 0),
+    )
 
-    is_high_risk = threat_score >= 50
     gateway_decision = "DECEIVE"
-    threat_level = "CRITICAL" if threat_score >= 90 else "HIGH"
 
     # Activate Autonomous Deception Orchestrator (ADO)
     ado_session = deception_orchestrator.activate(
@@ -96,26 +135,20 @@ def handle_hacker_breach_request(session_id: str, hacker_id: str, query: str, ta
     if not is_bulk and target_patient_id.strip().isdigit():
         target_patient_id = f"P-{int(target_patient_id.strip()):02d}"
 
+    available_twins = synthetic_repository.valid_catalog()
+    available_synthetic_ids = {twin.synthetic_patient_id for twin in available_twins}
     if is_bulk:
-        target_ids = [t.real_patient_id for t in synthetic_repository.list_all() if t.real_patient_id]
-        target_name_summary = f"ALL {len(target_ids)} Patient Records (Bulk Dump Attempt)"
+        target_ids = [t.real_patient_id for t in available_twins if t.real_patient_id]
     elif "," in target_patient_id:
         target_ids = [t.strip() for t in target_patient_id.split(",") if t.strip()]
-        target_name_summary = f"Multiple Patients ({', '.join(target_ids)})"
     else:
         target_ids = [target_patient_id]
-        target_name_summary = f"Patient {target_patient_id}"
 
     decoy_records = []
     watermark_ids = []
     syn_patient_ids = []
-    requested_fields = requested_payload.get("requested_fields") or requested_payload.get("fields") or []
-    if not isinstance(requested_fields, list):
-        requested_fields = []
-    requested_fields = [str(field) for field in requested_fields[:25]]
-
     for pid in target_ids:
-        result = _get_existing_synthetic_twin(pid)
+        result = _get_existing_synthetic_twin(pid, available_synthetic_ids)
         if result is None:
             continue
         syn_payload, wm_id = result
@@ -127,11 +160,14 @@ def handle_hacker_breach_request(session_id: str, hacker_id: str, query: str, ta
         response_data = decoy_records[0]
         response_data["records_returned"] = 1
         response_data["is_synthetic"] = True
+        response_data["threat_score"] = threat_score
+        response_data["gateway_decision"] = gateway_decision
+        response_data["attack_type"] = "DATA_EXFILTRATION" if is_bulk else "PATIENT_ENUMERATION"
     else:
         response_data = {
             "exfiltration_type": "BULK_DATABASE_DUMP" if is_bulk else "MULTI_RECORD_PROBE",
+            "attack_type": "DATA_EXFILTRATION" if is_bulk or contains_attack_syntax else "PATIENT_ENUMERATION",
             "total_records_intercepted": len(decoy_records),
-            "target_patient_ids": target_ids,
             "gateway_action": "AI_GATEWAY_HIGH_THREAT_REDIRECT_ACTIVE",
             "ado_lifecycle_state": ado_session.state.value,
             "gateway_decision": gateway_decision,
@@ -166,42 +202,20 @@ def handle_hacker_breach_request(session_id: str, hacker_id: str, query: str, ta
     )
 
     record_audit("system", "hacker_breach_request", audit_text)
-    attack_details = f"session={session_id}; query={query}; target={target_patient_id}; synthetic_twin={primary_syn_id}; decision={gateway_decision}; ado_state={ado_session.state.value}; risk={threat_score}%; watermark={primary_wm}"
-    security_repository.append("attack", attack_details)
-
-    # Real-time WebSocket alert broadcast to Admin/User Dashboard
-    publish_event("hacker_attack_alert", {
-        "session_id": session_id,
-        "hacker_id": hacker_id,
-        "action": query or f"Attacker Exfiltration Query against {target_name_summary}",
-        "gateway_decision": gateway_decision,
-        "ado_state": ado_session.state.value,
-        "threat_level": threat_level,
-        "threat_score": threat_score,
-        "ai_risk_score": threat_score,
-        "details": f"Adversary probe attempting to steal clinical EHR data for {target_name_summary}",
-        "target_patient_id": target_patient_id,
-        "synthetic_patient_id": primary_syn_id,
-        "target_patient_name": target_name_summary,
-        "data_type": "Patient PII (Aadhaar Number, Mobile Phone, Clinical Diagnosis, Prescriptions & Insurance)",
-        "stolen_categories": [
-            "🆔 Patient Aadhaar Number & Government Identification",
-            "📞 Mobile Phone Number & Residential Address",
-            "🩺 Clinical Diagnoses, Symptoms & Medical History",
-            "💊 Prescription Medicines & Treatment Regimens",
-            "🏥 Attending Doctor & Department Allocation",
-            "🏦 Insurance Policy Account & Emergency Family Contacts",
-        ],
-        "watermark_id": primary_wm,
-        "is_invisible_watermark": True,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "is_high_risk": is_high_risk,
-        "attack_type": "DATA_EXFILTRATION" if is_bulk else "PATIENT_ENUMERATION",
-        "records_requested": len(target_ids),
-        "records_returned": len(decoy_records),
-        "requested_fields": requested_fields,
-        "synthetic_patient_ids": syn_patient_ids,
-    })
+    record_forensic_attack(
+        attack_type="DATA_EXFILTRATION" if is_bulk or contains_attack_syntax else "PATIENT_ENUMERATION",
+        session_id=session_id,
+        risk_score=threat_score,
+        gateway_decision=gateway_decision,
+        patient_id=None if is_bulk else target_patient_id,
+        synthetic_patient_id=primary_syn_id,
+        username=hacker_id,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        watermark_id=primary_wm,
+        records_requested=len(target_ids),
+        records_returned=len(decoy_records),
+        requested_fields=requested_fields,
+        synthetic_patient_ids=syn_patient_ids,
+    )
     return response_data
-
-

@@ -103,10 +103,21 @@ function useRealtimeNotifications(
   }, [onEvent, setNotifications])
 }
 
-function Layout({ accent, children }: { accent: string; children: React.ReactNode }) {
+function Layout({
+  accent,
+  children,
+  adminLayout = false,
+}: {
+  accent: string
+  children: React.ReactNode
+  adminLayout?: boolean
+}) {
   return (
-    <div className="shell" style={{ ['--accent' as string]: accent }}>
-      <aside className="sidebar">
+    <div
+      className={adminLayout ? 'shell admin-dashboard-layout' : 'shell'}
+      style={{ ['--accent' as string]: accent }}
+    >
+      <aside className={adminLayout ? 'sidebar sticky-sidebar' : 'sidebar'}>
         <div>
           <p className="eyebrow">Active Cyber Deception</p>
           <h1>Healthcare Security Portal</h1>
@@ -123,7 +134,7 @@ function Layout({ accent, children }: { accent: string; children: React.ReactNod
           <Link to="/profile">Profile</Link>
         </nav>
       </aside>
-      <main className="content">{children}</main>
+      <main className={adminLayout ? 'content main-content-scrollable' : 'content'}>{children}</main>
     </div>
   )
 }
@@ -993,7 +1004,7 @@ function AdminDashboard({ token }: { token: string }) {
   }
 
   return (
-    <Layout accent="#7c3aed">
+    <Layout accent="#7c3aed" adminLayout>
       <section className="hero">
         <span className="badge">Administrator</span>
         <h2>Security operations view for attacks, watermarks, and deception coverage.</h2>

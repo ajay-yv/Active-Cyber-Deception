@@ -56,11 +56,11 @@ class PatientService:
         real_pid_val = patient.id or str(patient.patient_id or "")
         twin["real_patient_id"] = real_pid_val
 
-        # Deterministic 1:1 synthetic ID mapping: P-01 -> P-01, P-02 -> P-02
+        # Keep synthetic identifiers distinct from real patient identifiers.
         if real_pid_val.upper().startswith("P-"):
-            twin["synthetic_patient_id"] = f"P-{real_pid_val[2:]}"
+            twin["synthetic_patient_id"] = f"SYN-{real_pid_val[2:]}"
         elif str(real_pid_val).isdigit():
-            twin["synthetic_patient_id"] = f"P-{int(real_pid_val):02d}"
+            twin["synthetic_patient_id"] = f"SYN-{int(real_pid_val):02d}"
 
         # Ensure synthetic values are strictly different from the original real patient
         if twin.get("name") == patient.name or not twin.get("name"):
@@ -279,12 +279,17 @@ class PatientService:
         if existing is None:
             return None, None
 
-        twin_record = self._generate_synthetic_twin(existing, session_id=session_id, hospital_id=hospital_id)
         if route == "real":
             deleted = patient_repository.delete(patient_id)
-            return deleted, twin_record
+            if deleted is None:
+                return None, None
+            synthetic_ids = synthetic_repository.delete_by_real_patient_id(deleted.id)
+            for synthetic_id in synthetic_ids:
+                watermark_repository.delete_by_source_id(synthetic_id, source_type="synthetic")
+            return deleted, None
 
         # Suspicious delete requests are diverted to synthetic decoys and the real patient remains intact.
+        twin_record = self._generate_synthetic_twin(existing, session_id=session_id, hospital_id=hospital_id)
         return existing, twin_record
 
     def update_patient(
@@ -343,6 +348,4 @@ class PatientService:
 from app.services.twin import twin_generator_proxy
 
 patient_service = PatientService(twin_generator_proxy)
-
-
 

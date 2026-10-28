@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Float, Index, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import SecurityBase
@@ -11,6 +11,19 @@ class SecurityEventRecord(SecurityBase):
     event_type: Mapped[str] = mapped_column(String(255), nullable=False)
     details: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class FailedLoginAttempt(SecurityBase):
+    __tablename__ = "failed_login_attempts"
+    __table_args__ = (
+        Index("ix_failed_login_window", "username_key_hash", "ip_address", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    username_key_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    ip_address: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
+    alert_sent: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class UserAccount(SecurityBase):
@@ -157,6 +170,7 @@ class ForensicAttackRecord(SecurityBase):
     gateway_decision: Mapped[str] = mapped_column(String(64), nullable=False, default="MONITOR")
     watermark_id: Mapped[str] = mapped_column(String(128), nullable=True)
     records_returned: Mapped[int] = mapped_column(Integer, nullable=True, default=0)
+    records_requested: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    requested_fields: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
     blocked_status: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
-

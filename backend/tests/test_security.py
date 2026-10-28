@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -112,6 +114,56 @@ def test_hacker_can_list_hack_modes() -> None:
     payload = response.json()
     assert isinstance(payload.get("modes"), list)
     assert any(mode["id"] == "probe_api" for mode in payload["modes"])
+
+
+def test_breach_forensics_capture_ip_requested_fields_and_risk() -> None:
+    admin_access_token = admin_token()
+    patient_response = client.post(
+        "/api/patients",
+        json={
+            "name": "Forensic Metadata Patient",
+            "age": 42,
+            "disease": "Test condition",
+            "diagnosis": "Test diagnosis",
+        },
+        headers={"Authorization": "Bearer " + admin_access_token},
+    )
+    patient_id = patient_response.json()["patient"]["id"]
+    session_id = f"demo-forensic-metadata-{uuid4().hex}"
+
+    response = client.post(
+        "/api/security/breach",
+        json={
+            "query": "SELECT patient details for export",
+            "target_patient_id": patient_id,
+            "requested_payload": {"requested_fields": ["aadhaar_number", "diagnosis"]},
+        },
+        headers={
+            "Authorization": "Bearer " + hacker_token(),
+            "X-Session-Id": session_id,
+            "X-Forwarded-For": "198.51.100.42",
+            "X-Browser": "demo-browser",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["gateway_decision"] == "DECEIVE"
+    assert response.json()["threat_score"] == 90
+
+    records_response = client.get(
+        "/api/security/forensic-records?limit=50",
+        headers={"Authorization": "Bearer " + admin_access_token},
+    )
+    assert records_response.status_code == 200
+    matching_records = [
+        item for item in records_response.json()["records"] if item["session_id"] == session_id
+    ]
+    record = next(item for item in matching_records if item["requested_fields"])
+    assert record["ip_address"] == "testclient"
+    assert record["attack_type"] == "DATA_EXFILTRATION"
+    assert record["requested_fields"] == ["aadhaar_number", "diagnosis"]
+    assert record["records_requested"] == 1
+    assert record["timestamp"]
 
 
 def test_hacker_can_execute_hack_mode() -> None:

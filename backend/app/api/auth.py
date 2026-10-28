@@ -148,41 +148,19 @@ def login_with_google(
     if existing and (existing.role != "patient" or existing.is_blocked):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This patient account cannot sign in")
 
-    patient = None
-    if existing and existing.patient_record_id:
-        patient = patient_repository.find_by_id(existing.patient_record_id)
-
-    if patient is None:
-        matches = patient_repository.find_by_email(normalized_email)
-        if matches:
-            patient = matches[0]
-        else:
-            display_name = str(claims.get("name") or normalized_email.split("@")[0].title()).strip()
-            from app.schemas import PatientCreate
-            from app.services.patients import PatientService
-            from app.services.twin import twin_generator_proxy
-            patient_service = PatientService(twin_generator_proxy)
-            create_payload = PatientCreate(
-                name=display_name,
-                age=30,
-                disease="General Health Checkup",
-                diagnosis="Routine Clinical Assessment",
-                medicines=["Multivitamins"],
-                treatment_pattern="Standard Protocol",
-                gender=claims.get("gender") or "Other",
-                email=normalized_email,
-                department="General Clinical",
-                doctor_assigned="Dr. Unassigned",
-            )
-            patient, _ = patient_service.create_patient(
-                create_payload,
-                session_id=context.get("session_id", "google-signup"),
-                hospital_id="HOSPITAL-001",
-                route="real",
-            )
-
-    if patient is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="The linked patient record is unavailable")
+    matches = patient_repository.find_by_email(normalized_email)
+    if len(matches) > 1:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This Google email matches multiple patient records. Contact the hospital to correct the duplicate records.",
+        )
+    if not matches:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No patient record matches the selected Google email. Choose the email registered with the hospital or contact the hospital to update your record.",
+        )
+    patient = matches[0]
+    previous_patient_record_id = existing.patient_record_id if existing else None
 
     display_name = str(claims.get("name") or patient.name or normalized_email).strip()
     password_hash = existing.password_hash if existing else hash_password(secrets.token_urlsafe(48))
@@ -196,6 +174,13 @@ def login_with_google(
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    if previous_patient_record_id and previous_patient_record_id != patient.id:
+        record_audit(
+            account.username,
+            "google_patient_link_updated",
+            f"previous_patient_record_id={previous_patient_record_id}; patient_record_id={patient.id}",
+        )
 
     token = create_access_token(
         account.username,
@@ -260,7 +245,9 @@ def register_patient(payload: PatientRegisterRequest, context: dict[str, str] = 
 
     username = clean_digits
     full_name = payload.full_name.strip() if payload.full_name else "Patient"
-    email = payload.email.strip() if payload.email else f"{username}@patient.health"
+    email = payload.email.strip().lower() if payload.email else f"{username}@patient.health"
+    if payload.email and "@" not in email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A valid email address is required")
 
     hashed = hash_password(pwd)
     record = UserRecord(
@@ -272,9 +259,6 @@ def register_patient(payload: PatientRegisterRequest, context: dict[str, str] = 
         is_blocked=False,
     )
     user_repository.create(record)
-
-    # Also sync generic 'patient' user password
-    user_repository.update_password("patient", hashed)
 
     token = create_access_token(
         username,
@@ -511,6 +495,3 @@ def get_sent_emails(email: str | None = None) -> dict:
             filtered.append(line_str)
             
     return {"logs": filtered[:10]}
-
-
-

@@ -1,6 +1,7 @@
 import argparse
 import json
 import random
+from importlib.metadata import version
 from pathlib import Path
 
 import joblib
@@ -18,6 +19,7 @@ MODEL_DIR.mkdir(exist_ok=True)
 
 
 def generate_sample_request_dataset(num_samples: int = 250) -> pd.DataFrame:
+    rng = random.Random(42)
     roles = ["doctor", "nurse", "administrator", "hacker", "anonymous", "researcher"]
     devices = ["trusted", "managed", "personal", "unknown", "lab-equipment"]
     browsers = ["chrome", "firefox", "safari", "curl", "python-requests", "unknown"]
@@ -52,29 +54,29 @@ def generate_sample_request_dataset(num_samples: int = 250) -> pd.DataFrame:
 
     rows: list[dict[str, str | int]] = []
     for i in range(num_samples):
-        role = random.choices(roles, weights=[30, 20, 10, 10, 15, 15], k=1)[0]
-        path = random.choice(paths)
-        body = random.choice(bodies)
-        params_string = random.choice(params)
-        login_failures = random.choices([0, 1, 2, 3], weights=[70, 20, 7, 3], k=1)[0]
-        failed_auth_attempts = random.choices([0, 1, 2, 3, 4], weights=[75, 15, 6, 3, 1], k=1)[0]
-        request_frequency = random.uniform(0.1, 10.0)
-        ip_address_frequency = random.choice([1, 1, 2, 3, 5, 10])
-        session_duration = random.uniform(15.0, 3600.0)
-        patient_access_count = random.choice([0, 1, 2, 3, 10])
-        time_between_requests = random.uniform(0.1, 300.0)
+        role = rng.choices(roles, weights=[30, 20, 10, 10, 15, 15], k=1)[0]
+        path = rng.choice(paths)
+        body = rng.choice(bodies)
+        params_string = rng.choice(params)
+        login_failures = rng.choices([0, 1, 2, 3], weights=[70, 20, 7, 3], k=1)[0]
+        failed_auth_attempts = rng.choices([0, 1, 2, 3, 4], weights=[75, 15, 6, 3, 1], k=1)[0]
+        request_frequency = rng.uniform(0.1, 10.0)
+        ip_address_frequency = rng.choice([1, 1, 2, 3, 5, 10])
+        session_duration = rng.uniform(15.0, 3600.0)
+        patient_access_count = rng.choice([0, 1, 2, 3, 10])
+        time_between_requests = rng.uniform(0.1, 300.0)
         label = "normal"
         if role == "hacker" or "SELECT" in body or "script" in body or "/api/export" in path or "limit=200" in path or "count=1000" in params_string or failed_auth_attempts >= 2:
-            label = random.choice(["attack", "data_exfiltration", "recon"])
+            label = rng.choice(["attack", "data_exfiltration", "recon"])
 
         rows.append(
             {
                 "role": role,
-                "device": random.choice(devices),
-                "browser": random.choice(browsers),
-                "operating_system": random.choice(operating_systems),
-                "country": random.choice(countries),
-                "method": random.choice(methods),
+                "device": rng.choice(devices),
+                "browser": rng.choice(browsers),
+                "operating_system": rng.choice(operating_systems),
+                "country": rng.choice(countries),
+                "method": rng.choice(methods),
                 "path": path,
                 "body": body,
                 "params": params_string,
@@ -120,7 +122,7 @@ def train_models(dataset_path: str | Path | None = None, model_dir: Path | None 
     random_forest = RandomForestClassifier(n_estimators=150, class_weight="balanced", random_state=42)
     random_forest.fit(X_train, y_train)
 
-    xgboost = XGBClassifier(n_estimators=150, use_label_encoder=False, eval_metric="logloss", random_state=42)
+    xgboost = XGBClassifier(n_estimators=150, eval_metric="logloss", random_state=42)
     xgboost.fit(X_train, y_train)
 
     joblib.dump(isolation_forest, model_dir / "isolation_forest.joblib")
@@ -139,6 +141,10 @@ def train_models(dataset_path: str | Path | None = None, model_dir: Path | None 
         "train_samples": len(X_train),
         "test_samples": len(X_test),
         "label_map": label_map,
+        "library_versions": {
+            package: version(package)
+            for package in ("scikit-learn", "xgboost", "numpy", "pandas", "joblib")
+        },
         "random_forest": {
             "accuracy": float(accuracy_score(y_test, y_pred_rf)),
             "precision": float(precision_score(y_test, y_pred_rf, average="weighted", zero_division=0)),

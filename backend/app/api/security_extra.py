@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
 from app.core.dependencies import require_roles, request_context_headers
@@ -11,7 +11,7 @@ from app.services.audit import record_audit
 from app.services.realtime import publish_event
 from app.services.security import record_forensic_attack, security_repository
 from app.services.gateway import evaluate_request
-from app.services.registries import synthetic_repository
+from app.services.decoy_catalog import DECOY_CARD_FIELDS, get_attacker_decoy_catalog
 
 router = APIRouter(prefix="/security", tags=["security"])
 
@@ -71,7 +71,11 @@ def hack_modes(_: object = Depends(require_roles("hacker"))) -> dict:
 
 
 @router.post("/hack-modes/execute")
-def execute_hack_mode(payload: AttackModeRequest, current_user: object = Depends(require_roles("hacker"))) -> dict:
+def execute_hack_mode(
+    payload: AttackModeRequest,
+    current_user: object = Depends(require_roles("hacker")),
+    context: dict[str, str] = Depends(request_context_headers),
+) -> dict:
     result = execute_attack_mode(
         session_id=payload.session_id,
         mode=payload.mode,
@@ -79,6 +83,8 @@ def execute_hack_mode(payload: AttackModeRequest, current_user: object = Depends
         hacker_id=getattr(current_user, "username", "hacker"),
         target_patient_id=payload.target_patient_id,
         requested_payload=payload.requested_payload,
+        ip_address=context.get("ip_address", "0.0.0.0"),
+        user_agent=context.get("browser", ""),
     )
     return result
 
@@ -86,10 +92,11 @@ def execute_hack_mode(payload: AttackModeRequest, current_user: object = Depends
 @router.post("/simulation/marker")
 def security_test_marker(
     payload: SecurityMarkerRequest,
+    request: Request,
     current_user: object = Depends(require_roles("hacker", "administrator")),
     context: dict[str, str] = Depends(request_context_headers),
 ) -> dict:
-    require_simulation_enabled()
+    require_simulation_enabled(request)
     if payload.marker not in ALLOWED_SECURITY_MARKERS:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported security test marker")
 
@@ -104,6 +111,7 @@ def security_test_marker(
     )
 
     attack_type = "SQL_INJECTION" if payload.marker == "TEST_SQL_INJECTION" else "DIRECTORY_TRAVERSAL"
+    synthetic_records = get_attacker_decoy_catalog()
     event_payload = record_forensic_attack(
         attack_type=attack_type,
         session_id=context["session_id"],
@@ -114,41 +122,15 @@ def security_test_marker(
         user_agent=context.get("browser", ""),
         attack_probability=decision.attack_probability,
         blocked_status=decision.action == "block",
-        requested_fields=[],
-        records_requested=0,
-        records_returned=0,
+        requested_fields=list(DECOY_CARD_FIELDS),
+        records_requested=len(synthetic_records),
+        records_returned=len(synthetic_records),
     )
-
-    from app.repositories.watermark_repository import watermark_repository
-    existing_twins = synthetic_repository.valid_catalog()
-    first_decoy = existing_twins[0] if existing_twins else None
-
-    sample_decoy = None
-    if first_decoy is not None:
-        twin_id = first_decoy.synthetic_patient_id
-        wm = watermark_repository.find_by_source_id(twin_id, source_type="synthetic")
-        sample_decoy = {
-            "patient_id": twin_id,
-            "id": twin_id,
-            "synthetic_patient_id": twin_id,
-            "name": first_decoy.name,
-            "disease": first_decoy.disease,
-            "diagnosis": first_decoy.diagnosis,
-            "gender": first_decoy.gender,
-            "age": first_decoy.age_range,
-            "doctor_assigned": first_decoy.doctor_assigned,
-            "department": first_decoy.department,
-            "ward": first_decoy.ward,
-            "phone": first_decoy.phone_number,
-            "email": first_decoy.email,
-            "aadhaar": first_decoy.aadhaar_number,
-            "watermark_id": wm.watermark_id if wm else None,
-        }
 
     deceptive_payload = {
         "attack_type": attack_type,
         "is_synthetic": True,
-        "sample_decoy": sample_decoy,
+        "synthetic_records": synthetic_records,
         "message": f"Query intercepted and redirected to honeypot telemetry layer.",
     }
 
@@ -171,8 +153,10 @@ def security_test_marker(
 @router.post("/simulation/finish")
 def simulation_finish(
     payload: SimulationFinishRequest,
+    request: Request,
+    _current_user: object = Depends(require_roles("hacker", "administrator")),
 ) -> dict:
-    require_simulation_enabled()
+    require_simulation_enabled(request)
     now_str = datetime.now(timezone.utc).isoformat()
     event_payload = {
         "attack_type": payload.attack,
@@ -191,4 +175,3 @@ def list_forensic_records(
     _: object = Depends(require_roles("administrator", "doctor", "receptionist")),
 ) -> dict:
     return {"records": security_repository.list_forensic_records(limit=limit)}
-

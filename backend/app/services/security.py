@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from collections import defaultdict
+from datetime import timedelta
 from typing import Optional
 from hashlib import sha256
 
@@ -40,6 +41,8 @@ _failed_login_accounts: dict[str, set[str]] = defaultdict(set)
 _failed_login_counts: dict[str, int] = defaultdict(int)
 AUTO_BLOCK_SESSION_THRESHOLD = 25
 AUTO_BLOCK_USER_THRESHOLD = 25
+FAILED_LOGIN_ALERT_THRESHOLD = 5
+FAILED_LOGIN_ALERT_WINDOW = timedelta(minutes=5)
 
 
 class PasswordResetStore:
@@ -105,9 +108,9 @@ def record_forensic_attack(
     attack_probability: float | None = None,
     watermark_id: str | None = None,
     records_returned: int = 0,
+    records_requested: int = 0,
     blocked_status: bool = False,
     requested_fields: list[str] | None = None,
-    records_requested: int = 0,
     synthetic_patient_ids: list[str] | None = None,
 ) -> dict:
     from app.repositories.synthetic_repository import is_valid_synthetic_id
@@ -143,10 +146,7 @@ def record_forensic_attack(
         "blocked_status": bool(blocked_status),
     }
 
-    try:
-        security_repository.add_forensic_record(payload)
-    except Exception:
-        pass
+    security_repository.add_forensic_record(payload)
 
     security_repository.append(
         "attack",
@@ -162,19 +162,7 @@ def record_forensic_attack(
             "timestamp": now_str,
         })
 
-        real_p_name = None
         if patient_id:
-            try:
-                from app.repositories.patient_repository import patient_repository
-                p_rec = patient_repository.get_by_id(patient_id)
-                if p_rec:
-                    real_p_name = p_rec.name
-            except Exception:
-                pass
-
-        if real_p_name:
-            target_summary = f"{real_p_name} ({patient_id})"
-        elif patient_id:
             target_summary = f"Patient {patient_id}"
         else:
             target_summary = "Hospital Patient Database (All Patients)"
@@ -183,11 +171,10 @@ def record_forensic_attack(
             "session_id": session_id,
             "hacker_id": username or "simulated_hacker",
             "action": f"Adversary {attack_type} Attack Probe",
-            "details": f"Attacker probe attempting to extract data from {target_summary}",
+            "details": f"Attacker probe attempting to extract {', '.join(payload['requested_fields']) or 'patient data'} from {target_summary}",
             "target_patient_id": patient_id or "ALL_PATIENTS",
-            "target_patient_name": target_summary,
             "synthetic_patient_id": resolved_synthetic_id,
-            "data_type": "Patient PII (Aadhaar Number, Mobile Phone, Residential Address, Clinical Diagnosis & Prescriptions)",
+            "data_type": ", ".join(payload["requested_fields"]) or "Patient clinical record",
             "stolen_categories": [
                 "🆔 Patient Aadhaar Number & Government Identification",
                 "📞 Mobile Phone Number & Residential Address",
@@ -256,36 +243,62 @@ def log_login(username: str, role: str, ip_address: str, device: str, browser: s
 
 
 def log_login_failure(username: str, session_id: str, ip_address: str, device: str, browser: str, country: str) -> None:
+    attempted_username = (username or "").strip()[:255]
+    failure_count, should_alert = security_repository.record_failed_login(
+        username=(username or "").strip(),
+        ip_address=ip_address,
+        threshold=FAILED_LOGIN_ALERT_THRESHOLD,
+        window=FAILED_LOGIN_ALERT_WINDOW,
+    )
     security_repository.append(
         "login_failure",
-        f"username={username}; session={session_id}; ip={ip_address}; device={device}; browser={browser}; country={country}",
+        f"username={attempted_username}; session={session_id}; ip={ip_address}; device={device}; browser={browser}; country={country}",
     )
     _failed_login_accounts[session_id].add(username)
     _failed_login_counts[session_id] += 1
+    session_failure_count = _failed_login_counts[session_id]
     distinct_users = len(_failed_login_accounts[session_id])
-    failure_count = _failed_login_counts[session_id]
 
     is_credential_stuffing = distinct_users >= 3
     attack_type = "CREDENTIAL_STUFFING" if is_credential_stuffing else "BRUTE_FORCE"
-    risk_score = 95.0 if is_credential_stuffing else min(55.0 + failure_count * 15.0, 96.0)
 
-    if failure_count >= AUTO_BLOCK_SESSION_THRESHOLD or is_credential_stuffing:
-        block_session(session_id, f"Repeated login failures ({failure_count} attempts) - {attack_type}")
+    if session_failure_count >= AUTO_BLOCK_SESSION_THRESHOLD or is_credential_stuffing:
+        block_session(session_id, f"Repeated login failures ({session_failure_count} attempts) - {attack_type}")
 
-    is_blocked = session_id in blocked_sessions
-    decision = "BLOCK" if is_blocked else ("DECEIVE" if risk_score >= 70 else "MONITOR")
-
-    record_forensic_attack(
-        attack_type=attack_type,
-        session_id=session_id,
-        risk_score=risk_score,
-        gateway_decision=decision,
-        username=username,
-        ip_address=ip_address,
-        user_agent=browser,
-        blocked_status=is_blocked,
-    )
     record_suspicious_activity(session_id=session_id, reason=f"repeated_login_failure_{attack_type}", username=username)
+
+    if should_alert or session_failure_count == FAILED_LOGIN_ALERT_THRESHOLD:
+        now_str = datetime.now(timezone.utc).isoformat()
+        forensic_attack = security_repository.add_forensic_record({
+            "attack_type": attack_type,
+            "session_id": session_id,
+            "username": attempted_username,
+            "ip_address": ip_address,
+            "timestamp": now_str,
+            "risk_score": 90,
+            "gateway_decision": "MONITOR",
+            "records_requested": 0,
+            "records_returned": 0,
+            "requested_fields": [],
+            "blocked_status": session_id in blocked_sessions,
+        })
+        alert_payload = {
+            "attack_id": forensic_attack["attack_id"],
+            "attempted_username": attempted_username,
+            "ip_address": ip_address,
+            "attempt_count": failure_count,
+            "threshold": FAILED_LOGIN_ALERT_THRESHOLD,
+            "window_minutes": int(FAILED_LOGIN_ALERT_WINDOW.total_seconds() // 60),
+            "attack_type": attack_type,
+            "threat_score": 90,
+            "timestamp": now_str,
+            "session_id": session_id,
+        }
+        security_repository.append(
+            "failed_login_alert",
+            f"username={attempted_username}; session={session_id}; ip={ip_address}; attempts={failure_count}; window_minutes={alert_payload['window_minutes']}",
+        )
+        publish_event("FAILED_LOGIN_THRESHOLD_REACHED", alert_payload)
 
 
 def log_decision(session_id: str, route: str, score: int, reason: str = "", username: str | None = None) -> None:
@@ -353,6 +366,7 @@ def reset_security_state() -> None:
     _suspicious_user_counts.clear()
     _failed_login_accounts.clear()
     _failed_login_counts.clear()
+    security_repository.clear_failed_login_attempts()
 
 
 def is_session_blocked(session_id: str) -> bool:

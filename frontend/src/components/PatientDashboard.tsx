@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import type { PatientRecord, LabResultResponse } from '../api'
-import { fetchCurrentPatient, fetchLabResults, fetchPatients } from '../api'
+import { fetchCurrentPatient, fetchLabResults } from '../api'
 
 interface PatientDashboardProps {
   token: string
@@ -12,6 +12,7 @@ export const PatientDashboardComponent: React.FC<PatientDashboardProps> = ({ tok
   const [patients, setPatients] = useState<PatientRecord[]>([])
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [lastSyncTime, setLastSyncTime] = useState<string>(new Date().toLocaleTimeString())
   const [isSyncPulsing, setIsSyncPulsing] = useState(false)
   const [adminUpdateToast, setAdminUpdateToast] = useState<string | null>(null)
@@ -26,22 +27,11 @@ export const PatientDashboardComponent: React.FC<PatientDashboardProps> = ({ tok
   const loadPatientRecords = useCallback(async (isBackground: boolean = false) => {
     try {
       if (!isBackground) setLoading(true)
-      let fetchedPatients: PatientRecord[] = []
-      try {
-        const patient = await fetchCurrentPatient(token)
-        if (patient) {
-          fetchedPatients = [patient]
-        }
-      } catch (e) {
-        console.warn('fetchCurrentPatient unsuccessful, checking hospital patients:', e)
-      }
-
-      if (fetchedPatients.length === 0) {
-        const res = await fetchPatients(token)
-        fetchedPatients = res.patients || []
-      }
+      const patient = await fetchCurrentPatient(token)
+      const fetchedPatients = patient ? [patient] : []
 
       setPatients(fetchedPatients)
+      setLoadError(null)
 
       const newHash = JSON.stringify(fetchedPatients.map((p) => ({ id: p.id, name: p.name, disease: p.disease, meds: p.medicines, doc: p.doctor_assigned })))
       if (previousRecordsHashRef.current && previousRecordsHashRef.current !== newHash) {
@@ -59,6 +49,7 @@ export const PatientDashboardComponent: React.FC<PatientDashboardProps> = ({ tok
     } catch (err) {
       console.warn('Failed to fetch patient records:', err)
       setPatients([])
+      setLoadError(err instanceof Error ? err.message : 'Unable to sync your patient record.')
       setLabResult(null)
     } finally {
       if (!isBackground) setLoading(false)
@@ -133,32 +124,21 @@ export const PatientDashboardComponent: React.FC<PatientDashboardProps> = ({ tok
   })()
 
   // Determine if the current session was authenticated via Google
-  const isGoogleAuth = Boolean(
-    user?.auth_provider === 'google' ||
-    (user?.email &&
-      (user.email.endsWith('@gmail.com') || user.email.includes('@')) &&
-      !user.email.endsWith('@patient.health') &&
-      !user.email.includes('+') &&
-      !user.email.includes('mobile') &&
-      !/^\d+@/.test(user.email))
-  )
+  const isGoogleAuth = user?.auth_provider === 'google'
 
-  // Compute patient display name: strictly show patient name, never email or mobile phone
+  // Registration accounts show the name entered during signup; Google accounts show the linked clinical name.
   const patientDisplayName = (() => {
     const recName = activeRecord?.name?.trim()
-    if (recName && !recName.includes('@') && !/^\+?\d+$/.test(recName.replace(/\s+/g, '')) && !recName.toLowerCase().startsWith('patient (')) {
-      return recName
-    }
     const uName = user?.full_name?.trim()
-    if (uName && !uName.includes('@') && !/^\+?\d+$/.test(uName.replace(/\s+/g, '')) && !uName.toLowerCase().startsWith('patient (')) {
-      return uName
-    }
-    if (recName && !recName.includes('@') && !/^\+?\d+$/.test(recName.replace(/\s+/g, ''))) {
-      return recName
-    }
-    if (uName && !uName.includes('@') && !/^\+?\d+$/.test(uName.replace(/\s+/g, ''))) {
-      return uName
-    }
+    const isDisplayableName = (name?: string) =>
+      Boolean(name && !name.includes('@') && !/^\+?\d+$/.test(name.replace(/\s+/g, '')))
+    const isGenericName = (name?: string) =>
+      !name || ['patient', 'patient user', 'patient record (self)'].includes(name.toLowerCase())
+
+    if (isGoogleAuth && isDisplayableName(recName)) return recName
+    if (!isGoogleAuth && isDisplayableName(uName) && !isGenericName(uName)) return uName
+    if (isDisplayableName(recName) && !isGenericName(recName)) return recName
+    if (isDisplayableName(uName)) return uName
     return 'Patient Account'
   })()
 
@@ -204,7 +184,7 @@ export const PatientDashboardComponent: React.FC<PatientDashboardProps> = ({ tok
               </span>
             </div>
             <p style={{ margin: 0, fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>
-              St. Jude Health System • Real-Time Clinical Records Synchronized with Hospital Administration
+              Real-Time Clinical Records Synchronized with Hospital Administration
             </p>
           </div>
         </div>
@@ -337,14 +317,14 @@ export const PatientDashboardComponent: React.FC<PatientDashboardProps> = ({ tok
                 Simultaneous Administrator Data Synchronization Active
               </span>
               <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569' }}>
-                Any patient profiles, diagnoses, prescriptions, or clinical notes entered by Hospital Administrator appear here simultaneously in real time.
+                Only the clinical record linked to your patient account is shown here. Administrator updates to that record sync automatically.
               </p>
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: '0.82rem', color: '#15803d', fontWeight: 600 }}>
-              <strong>{patients.length}</strong> {patients.length === 1 ? 'Record' : 'Records'} in Hospital Vault
+              <strong>{patients.length}</strong> {patients.length === 1 ? 'Linked Record' : 'Linked Records'}
             </span>
             <button
               onClick={() => loadPatientRecords(false)}
@@ -819,10 +799,16 @@ export const PatientDashboardComponent: React.FC<PatientDashboardProps> = ({ tok
           <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 48, textAlign: 'center', boxShadow: '0 4px 14px -2px rgba(15, 23, 42, 0.05)' }}>
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>🏥</div>
             <h3 style={{ color: '#0f172a', fontSize: '1.35rem', margin: '0 0 8px', fontWeight: 800 }}>
-              {loading ? 'Synchronizing Patient Vault...' : 'No Active Patient Records Found'}
+              {loading
+                ? 'Synchronizing Patient Vault...'
+                : loadError
+                  ? 'Unable to Synchronize Patient Vault'
+                  : 'No Patient Record Linked'}
             </h3>
             <p style={{ color: '#64748b', maxWidth: 480, margin: '0 auto 20px', fontSize: '0.9rem' }}>
-              Patient records registered by Hospital Administrator will populate here automatically and simultaneously in real time.
+              {loadError
+                ? `${loadError} Check the backend connection, then refresh.`
+                : 'Ask the Hospital Administrator to enter the same email address used by this patient account on your patient record. Only a uniquely matched record is displayed.'}
             </p>
             <button
               onClick={() => loadPatientRecords(false)}

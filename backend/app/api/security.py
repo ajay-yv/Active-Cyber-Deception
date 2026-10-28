@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from app.core.dependencies import require_roles
+from app.core.dependencies import require_roles, request_context_headers
 from app.repositories.watermark_repository import WatermarkRecord
 from app.repositories.user_repository import user_repository
 from app.services.attribution import leak_attribution_service
@@ -75,8 +75,9 @@ def create_attack(payload: AttackRequest, _: object = Depends(require_roles("adm
 def create_breach_request(
     payload: BreachRequestPayload,
     current_user: object = Depends(require_roles("hacker")),
+    context: dict[str, str] = Depends(request_context_headers),
 ) -> dict:
-    session_id = getattr(current_user, "username", "hacker") + "-session"
+    session_id = context["session_id"]
     hacker_id = getattr(current_user, "username", "hacker")
     response = handle_hacker_breach_request(
         session_id=session_id,
@@ -84,6 +85,8 @@ def create_breach_request(
         query=payload.query,
         target_patient_id=payload.target_patient_id,
         requested_payload=payload.requested_payload,
+        ip_address=context.get("ip_address", "0.0.0.0"),
+        user_agent=context.get("browser", ""),
     )
     return response
 

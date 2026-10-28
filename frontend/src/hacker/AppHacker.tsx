@@ -70,8 +70,49 @@ function useRealtimeNotifications(
   }, [token, onEvent, setNotifications])
 }
 
+function formatHackerPatientId(id?: string, altId?: string): string {
+  let val = (id || altId || '').trim()
+  if (val.startsWith('SYN-')) {
+    val = 'P-' + val.slice(4)
+  } else if (val.startsWith('SYN')) {
+    val = val.slice(3)
+  }
+  return val || 'P-01'
+}
+
+function formatPrescriptions(medicines?: any, treatmentPattern?: string): string {
+  if (Array.isArray(medicines) && medicines.length > 0) {
+    return medicines.join(', ')
+  }
+  if (typeof medicines === 'string' && medicines.trim()) {
+    const trimmed = medicines.trim()
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.join(', ')
+        }
+      } catch {
+        // fall through
+      }
+    }
+    return trimmed
+  }
+  if (treatmentPattern && treatmentPattern.trim()) {
+    return treatmentPattern.trim()
+  }
+  return 'Tab. Paracetamol 650mg BD, Tab. Pantoprazole 40mg OD'
+}
+
+function formatLocation(address?: string): string {
+  if (address && address.trim()) {
+    return address.trim()
+  }
+  return 'Flat 42, Green Meadows, Bengaluru, KA - 560038'
+}
+
 export default function AppHacker() {
-  const [username, setUsername] = useState('hacker@stjude.org')
+  const [username, setUsername] = useState('hacker')
   const [password, setPassword] = useState('hacker123')
   const [isForgotPasswordView, setIsForgotPasswordView] = useState(false)
   const [token, setToken] = useState<string | null>(null)
@@ -92,6 +133,8 @@ export default function AppHacker() {
   const [customPatientInput, setCustomPatientInput] = useState('')
   const [activePatients, setActivePatients] = useState<PatientRecord[]>([])
   const [breachResponse, setBreachResponse] = useState<BreachResponse | null>(null)
+  const [exfiltratedRecords, setExfiltratedRecords] = useState<any[]>([])
+  const [attackDecoyRecords, setAttackDecoyRecords] = useState<BreachResponse[]>([])
   const [modeResult, setModeResult] = useState<string>('')
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [modes, setModes] = useState<Array<{ id: string; label: string; description: string }>>([])
@@ -207,6 +250,7 @@ export default function AppHacker() {
     setError('')
     setAttackMessage('')
     setBreachResponse(null)
+    setAttackDecoyRecords([])
 
     if (!token) {
       setError('Login first to launch attacks.')
@@ -227,7 +271,40 @@ export default function AppHacker() {
         },
         token,
       )
-      setModeResult(JSON.stringify(result, null, 2))
+      if (isExfiltration && result && typeof result === 'object') {
+        const response = (result as {
+          response?: BreachResponse & {
+            is_synthetic?: boolean
+            source_type?: string
+          }
+        }).response
+        const decoys: BreachResponse[] = response && typeof response === 'object'
+          ? Array.isArray(response.decoy_records)
+            ? response.decoy_records.filter((record) => (record as BreachResponse & { source_type?: string }).source_type === 'synthetic')
+            : response.is_synthetic === true || response.source_type === 'synthetic'
+              ? [response]
+              : []
+          : []
+
+        const attackerRecords = decoys.map((record) =>
+          Object.fromEntries(
+            Object.entries(record).filter(([key]) =>
+              key !== 'is_synthetic' && key !== 'source_type' && key !== 'watermark_fingerprint' && key !== 'watermark_id',
+            ),
+          ) as BreachResponse,
+        )
+        setModeResult(JSON.stringify({ mode: selectedMode, response: attackerRecords }, null, 2))
+        setAttackDecoyRecords(attackerRecords)
+        if (decoys.length > 0) {
+          setExfiltratedRecords((prev) => {
+            const existingIds = new Set(prev.map((x) => x.patient_id || x.synthetic_patient_id))
+            const newRecords = attackerRecords.filter((x) => !existingIds.has(x.patient_id || x.synthetic_patient_id))
+            return [...prev, ...newRecords]
+          })
+        }
+      } else {
+        setModeResult(JSON.stringify(result, null, 2))
+      }
       setAttackMessage('Attack mode executed successfully.')
     } catch (err) {
       setError(String(err))
@@ -258,7 +335,23 @@ export default function AppHacker() {
       },
       token,
     )
-      .then((result) => setBreachResponse(result))
+      .then((result) => {
+        setBreachResponse(result)
+        const decoys = result.decoy_records
+        if (decoys && decoys.length > 0) {
+          setExfiltratedRecords((prev) => {
+            const existingIds = new Set(prev.map((x) => x.patient_id || x.synthetic_patient_id))
+            const newRecords = decoys.filter((x: any) => !existingIds.has(x.patient_id || x.synthetic_patient_id))
+            return [...prev, ...newRecords]
+          })
+        } else if (result.name || result.patient_id || result.synthetic_patient_id) {
+          setExfiltratedRecords((prev) => {
+            const id = result.patient_id || result.synthetic_patient_id
+            if (prev.some((x) => (x.patient_id || x.synthetic_patient_id) === id)) return prev
+            return [...prev, result]
+          })
+        }
+      })
       .catch((err) => setError(String(err)))
   }
 
@@ -288,18 +381,19 @@ export default function AppHacker() {
                 <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
                   Attacker Handle / Email ID
                   <input
+                    id="hacker-username"
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="hacker"
-                    style={{ padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.3)', background: '#090d16', color: '#4ade80', fontSize: '0.95rem' }}
+                    placeholder="hacker@stjude.org"
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.3)', background: '#090d16', color: '#4ade80', fontSize: '0.95rem', outline: 'none' }}
                     required
                   />
                 </label>
 
-                <div>
+                <div style={{ display: 'grid', gap: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <label style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
+                    <label htmlFor="hacker-password" style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
                       Passcode
                     </label>
                     <button
@@ -311,17 +405,18 @@ export default function AppHacker() {
                         setResetError('')
                         if (username && username.includes('@')) setResetEmail(username)
                       }}
-                      style={{ background: 'none', border: 'none', color: '#22c55e', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+                      style={{ background: 'none', border: 'none', color: '#22c55e', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}
                     >
                       Reset Passcode?
                     </button>
                   </div>
                   <input
+                    id="hacker-password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.3)', background: '#090d16', color: '#4ade80', fontSize: '0.95rem' }}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.3)', background: '#090d16', color: '#4ade80', fontSize: '0.95rem', outline: 'none' }}
                     required
                   />
                 </div>
@@ -333,8 +428,9 @@ export default function AppHacker() {
                 ) : null}
 
                 <button
+                  id="hacker-login-btn"
                   type="submit"
-                  style={{ padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: '#020617', fontSize: '1rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 0 20px rgba(34, 197, 94, 0.4)' }}
+                  style={{ padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: '#020617', fontSize: '1rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 0 20px rgba(34, 197, 94, 0.4)', fontFamily: 'inherit', letterSpacing: '0.02em' }}
                 >
                   INITIALIZE MATRIX SESSION →
                 </button>
@@ -495,8 +591,8 @@ export default function AppHacker() {
                 <div style={{ display: 'grid', gap: 24 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
                     <div style={{ background: 'rgba(15, 23, 42, 0.8)', padding: 20, borderRadius: 16, border: '1px solid rgba(34, 197, 94, 0.2)' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Total Patient Records</span>
-                      <h2 style={{ fontSize: '2rem', margin: '6px 0 0', color: '#4ade80' }}>{metrics.synthetic_records ?? 0}</h2>
+                      <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Exfiltrated Patient Records</span>
+                      <h2 style={{ fontSize: '2rem', margin: '6px 0 0', color: '#4ade80' }}>{exfiltratedRecords.length}</h2>
                     </div>
                     <div style={{ background: 'rgba(15, 23, 42, 0.8)', padding: 20, borderRadius: 16, border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                       <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Active Cyber Attacks</span>
@@ -557,6 +653,20 @@ export default function AppHacker() {
                         </pre>
                       </div>
                     ) : null}
+
+                    {attackDecoyRecords.length > 0 ? (
+                      <div style={{ marginTop: 20, padding: 16, background: 'rgba(168, 85, 247, 0.08)', borderRadius: 12, border: '1px solid rgba(168, 85, 247, 0.4)' }}>
+                        <h4 style={{ color: '#c084fc', margin: '0 0 8px' }}>Simulated attacker output: replica patient records</h4>
+                        <p style={{ color: '#cbd5e1', fontSize: '0.82rem', margin: '0 0 12px' }}>
+                          The attacker view displays replica data only; no original patient records were exposed.
+                        </p>
+                        {attackDecoyRecords.map((record, index) => (
+                          <pre key={`${record.patient_id || record.synthetic_patient_id || 'decoy'}-${index}`} style={{ padding: 12, margin: '0 0 10px', background: '#020617', borderRadius: 8, color: '#e2e8f0', fontSize: '0.8rem', overflowX: 'auto' }}>
+                            {JSON.stringify(record, null, 2)}
+                          </pre>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ) : null}
@@ -567,12 +677,23 @@ export default function AppHacker() {
                   <div style={{ background: 'rgba(15, 23, 42, 0.9)', padding: 24, borderRadius: 16, border: '1px solid rgba(168, 85, 247, 0.3)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                       <h3 style={{ margin: 0, color: '#c084fc' }}>📁 Patient Records Database</h3>
-                      <span style={{ fontSize: '0.75rem', background: 'rgba(168, 85, 247, 0.2)', border: '1px solid #a855f7', color: '#c084fc', padding: '4px 10px', borderRadius: 999, fontWeight: 700 }}>
-                        ACTIVE RECORD REPOSITORY
-                      </span>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        {exfiltratedRecords.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => setExfiltratedRecords([])}
+                            style={{ fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: '#fca5a5', padding: '4px 10px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            🗑️ Clear Records
+                          </button>
+                        ) : null}
+                        <span style={{ fontSize: '0.75rem', background: 'rgba(168, 85, 247, 0.2)', border: '1px solid #a855f7', color: '#c084fc', padding: '4px 10px', borderRadius: 999, fontWeight: 700 }}>
+                          {exfiltratedRecords.length > 0 ? `${exfiltratedRecords.length} EXFILTRATED RECORDS` : 'NO EXFILTRATED RECORDS'}
+                        </span>
+                      </div>
                     </div>
 
-                    {dashboard?.synthetic_records && dashboard.synthetic_records.length > 0 ? (
+                    {exfiltratedRecords.length > 0 ? (
                       <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                           <thead>
@@ -586,9 +707,11 @@ export default function AppHacker() {
                             </tr>
                           </thead>
                           <tbody>
-                            {dashboard.synthetic_records.map((r) => (
-                              <tr key={r.synthetic_patient_id}>
-                                <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#c084fc', fontWeight: 700 }}>{r.synthetic_patient_id}</td>
+                            {exfiltratedRecords.map((r: any) => (
+                              <tr key={r.synthetic_patient_id || r.patient_id}>
+                                <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#c084fc', fontWeight: 700 }}>
+                                  {formatHackerPatientId(r.patient_id, r.synthetic_patient_id)}
+                                </td>
                                 <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#f8fafc', fontWeight: 600 }}>
                                   {r.name}
                                   <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>{r.age_range || '42 yrs'}</span>
@@ -603,10 +726,10 @@ export default function AppHacker() {
                                 </td>
                                 <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#cbd5e1' }}>
                                   <div style={{ fontSize: '0.8rem', color: '#38bdf8' }}>✉️ {r.email}</div>
-                                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>📍 {r.address}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>📍 {formatLocation(r.address)}</div>
                                 </td>
                                 <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#38bdf8' }}>
-                                  {Array.isArray(r.medicines) ? r.medicines.join(', ') : r.medicines}
+                                  {formatPrescriptions(r.medicines, r.treatment_pattern)}
                                 </td>
                               </tr>
                             ))}
@@ -763,47 +886,47 @@ export default function AppHacker() {
                       <div style={{ marginTop: 24, padding: 20, background: '#020617', borderRadius: 14, border: '1px solid #22c55e' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(34, 197, 94, 0.2)' }}>
                           <span style={{ color: '#4ade80', fontWeight: 800, fontSize: '0.9rem' }}>
-                            🛡️ EXFILTRATED PATIENT DATA RESPONSE
+                            🛡️ SIMULATED ATTACKER RESPONSE
                           </span>
                           <span style={{ fontSize: '0.75rem', background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '3px 8px', borderRadius: 6, fontWeight: 700 }}>
-                            DATABASE QUERY SUCCESSFUL
+                            REPLICA DATA
                           </span>
                         </div>
 
                         <div style={{ padding: 12, background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', color: '#4ade80', borderRadius: 8, fontSize: '0.82rem', marginBottom: 14 }}>
-                          ⚡ <strong>PATIENT RECORDS EXFILTRATED FROM DATABASE:</strong> Query executed on target {targetPatientId}. Patient Aadhaar, Contact, Diagnosis, and Prescriptions retrieved.
+                          🧪 <strong>SIMULATION ONLY:</strong> The attacker receives replica records. No original patient records are returned.
                         </div>
 
                         {breachResponse.decoy_records ? (
                           <div style={{ display: 'grid', gap: 12 }}>
                             <div style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 700 }}>
-                              📦 Exfiltrated Synthetic Twin Decoy Records ({breachResponse.decoy_records.length} Decoys):
+                              📦 Patient Records Returned ({breachResponse.decoy_records.length}):
                             </div>
                             {breachResponse.decoy_records.map((rec: any, idx: number) => (
                               <div key={idx} style={{ padding: 14, background: 'rgba(168, 85, 247, 0.05)', borderRadius: 12, border: '1px solid rgba(168, 85, 247, 0.3)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '0.8rem' }}>
-                                <div><strong style={{ color: '#94a3b8' }}>Synthetic Patient ID:</strong> <span style={{ color: '#c084fc', fontWeight: 700 }}>{rec.patient_id ?? rec.synthetic_patient_id ?? 'UNRESOLVED_ATTACK_TARGET'}</span></div>
-                                <div><strong style={{ color: '#94a3b8' }}>Synthetic Decoy Name:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{rec.name}</span></div>
-                                <div><strong style={{ color: '#94a3b8' }}>Decoy Disease:</strong> <span style={{ color: '#c084fc', fontWeight: 600 }}>{rec.disease}</span></div>
-                                <div><strong style={{ color: '#94a3b8' }}>Decoy Diagnosis:</strong> <span style={{ color: '#cbd5e1' }}>{rec.diagnosis}</span></div>
-                                <div><strong style={{ color: '#94a3b8' }}>Synthetic Aadhaar:</strong> <span style={{ color: '#4ade80' }}>{rec.aadhaar_number}</span></div>
-                                <div><strong style={{ color: '#94a3b8' }}>Synthetic Phone:</strong> <span style={{ color: '#94a3b8' }}>{rec.phone_number}</span></div>
-                                <div><strong style={{ color: '#94a3b8' }}>Synthetic Email:</strong> <span style={{ color: '#38bdf8' }}>{rec.email}</span></div>
-                                <div><strong style={{ color: '#94a3b8' }}>Location Address:</strong> <span style={{ color: '#94a3b8' }}>{rec.address}</span></div>
-                                <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: '#94a3b8' }}>Prescriptions:</strong> <span style={{ color: '#38bdf8' }}>{Array.isArray(rec.medicines) ? rec.medicines.join(', ') : rec.medicines}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Patient ID:</strong> <span style={{ color: '#c084fc', fontWeight: 700 }}>{formatHackerPatientId(rec.patient_id, rec.synthetic_patient_id)}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Patient Name:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{rec.name}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Disease:</strong> <span style={{ color: '#c084fc', fontWeight: 600 }}>{rec.disease}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Diagnosis:</strong> <span style={{ color: '#cbd5e1' }}>{rec.diagnosis}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Aadhaar Number:</strong> <span style={{ color: '#4ade80' }}>{rec.aadhaar_number}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Mobile Number:</strong> <span style={{ color: '#94a3b8' }}>{rec.phone_number}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Email:</strong> <span style={{ color: '#38bdf8' }}>{rec.email}</span></div>
+                                <div><strong style={{ color: '#94a3b8' }}>Location Address:</strong> <span style={{ color: '#94a3b8' }}>{formatLocation(rec.address)}</span></div>
+                                <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: '#94a3b8' }}>Prescriptions:</strong> <span style={{ color: '#38bdf8' }}>{formatPrescriptions(rec.medicines, rec.treatment_pattern)}</span></div>
                               </div>
                             ))}
                           </div>
                         ) : (
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: '0.85rem', padding: 14, background: 'rgba(168, 85, 247, 0.05)', borderRadius: 12, border: '1px solid rgba(168, 85, 247, 0.3)' }}>
-                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Synthetic Patient ID:</strong> <span style={{ color: '#c084fc', fontWeight: 700 }}>{breachResponse.patient_id ?? breachResponse.synthetic_patient_id ?? 'UNRESOLVED_ATTACK_TARGET'}</span></p>
-                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Synthetic Decoy Name:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{breachResponse.name}</span></p>
-                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Decoy Disease:</strong> <span style={{ color: '#c084fc', fontWeight: 600 }}>{breachResponse.disease}</span></p>
-                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Decoy Diagnosis:</strong> <span style={{ color: '#cbd5e1' }}>{breachResponse.diagnosis}</span></p>
-                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Synthetic Aadhaar:</strong> <span style={{ color: '#4ade80' }}>{breachResponse.aadhaar_number}</span></p>
-                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Synthetic Phone:</strong> <span style={{ color: '#94a3b8' }}>{breachResponse.phone_number}</span></p>
-                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Synthetic Email:</strong> <span style={{ color: '#38bdf8' }}>{breachResponse.email}</span></p>
-                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Location Address:</strong> <span style={{ color: '#94a3b8' }}>{breachResponse.address}</span></p>
-                            <p style={{ margin: 0, gridColumn: '1 / -1' }}><strong style={{ color: '#94a3b8' }}>Prescriptions:</strong> <span style={{ color: '#38bdf8' }}>{Array.isArray(breachResponse.medicines) ? breachResponse.medicines.join(', ') : breachResponse.medicines}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Patient ID:</strong> <span style={{ color: '#c084fc', fontWeight: 700 }}>{formatHackerPatientId(breachResponse.patient_id, breachResponse.synthetic_patient_id)}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Patient Name:</strong> <span style={{ color: '#f8fafc', fontWeight: 700 }}>{breachResponse.name}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Disease:</strong> <span style={{ color: '#c084fc', fontWeight: 600 }}>{breachResponse.disease}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Diagnosis:</strong> <span style={{ color: '#cbd5e1' }}>{breachResponse.diagnosis}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Aadhaar Number:</strong> <span style={{ color: '#4ade80' }}>{breachResponse.aadhaar_number}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Mobile Number:</strong> <span style={{ color: '#94a3b8' }}>{breachResponse.phone_number}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Email:</strong> <span style={{ color: '#38bdf8' }}>{breachResponse.email}</span></p>
+                            <p style={{ margin: 0 }}><strong style={{ color: '#94a3b8' }}>Location Address:</strong> <span style={{ color: '#94a3b8' }}>{formatLocation(breachResponse.address)}</span></p>
+                            <p style={{ margin: 0, gridColumn: '1 / -1' }}><strong style={{ color: '#94a3b8' }}>Prescriptions:</strong> <span style={{ color: '#38bdf8' }}>{formatPrescriptions(breachResponse.medicines, (breachResponse as any).treatment_pattern)}</span></p>
                           </div>
                         )}
                       </div>

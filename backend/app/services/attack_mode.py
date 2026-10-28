@@ -16,6 +16,8 @@ def execute_attack_mode(
     hacker_id: str | None = None,
     target_patient_id: str | None = None,
     requested_payload: dict | None = None,
+    ip_address: str = "127.0.0.1",
+    user_agent: str = "",
 ) -> dict[str, Any]:
     effective_hacker = hacker_id or "hacker"
     effective_target = target_patient_id or "ALL_PATIENTS"
@@ -29,20 +31,20 @@ def execute_attack_mode(
     }
     score = threat_scores.get(mode, 88)
 
-    # Publish real-time hacker attack alert & burglar alarm sound to Admin/User dashboard
-    publish_event("hacker_attack_alert", {
-        "session_id": session_id,
-        "hacker_id": effective_hacker,
-        "action": f"ATTACK_MODE: {mode.upper()}",
-        "details": details or f"Hacker initiated {mode} attack vector probe",
-        "target_patient_id": effective_target,
-        "target_patient_name": f"Target Scope: {effective_target}",
-        "data_type": "Aadhaar Card, Phone, Address, Clinical Diagnosis & Medicines",
-        "watermark_id": "UNRESOLVED_ATTACK_TARGET",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "threat_score": score,
-        "is_high_risk": True,
-    })
+    if mode not in {"exfiltrate_synthetic", "exfiltrate_original"}:
+        publish_event("hacker_attack_alert", {
+            "session_id": session_id,
+            "hacker_id": effective_hacker,
+            "action": f"ATTACK_MODE: {mode.upper()}",
+            "details": details or f"Hacker initiated {mode} attack vector probe",
+            "target_patient_id": effective_target,
+            "target_patient_name": f"Target Scope: {effective_target}",
+            "data_type": "Aadhaar Card, Phone, Address, Clinical Diagnosis & Medicines",
+            "watermark_id": "UNRESOLVED_ATTACK_TARGET",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "threat_score": score,
+            "is_high_risk": True,
+        })
 
     if mode == "probe_api":
         event = record_attack(session_id, mode, details or "Probe API surfaces for exposed EHR endpoints")
@@ -82,6 +84,8 @@ def execute_attack_mode(
             query=details or "Exfiltrate patient record",
             target_patient_id=effective_target,
             requested_payload=requested_payload or {},
+            ip_address=ip_address,
+            user_agent=user_agent,
         )
         record_audit("system", mode, f"session={session_id}; target={effective_target}")
         return {

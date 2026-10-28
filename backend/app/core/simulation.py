@@ -2,6 +2,7 @@ from ipaddress import ip_address
 from urllib.parse import urlparse
 
 from fastapi import HTTPException, status
+from starlette.requests import Request
 
 from app.core.settings import get_settings
 
@@ -9,15 +10,30 @@ from app.core.settings import get_settings
 LOOPBACK_HOSTS = {"localhost", "127.0.0.1", "::1"}
 
 
-def simulation_enabled() -> bool:
-    return get_settings().app_env.lower() in {"development", "test", "testing"}
+def simulation_enabled(hostname: str | None = None) -> bool:
+    settings = get_settings()
+    environment = settings.app_env.lower()
+    if environment in {"development", "test", "testing"}:
+        return True
+    if environment != "demo" or not settings.simulation_demo_enabled or not hostname:
+        return False
+
+    allowed_hosts = {
+        item.strip().lower().rstrip(".")
+        for item in settings.simulation_allowed_hosts.split(",")
+        if item.strip()
+    }
+    return hostname.lower().rstrip(".") in allowed_hosts
 
 
-def require_simulation_enabled() -> None:
-    if not simulation_enabled():
+def require_simulation_enabled(request: Request) -> None:
+    settings = get_settings()
+    is_demo = settings.app_env.lower() == "demo"
+    is_secure_demo_origin = request.url.scheme == "https" and request.url.port in {None, 443}
+    if not simulation_enabled(request.url.hostname) or (is_demo and not is_secure_demo_origin):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Development security simulation is disabled",
+            detail="Security simulation is disabled for this environment, host, or transport",
         )
 
 

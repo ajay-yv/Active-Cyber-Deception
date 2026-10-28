@@ -432,6 +432,10 @@ def _ensure_forensic_records_schema() -> None:
             connection.execute(text("ALTER TABLE forensic_records ADD COLUMN attack_probability FLOAT DEFAULT 0.0"))
         if "records_returned" not in columns:
             connection.execute(text("ALTER TABLE forensic_records ADD COLUMN records_returned INTEGER DEFAULT 0"))
+        if "records_requested" not in columns:
+            connection.execute(text("ALTER TABLE forensic_records ADD COLUMN records_requested INTEGER NOT NULL DEFAULT 0"))
+        if "requested_fields" not in columns:
+            connection.execute(text("ALTER TABLE forensic_records ADD COLUMN requested_fields TEXT NOT NULL DEFAULT '[]'"))
         if "blocked_status" not in columns:
             connection.execute(text("ALTER TABLE forensic_records ADD COLUMN blocked_status INTEGER NOT NULL DEFAULT 0"))
 
@@ -450,6 +454,5 @@ def _ensure_default_patients() -> None:
     except Exception as exc:
         import logging
         logging.getLogger(__name__).warning("Bootstrap patient check error: %s", exc)
-
 
 

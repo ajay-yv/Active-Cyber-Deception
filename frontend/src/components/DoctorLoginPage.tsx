@@ -195,7 +195,7 @@ export const DoctorLoginPage: React.FC<DoctorLoginPageProps> = ({ onLogin, onCan
             Doctor Clinical Portal Login
           </h2>
           <p style={{ margin: '8px auto 0', color: '#64748b', fontSize: '0.9rem', maxWidth: 500, lineHeight: 1.5 }}>
-            St. Jude Health System • Select doctor option and enter your password to unlock your isolated patient records.
+            Select doctor option and enter your password to unlock your isolated patient records.
           </p>
         </div>
 
