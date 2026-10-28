@@ -421,6 +421,82 @@ def test_administrator_can_reset_using_new_mobile_after_two_factor_verification(
             session.commit()
 
 
+def test_admin_recovery_can_verify_phone_shared_with_another_account(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    username = f"admin-shared-phone-{uuid4().hex[:12]}"
+    patient_username = f"patient-shared-phone-{uuid4().hex[:12]}"
+    email = f"{username}@stjude.org"
+    mobile = f"+919{uuid4().int % 10**9:09d}"
+    user_repository.create(UserRecord(
+        username=username,
+        password_hash=hash_password("old-password"),
+        role="administrator",
+        full_name="Admin Shared Phone Recovery Test",
+        email=email,
+    ))
+    user_repository.create(UserRecord(
+        username=patient_username,
+        password_hash=hash_password("patient-password"),
+        role="patient",
+        full_name="Patient with Shared Phone",
+        phone_number=mobile,
+    ))
+    email_deliveries: list[tuple[str, str]] = []
+    mobile_deliveries: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(
+            twilio_account_sid="AC-test",
+            twilio_auth_token="test-token",
+            twilio_from_number="+15005550006",
+            smtp_user="smtp-test",
+            smtp_pass="smtp-test-password",
+        ),
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_email",
+        lambda destination, otp, *_: email_deliveries.append((destination, otp)) or True,
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_sms",
+        lambda destination, otp: mobile_deliveries.append((destination, otp)) or True,
+    )
+
+    try:
+        request = client.post(
+            "/api/auth/request-password-reset",
+            json={"email": mobile, "username": username},
+        )
+        assert request.status_code == 200, request.text
+        assert {destination for destination, _ in email_deliveries} == {email}
+        assert {destination for destination, _ in mobile_deliveries} == {mobile}
+
+        reset = client.post(
+            "/api/auth/verify-reset-otp",
+            json={
+                "email": mobile,
+                "username": username,
+                "otp": mobile_deliveries[0][1],
+                "registered_email_otp": email_deliveries[0][1],
+                "new_password": "updated-admin-password-123",
+            },
+        )
+        assert reset.status_code == 200, reset.text
+        assert user_repository.get_by_phone_number(mobile, username).username == username
+        assert user_repository.get_by_phone_number(mobile, patient_username).username == patient_username
+    finally:
+        password_reset_store.clear_reset_otps(username)
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(
+                UserAccount.username.in_([username, patient_username])
+            ).delete(synchronize_session=False)
+            session.commit()
+
+
 def test_administrator_can_verify_new_email_and_update_account_email(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

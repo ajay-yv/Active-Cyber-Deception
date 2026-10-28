@@ -120,11 +120,18 @@ class UserRepository:
             session.commit()
         return True
 
-    def get_by_email(self, email: str) -> UserRecord | None:
+    def get_by_email(
+        self,
+        email: str,
+        username: str | None = None,
+    ) -> UserRecord | None:
         with SecuritySessionLocal() as session:
-            row = session.query(UserAccount).filter(
+            query = session.query(UserAccount).filter(
                 func.lower(func.trim(UserAccount.email)) == email.strip().lower()
-            ).first()
+            )
+            if username:
+                query = query.filter(UserAccount.username == username)
+            row = query.first()
             if row is None:
                 return None
             return UserRecord(
@@ -138,12 +145,19 @@ class UserRepository:
                 phone_number=getattr(row, "phone_number", None),
             )
 
-    def get_by_phone_number(self, phone_number: str) -> UserRecord | None:
+    def get_by_phone_number(
+        self,
+        phone_number: str,
+        username: str | None = None,
+    ) -> UserRecord | None:
         normalized_phone = _normalize_phone_number(phone_number)
         if not normalized_phone:
             return None
         with SecuritySessionLocal() as session:
-            rows = session.query(UserAccount).filter(UserAccount.phone_number.isnot(None)).all()
+            query = session.query(UserAccount).filter(UserAccount.phone_number.isnot(None))
+            if username:
+                query = query.filter(UserAccount.username == username)
+            rows = query.all()
             matches = [
                 row for row in rows
                 if _normalize_phone_number(row.phone_number) == normalized_phone

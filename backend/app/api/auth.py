@@ -405,20 +405,20 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
         if payload.username
         else None
     )
-    matching_contact_account = (
-        user_repository.get_by_email(input_email)
-        if "@" in input_email
-        else user_repository.get_by_phone_number(input_email)
-    )
-    if (
-        selected_account
-        and selected_account.role == "administrator"
-        and matching_contact_account
-        and matching_contact_account.username != selected_account.username
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="That email address or mobile number is linked to a different account.",
+    if selected_account and selected_account.role == "administrator":
+        matching_contact_account = (
+            user_repository.get_by_email(input_email, selected_account.username)
+            if "@" in input_email
+            else user_repository.get_by_phone_number(
+                input_email,
+                selected_account.username,
+            )
+        )
+    else:
+        matching_contact_account = (
+            user_repository.get_by_email(input_email)
+            if "@" in input_email
+            else user_repository.get_by_phone_number(input_email)
         )
 
     is_new_admin_contact = bool(
@@ -460,12 +460,6 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Enter a valid new recovery email address.",
                 )
-            existing_email_account = user_repository.get_by_email(recovery_email)
-            if existing_email_account and existing_email_account.username != user_record.username:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="That email address is already registered to another account.",
-                )
             if user_record.email and recovery_email == user_record.email.strip().lower():
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -487,16 +481,6 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Enter a valid mobile number with its country code.",
-            )
-        existing_phone_account = (
-            user_repository.get_by_phone_number(recovery_phone)
-            if recovery_phone
-            else None
-        )
-        if existing_phone_account and existing_phone_account.username != user_record.username:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="That mobile number is already registered to another account.",
             )
         settings = get_settings()
         missing_sms_settings = [
