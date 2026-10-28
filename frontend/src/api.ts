@@ -1600,23 +1600,21 @@ export async function changeEmail(newEmail: string, token: string): Promise<{ st
 export async function requestPasswordReset(
   email: string,
   username?: string,
-  recoveryEmail?: string,
-  recoveryPhone?: string,
-): Promise<{ status: string; message: string }> {
+): Promise<{ status: string; message: string; requiresRegisteredEmailOtp: boolean }> {
   const response = await safeFetch(`${apiBaseUrl}/api/auth/request-password-reset`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      email,
-      username,
-      recovery_email: recoveryEmail,
-      recovery_phone: recoveryPhone,
-    }),
+    body: JSON.stringify({ email, username }),
   })
   const responseBody = await response.text()
-  let data: { status?: unknown; message?: unknown; detail?: unknown } = {}
+  let data: {
+    status?: unknown
+    message?: unknown
+    detail?: unknown
+    requires_registered_email_otp?: unknown
+  } = {}
   try {
     data = JSON.parse(responseBody) as typeof data
   } catch {
@@ -1629,6 +1627,7 @@ export async function requestPasswordReset(
   return {
     status: String(data.status),
     message: typeof data.message === 'string' ? data.message : 'Verification code sent.',
+    requiresRegisteredEmailOtp: data.requires_registered_email_otp === true,
   }
 }
 
@@ -1641,6 +1640,7 @@ export async function verifyResetOtp(
   recoveryEmailOtp?: string,
   recoveryPhone?: string,
   mobileOtp?: string,
+  registeredEmailOtp?: string,
 ): Promise<{ status: string; message: string }> {
   const response = await safeFetch(`${apiBaseUrl}/api/auth/verify-reset-otp`, {
     method: 'POST',
@@ -1656,6 +1656,7 @@ export async function verifyResetOtp(
       recovery_email_otp: recoveryEmailOtp,
       recovery_phone: recoveryPhone,
       mobile_otp: mobileOtp,
+      registered_email_otp: registeredEmailOtp,
     }),
   })
   const data = await response.json().catch(() => ({})) as { status?: unknown; message?: unknown; detail?: unknown }

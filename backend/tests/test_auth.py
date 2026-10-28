@@ -324,7 +324,7 @@ def test_administrator_mobile_reset_requires_preconfigured_recovery_phone() -> N
             json={"email": "+919999999999", "username": username},
         )
         assert response.status_code == 503
-        assert "ADMIN_RECOVERY_PHONE" in response.json()["detail"]
+        assert "TWILIO_ACCOUNT_SID" in response.json()["detail"]
     finally:
         with SecuritySessionLocal() as session:
             session.query(UserAccount).filter(UserAccount.username == username).delete()
@@ -372,28 +372,37 @@ def test_administrator_can_reset_using_new_mobile_after_two_factor_verification(
         request = client.post(
             "/api/auth/request-password-reset",
             json={
-                "email": email,
+                "email": mobile,
                 "username": username,
-                "recovery_phone": mobile,
             },
         )
         assert request.status_code == 200, request.text
+        assert request.json()["requires_registered_email_otp"] is True
         assert email_deliveries[0][0] == email
         assert mobile_deliveries[0][0] == mobile
 
         payload = {
-            "email": email,
+            "email": mobile,
             "username": username,
-            "recovery_phone": mobile,
-            "otp": email_deliveries[0][1],
-            "mobile_otp": mobile_deliveries[0][1],
+            "otp": mobile_deliveries[0][1],
+            "registered_email_otp": email_deliveries[0][1],
             "new_password": "updated-admin-password-123",
         }
         wrong_mobile_code = client.post(
             "/api/auth/verify-reset-otp",
-            json={**payload, "mobile_otp": "000000" if mobile_deliveries[0][1] != "000000" else "000001"},
+            json={**payload, "otp": "000000" if mobile_deliveries[0][1] != "000000" else "000001"},
         )
         assert wrong_mobile_code.status_code == 400
+        wrong_registered_email_code = client.post(
+            "/api/auth/verify-reset-otp",
+            json={
+                **payload,
+                "registered_email_otp": (
+                    "000000" if email_deliveries[0][1] != "000000" else "000001"
+                ),
+            },
+        )
+        assert wrong_registered_email_code.status_code == 400
 
         reset = client.post("/api/auth/verify-reset-otp", json=payload)
         assert reset.status_code == 200, reset.text
@@ -446,23 +455,22 @@ def test_administrator_can_verify_new_email_and_update_account_email(
         request = client.post(
             "/api/auth/request-password-reset",
             json={
-                "email": registered_email,
+                "email": recovery_email,
                 "username": username,
-                "recovery_email": recovery_email,
             },
         )
         assert request.status_code == 200, request.text
+        assert request.json()["requires_registered_email_otp"] is True
         assert {destination for destination, _ in deliveries} == {
             registered_email,
             recovery_email,
         }
 
         payload = {
-            "email": registered_email,
+            "email": recovery_email,
             "username": username,
-            "recovery_email": recovery_email,
-            "otp": next(code for destination, code in deliveries if destination == registered_email),
-            "recovery_email_otp": next(code for destination, code in deliveries if destination == recovery_email),
+            "otp": next(code for destination, code in deliveries if destination == recovery_email),
+            "registered_email_otp": next(code for destination, code in deliveries if destination == registered_email),
             "new_password": "updated-admin-password-123",
         }
         reset = client.post("/api/auth/verify-reset-otp", json=payload)
@@ -480,7 +488,7 @@ def test_administrator_can_verify_new_email_and_update_account_email(
             session.commit()
 
 
-def test_new_admin_contact_requires_registered_email_verification(
+def test_new_admin_mobile_requires_sms_configuration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     username = f"admin-contact-{uuid4().hex[:12]}"
@@ -506,13 +514,12 @@ def test_new_admin_contact_requires_registered_email_verification(
         response = client.post(
             "/api/auth/request-password-reset",
             json={
-                "email": f"{uuid4().hex[:12]}@example.com",
+                "email": "+919876543210",
                 "username": username,
-                "recovery_phone": "+919876543210",
             },
         )
-        assert response.status_code == 400
-        assert "ADMIN_RECOVERY_EMAIL" in response.json()["detail"]
+        assert response.status_code == 503
+        assert "TWILIO_ACCOUNT_SID" in response.json()["detail"]
     finally:
         password_reset_store.clear_reset_otps(username)
         with SecuritySessionLocal() as session:

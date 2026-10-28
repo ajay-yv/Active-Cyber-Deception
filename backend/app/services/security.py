@@ -133,6 +133,21 @@ class PasswordResetStore:
         del self._admin_reset_otp_store[key]
         return True
 
+    def has_admin_reset_for_contact(
+        self,
+        username: str,
+        email: str | None,
+        phone_number: str | None,
+    ) -> bool:
+        value = self._admin_reset_otp_store.get(self._key("admin_reset", username))
+        if value is None:
+            return False
+        _, _, stored_email, stored_phone, expiry, _ = value
+        if time.time() > expiry:
+            del self._admin_reset_otp_store[self._key("admin_reset", username)]
+            return False
+        return stored_email == email and stored_phone == phone_number
+
     def set_email_verification_otp(self, email: str, otp: str) -> None:
         self._otp_store[self._key('verify_email', email)] = (otp, time.time() + self.expiration_seconds)
 

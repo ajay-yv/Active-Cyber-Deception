@@ -419,11 +419,9 @@ export default function AppUser() {
   const [forgotStep, setForgotStep] = useState<'step1' | 'step2' | 'success'>('step1')
   const [forgotUsername, setForgotUsername] = useState('admin')
   const [forgotEmail, setForgotEmail] = useState('')
-  const [forgotRecoveryEmail, setForgotRecoveryEmail] = useState('')
-  const [forgotRecoveryEmailOtp, setForgotRecoveryEmailOtp] = useState('')
-  const [forgotRecoveryPhone, setForgotRecoveryPhone] = useState('')
+  const [forgotRegisteredEmailOtp, setForgotRegisteredEmailOtp] = useState('')
+  const [forgotRequiresRegisteredEmailOtp, setForgotRequiresRegisteredEmailOtp] = useState(false)
   const [forgotOtp, setForgotOtp] = useState('')
-  const [forgotMobileOtp, setForgotMobileOtp] = useState('')
   const [forgotNewPassword, setForgotNewPassword] = useState('')
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState('')
   const [forgotStatus, setForgotStatus] = useState('')
@@ -696,11 +694,9 @@ export default function AppUser() {
   function handleForgotUsernameChange(selectedUser: string) {
     setForgotUsername(selectedUser)
     setForgotEmail('')
-    setForgotRecoveryEmail('')
-    setForgotRecoveryEmailOtp('')
-    setForgotRecoveryPhone('')
+    setForgotRegisteredEmailOtp('')
+    setForgotRequiresRegisteredEmailOtp(false)
     setForgotOtp('')
-    setForgotMobileOtp('')
   }
 
   async function handleCheckLogs() {
@@ -1312,16 +1308,11 @@ export default function AppUser() {
     }
     setIsForgotSubmitting(true)
     try {
-      const res = await requestPasswordReset(
-        target,
-        forgotUsername,
-        forgotRecoveryEmail.trim() || undefined,
-        forgotRecoveryPhone.trim() || undefined,
-      )
+      const res = await requestPasswordReset(target, forgotUsername)
       setForgotStatus(res.message || `Verification OTP code sent to ${target}! Check your email inbox.`)
       setForgotOtp('') // Keep input empty so user enters the code received in their real email
-      setForgotRecoveryEmailOtp('')
-      setForgotMobileOtp('')
+      setForgotRegisteredEmailOtp('')
+      setForgotRequiresRegisteredEmailOtp(res.requiresRegisteredEmailOtp)
       setForgotStep('step2')
     } catch (err) {
       setForgotError(err instanceof Error ? err.message : String(err))
@@ -1346,12 +1337,8 @@ export default function AppUser() {
       setForgotError('Enter the 6-digit code sent to the registered email.')
       return
     }
-    if (forgotRecoveryPhone.trim() && !/^\d{6}$/.test(forgotMobileOtp.trim())) {
-      setForgotError('Enter the 6-digit code sent to the new mobile number.')
-      return
-    }
-    if (forgotRecoveryEmail.trim() && !/^\d{6}$/.test(forgotRecoveryEmailOtp.trim())) {
-      setForgotError('Enter the 6-digit code sent to the new email address.')
+    if (forgotRequiresRegisteredEmailOtp && !/^\d{6}$/.test(forgotRegisteredEmailOtp.trim())) {
+      setForgotError('Enter the 6-digit code sent to the registered account email.')
       return
     }
 
@@ -1373,10 +1360,11 @@ export default function AppUser() {
         forgotOtp.trim(),
         forgotNewPassword,
         forgotUsername,
-        forgotRecoveryEmail.trim() || undefined,
-        forgotRecoveryEmailOtp.trim() || undefined,
-        forgotRecoveryPhone.trim() || undefined,
-        forgotMobileOtp.trim() || undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        forgotRequiresRegisteredEmailOtp ? forgotRegisteredEmailOtp.trim() : undefined,
       )
       setForgotStatus(res.message || 'Password updated successfully!')
       setForgotStep('success')
@@ -1703,11 +1691,9 @@ export default function AppUser() {
                         onClick={() => {
                           setForgotUsername('admin')
                           setForgotEmail('')
-                          setForgotRecoveryEmail('')
-                          setForgotRecoveryEmailOtp('')
-                          setForgotRecoveryPhone('')
+                          setForgotRegisteredEmailOtp('')
+                          setForgotRequiresRegisteredEmailOtp(false)
                           setForgotOtp('')
-                          setForgotMobileOtp('')
                           setForgotStep('step1')
                           setForgotStatus('')
                           setForgotError('')
@@ -4675,46 +4661,17 @@ export default function AppUser() {
                   </label>
 
                   <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
-                    {forgotUsername === 'admin' && (forgotRecoveryEmail.trim() || forgotRecoveryPhone.trim())
-                      ? 'Registered Account Email'
-                      : 'Registered Email or Mobile Number'}
+                    Email Address or Mobile Number
                     <input
                       required
                       type="text"
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
                       autoComplete="email tel"
-                      placeholder="Email or mobile registered to this account"
+                      placeholder="Enter your email address or mobile number"
                       style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }}
                     />
                   </label>
-
-                  {forgotUsername === 'admin' ? (
-                    <>
-                    <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
-                      New Email Address (optional)
-                      <input
-                        type="email"
-                        value={forgotRecoveryEmail}
-                        onChange={(e) => setForgotRecoveryEmail(e.target.value)}
-                        autoComplete="email"
-                        placeholder="name@example.com"
-                        style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }}
-                      />
-                    </label>
-                    <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
-                      New Mobile Number (optional)
-                      <input
-                        type="tel"
-                        value={forgotRecoveryPhone}
-                        onChange={(e) => setForgotRecoveryPhone(e.target.value)}
-                        autoComplete="tel"
-                        placeholder="e.g. +919876543210"
-                        style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }}
-                      />
-                    </label>
-                    </>
-                  ) : null}
 
                   {forgotError ? <p style={{ color: '#dc2626', fontSize: '0.85rem', margin: 0 }}>{forgotError}</p> : null}
 
@@ -4737,16 +4694,12 @@ export default function AppUser() {
                 </span>
                 <h2 style={{ margin: '4px 0 6px', fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>Enter OTP & Set New Password</h2>
                 <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 20px', lineHeight: 1.5 }}>
-                  {forgotRecoveryPhone.trim() || forgotRecoveryEmail.trim()
-                    ? <>Enter the code sent to the registered account email and each new recovery contact.</>
-                    : <>A verification code was sent to <strong>{forgotEmail}</strong>. Please enter it below to reset your password.</>}
+                  Enter the code sent to <strong>{forgotEmail}</strong>.
                 </p>
 
                 <form onSubmit={handleVerifyOtpAndReset} style={{ display: 'grid', gap: 14 }}>
                   <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
-                    {forgotRecoveryPhone.trim() || forgotRecoveryEmail.trim()
-                      ? 'Registered Email OTP Code *'
-                      : 'Email or Mobile OTP Code *'}
+                    Email or Mobile OTP Code *
                     <input
                       required
                       type="text"
@@ -4761,35 +4714,19 @@ export default function AppUser() {
                     />
                   </label>
 
-                  {forgotRecoveryEmail.trim() ? (
+                  {forgotRequiresRegisteredEmailOtp ? (
                     <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
-                      New Email OTP Code *
+                      Registered Account Email OTP Code *
                       <input
                         required
                         type="text"
                         inputMode="numeric"
+                        autoComplete="one-time-code"
                         pattern="[0-9]{6}"
                         maxLength={6}
-                        value={forgotRecoveryEmailOtp}
-                        onChange={(e) => setForgotRecoveryEmailOtp(e.target.value)}
-                        placeholder="6-digit email code"
-                        style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', letterSpacing: '0.15em', fontWeight: 700 }}
-                      />
-                    </label>
-                  ) : null}
-
-                  {forgotRecoveryPhone.trim() ? (
-                    <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
-                      Mobile OTP Code *
-                      <input
-                        required
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]{6}"
-                        maxLength={6}
-                        value={forgotMobileOtp}
-                        onChange={(e) => setForgotMobileOtp(e.target.value)}
-                        placeholder="6-digit mobile code"
+                        value={forgotRegisteredEmailOtp}
+                        onChange={(e) => setForgotRegisteredEmailOtp(e.target.value)}
+                        placeholder="6-digit code"
                         style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', letterSpacing: '0.15em', fontWeight: 700 }}
                       />
                     </label>
