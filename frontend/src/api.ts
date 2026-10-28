@@ -1597,13 +1597,17 @@ export async function changeEmail(newEmail: string, token: string): Promise<{ st
   return { status: 'success', message: 'Email address updated successfully in secure local enclave!' }
 }
 
-export async function requestPasswordReset(email: string, username?: string): Promise<{ status: string; message: string }> {
+export async function requestPasswordReset(
+  email: string,
+  username?: string,
+  recoveryPhone?: string,
+): Promise<{ status: string; message: string }> {
   const response = await safeFetch(`${apiBaseUrl}/api/auth/request-password-reset`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, username }),
+    body: JSON.stringify({ email, username, recovery_phone: recoveryPhone }),
   })
   const responseBody = await response.text()
   let data: { status?: unknown; message?: unknown; detail?: unknown } = {}
@@ -1627,13 +1631,22 @@ export async function verifyResetOtp(
   otp: string,
   newPassword: string,
   username?: string,
+  recoveryPhone?: string,
+  mobileOtp?: string,
 ): Promise<{ status: string; message: string }> {
   const response = await safeFetch(`${apiBaseUrl}/api/auth/verify-reset-otp`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, otp, new_password: newPassword, username }),
+    body: JSON.stringify({
+      email,
+      otp,
+      new_password: newPassword,
+      username,
+      recovery_phone: recoveryPhone,
+      mobile_otp: mobileOtp,
+    }),
   })
   const data = await response.json().catch(() => ({})) as { status?: unknown; message?: unknown; detail?: unknown }
   if (!response.ok || (data.status !== 'success' && data.status !== 'ok')) {

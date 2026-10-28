@@ -300,6 +300,7 @@ class UpdateEmailRequest(BaseModel):
 class PasswordResetRequest(BaseModel):
     email: str = Field(min_length=1, max_length=255)
     username: str | None = None
+    recovery_phone: str | None = Field(default=None, min_length=10, max_length=20)
 
 
 
@@ -317,6 +318,8 @@ class VerifyOtpRequest(BaseModel):
     otp: str = Field(pattern=r"^\d{6}$")
     new_password: str = Field(min_length=8, max_length=128)
     username: str | None = None
+    recovery_phone: str | None = Field(default=None, min_length=10, max_length=20)
+    mobile_otp: str | None = Field(default=None, pattern=r"^\d{6}$")
 
 
 def _find_password_reset_account(identifier: str, selected_username: str | None = None) -> UserRecord:
@@ -390,7 +393,80 @@ def change_email(payload: UpdateEmailRequest, user: User = Depends(get_current_u
 @router.post("/request-password-reset")
 def request_password_reset(payload: PasswordResetRequest) -> dict:
     input_email = payload.email.strip()
-    user_record = _find_password_reset_account(input_email, payload.username)
+    if payload.recovery_phone and payload.username:
+        user_record = user_repository.get_by_username(payload.username.strip())
+        if user_record is None or user_record.role != "administrator":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Administrator account was not found.",
+            )
+        if user_record.is_blocked:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This account is blocked and cannot reset its password.",
+            )
+    else:
+        user_record = _find_password_reset_account(input_email, payload.username)
+    if payload.recovery_phone:
+        digits = "".join(character for character in payload.recovery_phone if character.isdigit())
+        if not 10 <= len(digits) <= 15:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Enter a valid mobile number with its country code.",
+            )
+        existing_phone_account = user_repository.get_by_phone_number(payload.recovery_phone)
+        if existing_phone_account and existing_phone_account.username != user_record.username:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="That mobile number is already registered to another account.",
+            )
+        settings = get_settings()
+        missing_sms_settings = [
+            setting
+            for setting, value in (
+                ("TWILIO_ACCOUNT_SID", settings.twilio_account_sid),
+                ("TWILIO_AUTH_TOKEN", settings.twilio_auth_token),
+                ("TWILIO_FROM_NUMBER", settings.twilio_from_number),
+            )
+            if not value.strip()
+        ]
+        if missing_sms_settings:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"SMS delivery is not configured. The administrator must configure: {', '.join(missing_sms_settings)}.",
+            )
+        if not settings.smtp_user.strip() or not settings.smtp_pass.strip():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Email verification is not configured. The administrator must configure SMTP before resetting the administrator password to a new mobile number.",
+            )
+        if not user_record.email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No registered email address is available to verify this administrator account.",
+            )
+        email_otp = f"{secrets.randbelow(1_000_000):06d}"
+        mobile_otp = f"{secrets.randbelow(1_000_000):06d}"
+        email_delivered = send_otp_email(user_record.email, email_otp, user_record.full_name)
+        mobile_delivered = send_otp_sms(payload.recovery_phone, mobile_otp)
+        if not email_delivered or not mobile_delivered:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Could not deliver both verification codes. Check SMTP and Twilio configuration, sender status, and destination-country permissions.",
+            )
+        password_reset_store.clear_reset_otps(user_record.username)
+        password_reset_store.set_admin_reset_otps(
+            user_record.username,
+            email_otp,
+            mobile_otp,
+            payload.recovery_phone,
+        )
+        record_audit(user_record.username, "request_password_reset", "dual verification codes sent")
+        return {
+            "status": "success",
+            "message": "Verification codes sent to the registered email and the new mobile number. Both are required to reset the password.",
+        }
+
     otp = f"{secrets.randbelow(1_000_000):06d}"
 
     if "@" in input_email:
@@ -436,6 +512,7 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
             ),
         )
 
+    password_reset_store.clear_reset_otps(user_record.username)
     password_reset_store.set_otp(user_record.username, otp)
     record_audit(user_record.username, "request_password_reset", f"password reset OTP sent by {channel}")
 
@@ -473,14 +550,54 @@ def verify_email_otp(payload: VerifyEmailOtpRequest, user: User = Depends(get_cu
 @router.post("/verify-reset-otp")
 def verify_reset_otp(payload: VerifyOtpRequest) -> dict:
     input_identifier = payload.email.strip()
-    user_record = _find_password_reset_account(input_identifier, payload.username)
-    if not password_reset_store.verify_reset_otp(user_record.username, payload.otp):
+    if payload.recovery_phone:
+        user_record = (
+            user_repository.get_by_username(payload.username.strip())
+            if payload.username
+            else None
+        )
+        if user_record is None or user_record.role != "administrator":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Administrator account was not found.",
+            )
+        if user_record.is_blocked:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This account is blocked and cannot reset its password.",
+            )
+        if user_record.role != "administrator" or not payload.mobile_otp:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Both verification codes are required for administrator recovery to a new mobile number.",
+            )
+        otp_valid = password_reset_store.verify_admin_reset_otps(
+            user_record.username,
+            payload.otp,
+            payload.mobile_otp,
+            payload.recovery_phone,
+        )
+    else:
+        user_record = _find_password_reset_account(input_identifier, payload.username)
+        otp_valid = password_reset_store.verify_reset_otp(user_record.username, payload.otp)
+    if not otp_valid:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired password reset token or OTP")
 
     new_hashed = hash_password(payload.new_password)
-    updated = user_repository.update_password(user_record.username, new_hashed)
+    updated = (
+        user_repository.update_password_and_phone(
+            user_record.username,
+            new_hashed,
+            payload.recovery_phone,
+        )
+        if payload.recovery_phone
+        else user_repository.update_password(user_record.username, new_hashed)
+    )
     if not updated:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update password")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update password and recovery phone.",
+        )
 
     record_audit(user_record.username, "reset_password", "password reset completed using a one-time code")
     return {"status": "success", "message": "Password reset successfully."}

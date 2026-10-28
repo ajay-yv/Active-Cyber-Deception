@@ -11,7 +11,6 @@ from app.api import auth as auth_api
 from app.core.settings import Settings
 from app.core import dependencies as dependency_module
 from app.core.users import hash_password
-from app.core.settings import Settings
 from app.db.engines import SecuritySessionLocal
 from app.main import app
 from app.models.security import FailedLoginAttempt, UserAccount
@@ -327,6 +326,87 @@ def test_administrator_mobile_reset_requires_preconfigured_recovery_phone() -> N
         assert response.status_code == 503
         assert "ADMIN_RECOVERY_PHONE" in response.json()["detail"]
     finally:
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(UserAccount.username == username).delete()
+            session.commit()
+
+
+def test_administrator_can_reset_using_new_mobile_after_two_factor_verification(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    username = f"admin-reset-{uuid4().hex[:12]}"
+    email = f"{username}@stjude.org"
+    mobile = f"+919{uuid4().int % 10**9:09d}"
+    user_repository.create(UserRecord(
+        username=username,
+        password_hash=hash_password("old-password"),
+        role="administrator",
+        full_name="Admin Dual Verification Test",
+        email=email,
+    ))
+    email_deliveries: list[tuple[str, str]] = []
+    mobile_deliveries: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(
+            twilio_account_sid="AC-test",
+            twilio_auth_token="test-token",
+            twilio_from_number="+15005550006",
+            smtp_user="smtp-test",
+            smtp_pass="smtp-test-password",
+        ),
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_email",
+        lambda destination, otp, *_: email_deliveries.append((destination, otp)) or True,
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_sms",
+        lambda destination, otp: mobile_deliveries.append((destination, otp)) or True,
+    )
+
+    try:
+        request = client.post(
+            "/api/auth/request-password-reset",
+            json={
+                "email": mobile,
+                "username": username,
+                "recovery_phone": mobile,
+            },
+        )
+        assert request.status_code == 200, request.text
+        assert email_deliveries[0][0] == email
+        assert mobile_deliveries[0][0] == mobile
+
+        payload = {
+            "email": mobile,
+            "username": username,
+            "recovery_phone": mobile,
+            "otp": email_deliveries[0][1],
+            "mobile_otp": mobile_deliveries[0][1],
+            "new_password": "updated-admin-password-123",
+        }
+        wrong_mobile_code = client.post(
+            "/api/auth/verify-reset-otp",
+            json={**payload, "mobile_otp": "000000" if mobile_deliveries[0][1] != "000000" else "000001"},
+        )
+        assert wrong_mobile_code.status_code == 400
+
+        reset = client.post("/api/auth/verify-reset-otp", json=payload)
+        assert reset.status_code == 200, reset.text
+        assert user_repository.get_by_username(username).phone_number == mobile
+        assert client.post(
+            "/api/auth/login",
+            json={"username": username, "password": "updated-admin-password-123"},
+        ).status_code == 200
+
+        reused_codes = client.post("/api/auth/verify-reset-otp", json=payload)
+        assert reused_codes.status_code == 400
+    finally:
+        password_reset_store.clear_reset_otps(username)
         with SecuritySessionLocal() as session:
             session.query(UserAccount).filter(UserAccount.username == username).delete()
             session.commit()

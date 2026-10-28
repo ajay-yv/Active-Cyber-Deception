@@ -419,7 +419,9 @@ export default function AppUser() {
   const [forgotStep, setForgotStep] = useState<'step1' | 'step2' | 'success'>('step1')
   const [forgotUsername, setForgotUsername] = useState('admin')
   const [forgotEmail, setForgotEmail] = useState('admin@healthcare-deception.org')
+  const [forgotRecoveryPhone, setForgotRecoveryPhone] = useState('')
   const [forgotOtp, setForgotOtp] = useState('')
+  const [forgotMobileOtp, setForgotMobileOtp] = useState('')
   const [forgotNewPassword, setForgotNewPassword] = useState('')
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState('')
   const [forgotStatus, setForgotStatus] = useState('')
@@ -692,6 +694,9 @@ export default function AppUser() {
   function handleForgotUsernameChange(selectedUser: string) {
     setForgotUsername(selectedUser)
     setForgotEmail(`${selectedUser}@stjude.org`)
+    setForgotRecoveryPhone('')
+    setForgotOtp('')
+    setForgotMobileOtp('')
   }
 
   async function handleCheckLogs() {
@@ -1301,12 +1306,12 @@ export default function AppUser() {
       setForgotError('Please select a username or enter an email address.')
       return
     }
-
     setIsForgotSubmitting(true)
     try {
-      const res = await requestPasswordReset(target, forgotUsername)
+      const res = await requestPasswordReset(target, forgotUsername, forgotRecoveryPhone.trim() || undefined)
       setForgotStatus(res.message || `Verification OTP code sent to ${target}! Check your email inbox.`)
       setForgotOtp('') // Keep input empty so user enters the code received in their real email
+      setForgotMobileOtp('')
       setForgotStep('step2')
     } catch (err) {
       setForgotError(err instanceof Error ? err.message : String(err))
@@ -1328,7 +1333,11 @@ export default function AppUser() {
     }
 
     if (forgotOtp.trim().length !== 6 || !/^\d{6}$/.test(forgotOtp.trim())) {
-      setForgotError('Enter the 6-digit code sent to your registered email or mobile number.')
+      setForgotError('Enter the 6-digit code sent to the registered email.')
+      return
+    }
+    if (forgotRecoveryPhone.trim() && !/^\d{6}$/.test(forgotMobileOtp.trim())) {
+      setForgotError('Enter the 6-digit code sent to the new mobile number.')
       return
     }
 
@@ -1345,7 +1354,14 @@ export default function AppUser() {
     setIsForgotSubmitting(true)
     try {
       const target = forgotEmail.trim() || forgotUsername
-      const res = await verifyResetOtp(target, forgotOtp.trim(), forgotNewPassword, forgotUsername)
+      const res = await verifyResetOtp(
+        target,
+        forgotOtp.trim(),
+        forgotNewPassword,
+        forgotUsername,
+        forgotRecoveryPhone.trim() || undefined,
+        forgotMobileOtp.trim() || undefined,
+      )
       setForgotStatus(res.message || 'Password updated successfully!')
       setForgotStep('success')
     } catch (err) {
@@ -4600,8 +4616,8 @@ export default function AppUser() {
 
       {/* DYNAMIC OTP FORGOT PASSWORD MODAL */}
       {isForgotModalOpen ? (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 1200, padding: 24 }}>
-          <div style={{ width: '100%', maxWidth: 460, background: '#ffffff', borderRadius: 20, padding: 32, border: '1px solid #cbd5e1', boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.25)', position: 'relative', color: '#0f172a' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflowY: 'auto', zIndex: 1200, padding: 16, boxSizing: 'border-box' }}>
+          <div style={{ width: '100%', maxWidth: 460, flexShrink: 0, margin: 'auto 0', background: '#ffffff', borderRadius: 20, padding: 32, border: '1px solid #cbd5e1', boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.25)', position: 'relative', color: '#0f172a', boxSizing: 'border-box' }}>
             
             {/* Close Button */}
             <button
@@ -4624,7 +4640,7 @@ export default function AppUser() {
                 </span>
                 <h2 style={{ margin: '4px 0 6px', fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>Request OTP Verification</h2>
                 <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 20px', lineHeight: 1.5 }}>
-                  Select your account and enter its registered email address or mobile number. We will send a one-time verification code to that contact.
+                  Select your account and enter its registered recovery contact. For administrator recovery to a new mobile, codes are sent to both the registered email and the new number.
                 </p>
 
                 <form onSubmit={handleSendOtp} style={{ display: 'grid', gap: 16 }}>
@@ -4642,7 +4658,7 @@ export default function AppUser() {
                   </label>
 
                   <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
-                    Registered Email or Mobile Number
+                    Registered email or mobile (or account email when adding a new mobile)
                     <input
                       required
                       type="text"
@@ -4653,6 +4669,23 @@ export default function AppUser() {
                       style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }}
                     />
                   </label>
+
+                  {forgotUsername === 'admin' ? (
+                    <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
+                      New Mobile Number (optional)
+                      <input
+                        type="tel"
+                        value={forgotRecoveryPhone}
+                        onChange={(e) => setForgotRecoveryPhone(e.target.value)}
+                        autoComplete="tel"
+                        placeholder="e.g. +919876543210"
+                        style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }}
+                      />
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 400 }}>
+                        We will send one code to the registered email above and another to this number. Both are required.
+                      </span>
+                    </label>
+                  ) : null}
 
                   {forgotError ? <p style={{ color: '#dc2626', fontSize: '0.85rem', margin: 0 }}>{forgotError}</p> : null}
 
@@ -4675,12 +4708,14 @@ export default function AppUser() {
                 </span>
                 <h2 style={{ margin: '4px 0 6px', fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>Enter OTP & Set New Password</h2>
                 <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 20px', lineHeight: 1.5 }}>
-                  A verification OTP code was sent to <strong>{forgotEmail}</strong>. Please enter the code below to reset your password.
+                  {forgotRecoveryPhone.trim()
+                    ? <>One code was sent to the email address registered to this account and another to the new mobile <strong>{forgotRecoveryPhone}</strong>. Both codes are required.</>
+                    : <>A verification code was sent to <strong>{forgotEmail}</strong>. Please enter it below to reset your password.</>}
                 </p>
 
                 <form onSubmit={handleVerifyOtpAndReset} style={{ display: 'grid', gap: 14 }}>
                   <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
-                    Enter 6-Digit OTP Code *
+                    Registered Email OTP Code *
                     <input
                       required
                       type="text"
@@ -4694,6 +4729,23 @@ export default function AppUser() {
                       style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', letterSpacing: '0.15em', fontWeight: 700 }}
                     />
                   </label>
+
+                  {forgotRecoveryPhone.trim() ? (
+                    <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
+                      Mobile OTP Code *
+                      <input
+                        required
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        value={forgotMobileOtp}
+                        onChange={(e) => setForgotMobileOtp(e.target.value)}
+                        placeholder="6-digit mobile code"
+                        style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', letterSpacing: '0.15em', fontWeight: 700 }}
+                      />
+                    </label>
+                  ) : null}
 
                   <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
                     New Password *

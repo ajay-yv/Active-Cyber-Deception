@@ -48,6 +48,7 @@ FAILED_LOGIN_ALERT_WINDOW = timedelta(minutes=5)
 class PasswordResetStore:
     def __init__(self) -> None:
         self._otp_store: dict[str, tuple[str, float]] = {}
+        self._admin_reset_otp_store: dict[str, tuple[str, str, str, float, int]] = {}
         self.expiration_seconds = 300
 
     def _key(self, purpose: str, email: str) -> str:
@@ -55,6 +56,10 @@ class PasswordResetStore:
 
     def set_otp(self, email: str, otp: str) -> None:
         self._otp_store[self._key('reset', email)] = (otp, time.time() + self.expiration_seconds)
+
+    def clear_reset_otps(self, username: str) -> None:
+        self._otp_store.pop(self._key("reset", username), None)
+        self._admin_reset_otp_store.pop(self._key("admin_reset", username), None)
 
     def verify_reset_otp(self, email: str, otp: str) -> bool:
         key = self._key('reset', email)
@@ -68,6 +73,56 @@ class PasswordResetStore:
         if stored_otp != otp:
             return False
         del self._otp_store[key]
+        return True
+
+    def set_admin_reset_otps(
+        self,
+        username: str,
+        email_otp: str,
+        mobile_otp: str,
+        mobile_number: str,
+    ) -> None:
+        self._admin_reset_otp_store[self._key("admin_reset", username)] = (
+            email_otp,
+            mobile_otp,
+            mobile_number,
+            time.time() + self.expiration_seconds,
+            0,
+        )
+
+    def verify_admin_reset_otps(
+        self,
+        username: str,
+        email_otp: str,
+        mobile_otp: str,
+        mobile_number: str,
+    ) -> bool:
+        key = self._key("admin_reset", username)
+        value = self._admin_reset_otp_store.get(key)
+        if value is None:
+            return False
+        stored_email_otp, stored_mobile_otp, stored_mobile, expiry, attempts = value
+        if time.time() > expiry:
+            del self._admin_reset_otp_store[key]
+            return False
+        if (
+            stored_email_otp != email_otp
+            or stored_mobile_otp != mobile_otp
+            or stored_mobile != mobile_number
+        ):
+            attempts += 1
+            if attempts >= 5:
+                del self._admin_reset_otp_store[key]
+            else:
+                self._admin_reset_otp_store[key] = (
+                    stored_email_otp,
+                    stored_mobile_otp,
+                    stored_mobile,
+                    expiry,
+                    attempts,
+                )
+            return False
+        del self._admin_reset_otp_store[key]
         return True
 
     def set_email_verification_otp(self, email: str, otp: str) -> None:

@@ -100,6 +100,22 @@ class UserRepository:
             session.commit()
         return True
 
+    def update_password_and_phone(
+        self,
+        username: str,
+        password_hash: str,
+        phone_number: str,
+    ) -> bool:
+        with SecuritySessionLocal() as session:
+            row = session.query(UserAccount).filter(UserAccount.username == username).first()
+            if row is None:
+                return False
+            row.password_hash = password_hash
+            row.phone_number = phone_number
+            session.add(row)
+            session.commit()
+        return True
+
     def get_by_email(self, email: str) -> UserRecord | None:
         with SecuritySessionLocal() as session:
             row = session.query(UserAccount).filter(
