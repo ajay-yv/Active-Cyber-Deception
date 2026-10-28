@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     smtp_from: str = "stjude.hospital.security@gmail.com"
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
+    twilio_api_key_sid: str = ""
+    twilio_api_key_secret: str = ""
     twilio_from_number: str = ""
     twilio_default_country_code: str = "91"
     simulator_max_requests: int = 100

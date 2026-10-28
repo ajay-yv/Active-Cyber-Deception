@@ -15,7 +15,7 @@ from app.services.audit import record_audit
 from app.services.security import log_login, log_login_failure, password_reset_store
 from app.services.registries import patient_repository
 from app.services.email import send_otp_email
-from app.services.sms import send_otp_sms
+from app.services.sms import missing_twilio_settings, send_otp_sms
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
@@ -483,15 +483,7 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
                 detail="Enter a valid mobile number with its country code.",
             )
         settings = get_settings()
-        missing_sms_settings = [
-            setting
-            for setting, value in (
-                ("TWILIO_ACCOUNT_SID", settings.twilio_account_sid),
-                ("TWILIO_AUTH_TOKEN", settings.twilio_auth_token),
-                ("TWILIO_FROM_NUMBER", settings.twilio_from_number),
-            )
-            if not value.strip()
-        ]
+        missing_sms_settings = missing_twilio_settings(settings)
         if recovery_phone and missing_sms_settings:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -556,15 +548,7 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
     else:
         destination = user_record.phone_number or user_record.username
         settings = get_settings()
-        missing_sms_settings = [
-            setting
-            for setting, value in (
-                ("TWILIO_ACCOUNT_SID", settings.twilio_account_sid),
-                ("TWILIO_AUTH_TOKEN", settings.twilio_auth_token),
-                ("TWILIO_FROM_NUMBER", settings.twilio_from_number),
-            )
-            if not value.strip()
-        ]
+        missing_sms_settings = missing_twilio_settings(settings)
         if missing_sms_settings:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
