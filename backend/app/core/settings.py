@@ -18,6 +18,16 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 1440
     app_env: str = "development"
     firebase_project_id: str | None = None
+    admin_recovery_phone: str | None = None
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_pass: str = ""
+    smtp_from: str = "stjude.hospital.security@gmail.com"
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_number: str = ""
+    twilio_default_country_code: str = "91"
     simulator_max_requests: int = 100
     simulator_max_records: int = 25
     simulator_min_interval_ms: int = 50

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 import logging
 import secrets
 from uuid import uuid4
@@ -12,8 +12,10 @@ from app.core.settings import get_settings
 from app.core.users import User, verify_password, hash_password
 from app.repositories.user_repository import user_repository, UserRecord
 from app.services.audit import record_audit
-from app.services.security import create_password_reset_token, log_login, log_login_failure, password_reset_store
+from app.services.security import log_login, log_login_failure, password_reset_store
 from app.services.registries import patient_repository
+from app.services.email import send_otp_email
+from app.services.sms import send_otp_sms
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
@@ -257,6 +259,7 @@ def register_patient(payload: PatientRegisterRequest, context: dict[str, str] = 
         full_name=full_name,
         email=email,
         is_blocked=False,
+        phone_number=clean_digits,
     )
     user_repository.create(record)
 
@@ -295,7 +298,7 @@ class UpdateEmailRequest(BaseModel):
 
 
 class PasswordResetRequest(BaseModel):
-    email: str
+    email: str = Field(min_length=1, max_length=255)
     username: str | None = None
 
 
@@ -310,19 +313,57 @@ class VerifyEmailOtpRequest(BaseModel):
 
 
 class VerifyOtpRequest(BaseModel):
-    email: str
-    otp: str
-    new_password: str
+    email: str = Field(min_length=1, max_length=255)
+    otp: str = Field(pattern=r"^\d{6}$")
+    new_password: str = Field(min_length=8, max_length=128)
+    username: str | None = None
 
 
-def _normalize_mobile_dispatch(address: str) -> str:
-    clean = address.strip()
-    if "@" in clean:
-        return clean
-    digits = "".join(ch for ch in clean if ch.isdigit())
-    if digits:
-        return f"{digits}@mobile.health"
-    return clean
+def _find_password_reset_account(identifier: str, selected_username: str | None = None) -> UserRecord:
+    clean_identifier = identifier.strip()
+    if "@" in clean_identifier:
+        account = user_repository.get_by_email(clean_identifier)
+    else:
+        account = user_repository.get_by_phone_number(clean_identifier)
+        if account is None:
+            digits = "".join(character for character in clean_identifier if character.isdigit())
+            if len(digits) == 12 and digits.startswith("91"):
+                digits = digits[2:]
+            elif len(digits) == 11 and digits.startswith("0"):
+                digits = digits[1:]
+            candidate = user_repository.get_by_username(digits) if len(digits) == 10 else None
+            if candidate and candidate.role == "patient":
+                account = candidate
+
+    if account is None:
+        selected_account = (
+            user_repository.get_by_username(selected_username.strip())
+            if selected_username
+            else None
+        )
+        if selected_account and selected_account.role == "administrator" and "@" not in clean_identifier:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=(
+                    "Administrator mobile recovery is not configured. "
+                    "The hospital administrator must set ADMIN_RECOVERY_PHONE to the verified recovery number."
+                ),
+            )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account is registered with that email address or mobile number.",
+        )
+    if selected_username and account.username != selected_username.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="That recovery contact does not belong to the selected account.",
+        )
+    if account.is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account is blocked and cannot reset its password.",
+        )
+    return account
 
 
 @router.post("/change-password")
@@ -349,58 +390,58 @@ def change_email(payload: UpdateEmailRequest, user: User = Depends(get_current_u
 @router.post("/request-password-reset")
 def request_password_reset(payload: PasswordResetRequest) -> dict:
     input_email = payload.email.strip()
-    input_username = (payload.username or "").strip()
+    user_record = _find_password_reset_account(input_email, payload.username)
+    otp = f"{secrets.randbelow(1_000_000):06d}"
 
-    # 1. Lookup user by email or by username
-    user_record = user_repository.get_by_email(input_email)
-    if user_record is None and input_username:
-        user_record = user_repository.get_by_username(input_username)
-    if user_record is None:
-        user_record = user_repository.get_by_username(input_email)
-    
-    # Default fallback to hacker or doctor account if not found so any email works smoothly
-    if user_record is None:
-        user_record = user_repository.get_by_username("hacker") or user_repository.get_by_username("doctor")
+    if "@" in input_email:
+        destination = user_record.email or ""
+        if not destination:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No registered email address is available for this account.",
+            )
+        delivered = send_otp_email(destination, otp, user_record.full_name)
+        channel = "email"
+    else:
+        destination = user_record.phone_number or user_record.username
+        settings = get_settings()
+        missing_sms_settings = [
+            setting
+            for setting, value in (
+                ("TWILIO_ACCOUNT_SID", settings.twilio_account_sid),
+                ("TWILIO_AUTH_TOKEN", settings.twilio_auth_token),
+                ("TWILIO_FROM_NUMBER", settings.twilio_from_number),
+            )
+            if not value.strip()
+        ]
+        if missing_sms_settings:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=(
+                    "Mobile OTP delivery is not configured for this hospital portal. "
+                    f"The administrator must configure: {', '.join(missing_sms_settings)}."
+                ),
+            )
+        delivered = send_otp_sms(destination, otp)
+        channel = "mobile"
 
-    otp = str(uuid4().hex[:6]).upper()
-    reset_token = str(uuid4().hex)
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+    if not delivered:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "The SMS provider did not accept the message. Verify the destination number, "
+                "Twilio sender number, account status, and destination-country permissions."
+                if channel == "mobile"
+                else "Could not send the verification email. Check the hospital email delivery configuration and try again."
+            ),
+        )
 
-    dispatch_email = input_email if "@" in input_email else (user_record.email if (user_record and user_record.email) else input_email)
-
-    # Store OTP under input_email AND username AND existing user_email / mobile alias
-    password_reset_store.set_otp(input_email, otp)
-    if user_record:
-        password_reset_store.set_otp(user_record.username, otp)
-        if user_record.email:
-            password_reset_store.set_otp(user_record.email, otp)
-        create_password_reset_token(user_record.username, dispatch_email, reset_token, expires_at)
-
-    if dispatch_email and dispatch_email != input_email:
-        password_reset_store.set_otp(dispatch_email, otp)
-
-    try:
-        if user_record:
-            record_audit(user_record.username, "request_password_reset", f"dynamic otp requested for identifier {input_email} and dispatched to {dispatch_email}")
-        else:
-            record_audit(input_email, "request_password_reset", f"dynamic otp requested for identifier {input_email} and dispatched to {dispatch_email}")
-    except Exception:
-        pass
-
-    reset_link = f"http://localhost:5174?reset_token={reset_token}&email={input_email}"
-
-    try:
-        send_otp_email(dispatch_email, otp, user_record.full_name if user_record else input_username or "User", reset_link=reset_link)
-    except Exception:
-        pass
+    password_reset_store.set_otp(user_record.username, otp)
+    record_audit(user_record.username, "request_password_reset", f"password reset OTP sent by {channel}")
 
     return {
-        "status": "ok",
-        "message": f"Password reset link sent to {input_email}. Please check your email inbox to reset your password.",
-        "email": input_email,
-        "otp": otp,
-        "reset_link": reset_link,
-        "username": user_record.username if user_record else input_username,
+        "status": "success",
+        "message": f"Verification code sent to your registered {channel}. It expires in 5 minutes.",
     }
 
 
@@ -431,46 +472,18 @@ def verify_email_otp(payload: VerifyEmailOtpRequest, user: User = Depends(get_cu
 
 @router.post("/verify-reset-otp")
 def verify_reset_otp(payload: VerifyOtpRequest) -> dict:
-    from app.services.security import password_reset_store
     input_identifier = payload.email.strip()
-
-    user_record = user_repository.get_by_email(input_identifier)
-    if user_record is None:
-        user_record = user_repository.get_by_username(input_identifier)
-
-    verified = False
-    token_record = None
-
-    if payload.reset_token:
-        token_record = verify_password_reset_token(payload.reset_token)
-        if token_record is not None:
-            user_record = user_repository.get_by_username(token_record.username)
-            verified = True
-            mark_password_reset_token_used(token_record.id)
-
-    if not verified and payload.otp and user_record is not None:
-        verified = (
-            password_reset_store.verify_reset_otp(input_identifier, payload.otp) or
-            (user_record.email and password_reset_store.verify_reset_otp(user_record.email, payload.otp)) or
-            password_reset_store.verify_reset_otp(user_record.username, payload.otp)
-        )
-
-    if not verified:
+    user_record = _find_password_reset_account(input_identifier, payload.username)
+    if not password_reset_store.verify_reset_otp(user_record.username, payload.otp):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired password reset token or OTP")
-
-    if user_record is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No account for that email/username")
 
     new_hashed = hash_password(payload.new_password)
     updated = user_repository.update_password(user_record.username, new_hashed)
-    if user_record and user_record.email != input_identifier and "@" in input_identifier:
-        user_repository.update_email(user_record.username, input_identifier)
-
     if not updated:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update password")
 
-    record_audit(user_record.username, "reset_password", f"password reset completed for {user_record.username} via email {input_identifier}")
-    return {"status": "ok", "message": f"Password reset successfully for {user_record.username}!"}
+    record_audit(user_record.username, "reset_password", "password reset completed using a one-time code")
+    return {"status": "success", "message": "Password reset successfully."}
 
 
 @router.get("/sent-emails")

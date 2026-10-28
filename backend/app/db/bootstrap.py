@@ -16,6 +16,7 @@ def create_all_tables() -> None:
     SecurityBase.metadata.create_all(bind=get_security_engine())
     _ensure_users_block_column()
     _ensure_users_email_column()
+    _ensure_users_phone_column()
     _ensure_users_patient_record_column()
     _ensure_default_users()
     _ensure_real_patient_watermark_columns()
@@ -368,6 +369,17 @@ def _ensure_users_email_column() -> None:
             pass
 
 
+def _ensure_users_phone_column() -> None:
+    engine = get_security_engine()
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+    columns = {column["name"] for column in inspector.get_columns("users")}
+    if "phone_number" not in columns:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE users ADD COLUMN phone_number VARCHAR(32)"))
+
+
 def _ensure_users_patient_record_column() -> None:
     engine = get_security_engine()
     inspector = inspect(engine)
@@ -386,35 +398,33 @@ def _ensure_users_patient_record_column() -> None:
 def _ensure_default_users() -> None:
     # Seed default users in the security database if they don't exist
     from app.db.engines import SecuritySessionLocal
-    from app.core.users import hash_password, verify_password
+    from app.core.users import hash_password
     from app.models.security import UserAccount
+    from app.core.settings import get_settings
+    admin_recovery_phone = get_settings().admin_recovery_phone
 
     defaults = [
-        ("admin", "Admin@8431", "administrator", "System Administrator", "admin@stjude.org"),
-        ("doctor", "Priya@10", "doctor", "Dr. Priya Nair (Cardiology)", "doctor@stjude.org"),
-        ("doctor_priya", "Priya@10", "doctor", "Dr. Priya Nair (Cardiology)", "priya@stjude.org"),
-        ("doctor_ramesh", "Ramesh@29", "doctor", "Dr. Ramesh Kumar (Neurology)", "ramesh@stjude.org"),
-        ("doctor_sarah", "Sarah@38", "doctor", "Dr. Sarah Jenkins (Pediatrics)", "sarah@stjude.org"),
-        ("doctor_rajesh", "Rajesh@47", "doctor", "Dr. Rajesh Patel (Orthopedics)", "rajesh@stjude.org"),
-        ("doctor_anita", "Anita@56", "doctor", "Dr. Anita Sharma (General Medicine)", "anita@stjude.org"),
-        ("patient", "Patient@1432", "patient", "Patient User", "patient@stjude.org"),
-        ("reception", "reception123", "receptionist", "Reception Desk", "reception@stjude.org"),
-        ("hacker", "hacker123", "hacker", "Simulated Attacker", "hacker@stjude.org"),
+        ("admin", "Admin@8431", "administrator", "System Administrator", "admin@stjude.org", admin_recovery_phone),
+        ("doctor", "Priya@10", "doctor", "Dr. Priya Nair (Cardiology)", "doctor@stjude.org", None),
+        ("doctor_priya", "Priya@10", "doctor", "Dr. Priya Nair (Cardiology)", "priya@stjude.org", None),
+        ("doctor_ramesh", "Ramesh@29", "doctor", "Dr. Ramesh Kumar (Neurology)", "ramesh@stjude.org", None),
+        ("doctor_sarah", "Sarah@38", "doctor", "Dr. Sarah Jenkins (Pediatrics)", "sarah@stjude.org", None),
+        ("doctor_rajesh", "Rajesh@47", "doctor", "Dr. Rajesh Patel (Orthopedics)", "rajesh@stjude.org", None),
+        ("doctor_anita", "Anita@56", "doctor", "Dr. Anita Sharma (General Medicine)", "anita@stjude.org", None),
+        ("patient", "Patient@1432", "patient", "Patient User", "patient@stjude.org", None),
+        ("reception", "reception123", "receptionist", "Reception Desk", "reception@stjude.org", None),
+        ("hacker", "hacker123", "hacker", "Simulated Attacker", "hacker@stjude.org", None),
     ]
 
     with SecuritySessionLocal() as session:
-        for username, pwd, role, full_name, email in defaults:
+        for username, pwd, role, full_name, email, phone_number in defaults:
             existing = session.query(UserAccount).filter(UserAccount.username == username).first()
             if existing is None:
-                session.add(UserAccount(username=username, password_hash=hash_password(pwd), role=role, full_name=full_name, email=email, is_blocked=False))
+                session.add(UserAccount(username=username, password_hash=hash_password(pwd), role=role, full_name=full_name, email=email, phone_number=phone_number, is_blocked=False))
             else:
-                if not existing.password_hash or not verify_password(pwd, existing.password_hash):
-                    if username == "admin":
-                        existing.password_hash = hash_password(pwd)
-                    elif username in ("doctor", "doctor_priya", "doctor_ramesh", "doctor_sarah", "doctor_rajesh", "doctor_anita"):
-                        existing.password_hash = hash_password(pwd)
                 existing.email = existing.email or email
-                existing.is_blocked = False
+                if phone_number:
+                    existing.phone_number = phone_number
                 session.add(existing)
         session.commit()
 
@@ -454,5 +464,3 @@ def _ensure_default_patients() -> None:
     except Exception as exc:
         import logging
         logging.getLogger(__name__).warning("Bootstrap patient check error: %s", exc)
-
-

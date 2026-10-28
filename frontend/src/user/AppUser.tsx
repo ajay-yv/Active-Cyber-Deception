@@ -1327,8 +1327,13 @@ export default function AppUser() {
       return
     }
 
-    if (!forgotNewPassword) {
-      setForgotError('Please enter a new password.')
+    if (forgotOtp.trim().length !== 6 || !/^\d{6}$/.test(forgotOtp.trim())) {
+      setForgotError('Enter the 6-digit code sent to your registered email or mobile number.')
+      return
+    }
+
+    if (forgotNewPassword.length < 8) {
+      setForgotError('Your new password must be at least 8 characters long.')
       return
     }
 
@@ -1340,7 +1345,7 @@ export default function AppUser() {
     setIsForgotSubmitting(true)
     try {
       const target = forgotEmail.trim() || forgotUsername
-      const res = await verifyResetOtp(target, forgotOtp, forgotNewPassword)
+      const res = await verifyResetOtp(target, forgotOtp.trim(), forgotNewPassword, forgotUsername)
       setForgotStatus(res.message || 'Password updated successfully!')
       setForgotStep('success')
     } catch (err) {
@@ -1572,7 +1577,7 @@ export default function AppUser() {
         />
       ) : !token ? (
         /* CLEAN FRONT PAGE */
-        <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ minHeight: '100vh', boxSizing: 'border-box', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', position: 'relative', overflowX: 'hidden', overflowY: 'auto' }}>
           
           <div style={{ width: '100%', maxWidth: 440, background: '#ffffff', borderRadius: 24, padding: 36, border: '1px solid #e2e8f0', boxShadow: '0 20px 40px rgba(15, 23, 42, 0.08)', textAlign: 'center' }}>
             
@@ -1603,8 +1608,8 @@ export default function AppUser() {
 
           {/* ADMIN & ROLE AUTHENTICATION MODAL */}
           {isAdminLoginModalOpen ? (
-            <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', padding: 20 }}>
-              <div style={{ width: '100%', maxWidth: 440, background: '#ffffff', borderRadius: 24, padding: 32, border: '1px solid #e2e8f0', boxShadow: '0 25px 60px rgba(15, 23, 42, 0.15)', position: 'relative' }}>
+            <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '20px', overflowX: 'hidden', overflowY: 'auto' }}>
+              <div style={{ width: '100%', maxWidth: 440, margin: 'auto 0', flex: '0 0 auto', background: '#ffffff', borderRadius: 24, padding: 32, border: '1px solid #e2e8f0', boxShadow: '0 25px 60px rgba(15, 23, 42, 0.15)', position: 'relative' }}>
                 
                 {/* Close Button */}
                 <button
@@ -1665,8 +1670,10 @@ export default function AppUser() {
                         type="button"
                         onClick={() => {
                           setForgotUsername('admin')
-                          setForgotEmail('admin@healthcare-deception.org')
+                          setForgotEmail('admin@stjude.org')
                           setForgotStep('step1')
+                          setForgotStatus('')
+                          setForgotError('')
                           setIsForgotModalOpen(true)
                         }}
                         style={{ background: 'none', border: 'none', color: '#0284c7', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}
@@ -1750,7 +1757,7 @@ export default function AppUser() {
                       <span style={{ height: 1, flex: 1, background: '#e2e8f0' }} />
                     </div>
 
-                    {/* 2. SEPARATE REGISTER BUTTON */}
+                    {/* 2. CREATE ACCOUNT BUTTON */}
                     <button
                       type="button"
                       onClick={() => {
@@ -1767,7 +1774,7 @@ export default function AppUser() {
                         padding: '14px 18px',
                         borderRadius: 12,
                         border: 'none',
-                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        background: 'linear-gradient(135deg, #0284c7, #2563eb)',
                         color: '#ffffff',
                         fontSize: '0.96rem',
                         fontWeight: 800,
@@ -1776,12 +1783,11 @@ export default function AppUser() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: 10,
-                        boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)',
+                        boxShadow: '0 4px 16px rgba(37, 99, 235, 0.3)',
                         transition: 'all 0.2s ease',
                       }}
                     >
-                      <span style={{ fontSize: '1.1rem' }}>📝</span>
-                      <span>Register</span>
+                      <span>Create a new account</span>
                     </button>
                   </div>
                 ) : null}
@@ -1791,8 +1797,8 @@ export default function AppUser() {
 
           {/* PATIENT REGISTRATION MODAL */}
           {isPatientRegisterModalOpen ? (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 9999, padding: 16 }}>
-              <div style={{ width: '100%', maxWidth: 440, background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 32, boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)', color: '#0f172a', position: 'relative' }}>
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 9999, padding: '24px 16px', overflowX: 'hidden', overflowY: 'auto' }}>
+              <div style={{ width: '100%', maxWidth: 440, margin: 'auto 0', flex: '0 0 auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 32, boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)', color: '#0f172a', position: 'relative' }}>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -4594,7 +4600,7 @@ export default function AppUser() {
 
       {/* DYNAMIC OTP FORGOT PASSWORD MODAL */}
       {isForgotModalOpen ? (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 100, padding: 24 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 1200, padding: 24 }}>
           <div style={{ width: '100%', maxWidth: 460, background: '#ffffff', borderRadius: 20, padding: 32, border: '1px solid #cbd5e1', boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.25)', position: 'relative', color: '#0f172a' }}>
             
             {/* Close Button */}
@@ -4618,7 +4624,7 @@ export default function AppUser() {
                 </span>
                 <h2 style={{ margin: '4px 0 6px', fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>Request OTP Verification</h2>
                 <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 20px', lineHeight: 1.5 }}>
-                  Select your username and enter your email address. A <strong>new dynamic 6-digit OTP code</strong> will be generated every time.
+                  Select your account and enter its registered email address or mobile number. We will send a one-time verification code to that contact.
                 </p>
 
                 <form onSubmit={handleSendOtp} style={{ display: 'grid', gap: 16 }}>
@@ -4636,13 +4642,14 @@ export default function AppUser() {
                   </label>
 
                   <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
-                    Registered Email Address
+                    Registered Email or Mobile Number
                     <input
                       required
-                      type="email"
+                      type="text"
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
-                      placeholder="e.g. doctor@stjude.org"
+                      autoComplete="email tel"
+                      placeholder="e.g. admin@stjude.org or +14155550123"
                       style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a' }}
                     />
                   </label>
@@ -4654,7 +4661,7 @@ export default function AppUser() {
                     disabled={isForgotSubmitting}
                     style={{ padding: '14px', borderRadius: 12, border: 'none', background: '#0284c7', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
                   >
-                    {isForgotSubmitting ? 'Generating OTP…' : 'Send Verification OTP →'}
+                    {isForgotSubmitting ? 'Sending OTP…' : 'Send Verification OTP →'}
                   </button>
                 </form>
               </div>
@@ -4676,9 +4683,14 @@ export default function AppUser() {
                     Enter 6-Digit OTP Code *
                     <input
                       required
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      pattern="[0-9]{6}"
+                      maxLength={6}
                       value={forgotOtp}
                       onChange={(e) => setForgotOtp(e.target.value)}
-                      placeholder="e.g. 9A4F12"
+                      placeholder="6-digit code"
                       style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', letterSpacing: '0.15em', fontWeight: 700 }}
                     />
                   </label>
@@ -4688,6 +4700,7 @@ export default function AppUser() {
                     <input
                       required
                       type="password"
+                      minLength={8}
                       value={forgotNewPassword}
                       onChange={(e) => setForgotNewPassword(e.target.value)}
                       placeholder="Enter new password"
@@ -4700,6 +4713,7 @@ export default function AppUser() {
                     <input
                       required
                       type="password"
+                      minLength={8}
                       value={forgotConfirmPassword}
                       onChange={(e) => setForgotConfirmPassword(e.target.value)}
                       placeholder="Confirm new password"

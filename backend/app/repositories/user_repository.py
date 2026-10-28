@@ -1,9 +1,19 @@
 from dataclasses import dataclass
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from app.db.engines import SecuritySessionLocal
 from app.models.security import UserAccount
+
+
+def _normalize_phone_number(value: str | None) -> str:
+    digits = "".join(ch for ch in (value or "") if ch.isdigit())
+    if len(digits) == 12 and digits.startswith("91"):
+        return digits[2:]
+    if len(digits) == 11 and digits.startswith("0"):
+        return digits[1:]
+    return digits
 
 
 def _normalize_bool(value: object) -> bool:
@@ -25,6 +35,7 @@ class UserRecord:
     email: str | None = None
     is_blocked: bool = False
     patient_record_id: str | None = None
+    phone_number: str | None = None
 
 
 class UserRepository:
@@ -41,6 +52,7 @@ class UserRepository:
                 email=row.email,
                 is_blocked=_normalize_bool(getattr(row, "is_blocked", False)),
                 patient_record_id=getattr(row, "patient_record_id", None),
+                phone_number=getattr(row, "phone_number", None),
             )
 
     def create(self, record: UserRecord) -> UserRecord:
@@ -51,6 +63,7 @@ class UserRepository:
                 role=record.role,
                 full_name=record.full_name,
                 email=record.email,
+                phone_number=record.phone_number,
                 patient_record_id=record.patient_record_id,
                 is_blocked=record.is_blocked,
             ))
@@ -77,9 +90,21 @@ class UserRepository:
             session.commit()
         return True
 
+    def update_phone_number(self, username: str, phone_number: str) -> bool:
+        with SecuritySessionLocal() as session:
+            row = session.query(UserAccount).filter(UserAccount.username == username).first()
+            if row is None:
+                return False
+            row.phone_number = phone_number
+            session.add(row)
+            session.commit()
+        return True
+
     def get_by_email(self, email: str) -> UserRecord | None:
         with SecuritySessionLocal() as session:
-            row = session.query(UserAccount).filter(UserAccount.email == email).first()
+            row = session.query(UserAccount).filter(
+                func.lower(func.trim(UserAccount.email)) == email.strip().lower()
+            ).first()
             if row is None:
                 return None
             return UserRecord(
@@ -90,6 +115,31 @@ class UserRepository:
                 email=row.email,
                 is_blocked=_normalize_bool(getattr(row, "is_blocked", False)),
                 patient_record_id=getattr(row, "patient_record_id", None),
+                phone_number=getattr(row, "phone_number", None),
+            )
+
+    def get_by_phone_number(self, phone_number: str) -> UserRecord | None:
+        normalized_phone = _normalize_phone_number(phone_number)
+        if not normalized_phone:
+            return None
+        with SecuritySessionLocal() as session:
+            rows = session.query(UserAccount).filter(UserAccount.phone_number.isnot(None)).all()
+            matches = [
+                row for row in rows
+                if _normalize_phone_number(row.phone_number) == normalized_phone
+            ]
+            if len(matches) != 1:
+                return None
+            row = matches[0]
+            return UserRecord(
+                username=row.username,
+                password_hash=row.password_hash,
+                role=row.role,
+                full_name=row.full_name,
+                email=row.email,
+                is_blocked=_normalize_bool(getattr(row, "is_blocked", False)),
+                patient_record_id=getattr(row, "patient_record_id", None),
+                phone_number=getattr(row, "phone_number", None),
             )
 
     def link_google_patient(
@@ -118,6 +168,7 @@ class UserRepository:
                     full_name=full_name,
                     email=email,
                     patient_record_id=patient_record_id,
+                    phone_number=None,
                     is_blocked=False,
                 )
                 session.add(row)
@@ -144,6 +195,7 @@ class UserRepository:
                 email=row.email,
                 is_blocked=_normalize_bool(getattr(row, "is_blocked", False)),
                 patient_record_id=row.patient_record_id,
+                phone_number=getattr(row, "phone_number", None),
             )
 
     def set_block(self, username: str, blocked: bool) -> bool:

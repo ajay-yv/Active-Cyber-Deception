@@ -8,6 +8,7 @@ from fastapi import HTTPException, Request
 from fastapi.testclient import TestClient
 
 from app.api import auth as auth_api
+from app.core.settings import Settings
 from app.core import dependencies as dependency_module
 from app.core.users import hash_password
 from app.core.settings import Settings
@@ -141,12 +142,222 @@ def test_request_email_verification_and_verify_otp_updates_email() -> None:
     assert me_response.json()["email"] == new_email
 
 
-def test_request_password_reset_with_mobile_input_generates_mobile_otp_alias() -> None:
-    response = client.post("/api/auth/request-password-reset", json={"email": "9876543210"})
-    assert response.status_code == 200
-    alias = "9876543210@mobile.health"
-    otp = password_reset_store.get_otp(alias, "reset") or password_reset_store.get_otp("9876543210", "reset")
-    assert otp is not None
+def test_password_reset_sends_email_otp_and_updates_password(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    username = f"reset-{uuid4().hex[:12]}"
+    email = f"{username}@example.test"
+    user_repository.create(UserRecord(
+        username=username,
+        password_hash=hash_password("old-password"),
+        role="doctor",
+        full_name="Reset Test Doctor",
+        email=email,
+    ))
+    deliveries: list[tuple[str, str, str]] = []
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_email",
+        lambda destination, otp, name: deliveries.append((destination, otp, name)) or True,
+    )
+
+    try:
+        response = client.post(
+            "/api/auth/request-password-reset",
+            json={"email": email.upper(), "username": username},
+        )
+
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["status"] == "success"
+        assert "otp" not in payload
+        assert deliveries == [(email, password_reset_store.get_otp(username), "Reset Test Doctor")]
+        otp = deliveries[0][1]
+        assert len(otp) == 6 and otp.isdigit()
+
+        reset_response = client.post(
+            "/api/auth/verify-reset-otp",
+            json={
+                "email": email,
+                "username": username,
+                "otp": otp,
+                "new_password": "updated-password-123",
+            },
+        )
+        assert reset_response.status_code == 200, reset_response.text
+        assert reset_response.json()["status"] == "success"
+        assert client.post(
+            "/api/auth/login",
+            json={"username": username, "password": "updated-password-123"},
+        ).status_code == 200
+
+        reused_otp_response = client.post(
+            "/api/auth/verify-reset-otp",
+            json={
+                "email": email,
+                "username": username,
+                "otp": otp,
+                "new_password": "another-password-123",
+            },
+        )
+        assert reused_otp_response.status_code == 400
+    finally:
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(UserAccount.username == username).delete()
+            session.commit()
+
+
+def test_password_reset_requires_registered_contact_and_sends_sms_otp(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    username = f"9{uuid4().int % 10**9:09d}"
+    phone = f"+91{username}"
+    user_repository.create(UserRecord(
+        username=username,
+        password_hash=hash_password("old-password"),
+        role="patient",
+        full_name="Reset Mobile Patient",
+        email=f"{username}@patient.health",
+        phone_number=phone,
+    ))
+    deliveries: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_sms",
+        lambda destination, otp: deliveries.append((destination, otp)) or True,
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_email",
+        lambda *_: pytest.fail("A mobile reset must not send email"),
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(
+            twilio_account_sid="AC-test",
+            twilio_auth_token="test-token",
+            twilio_from_number="+15005550006",
+        ),
+    )
+
+    try:
+        mismatch_response = client.post(
+            "/api/auth/request-password-reset",
+            json={"email": "+91" + f"{uuid4().int % 10**10:010d}", "username": username},
+        )
+        assert mismatch_response.status_code == 404
+        assert not deliveries
+
+        response = client.post(
+            "/api/auth/request-password-reset",
+            json={"email": username, "username": username},
+        )
+        assert response.status_code == 200, response.text
+        assert deliveries == [(phone, password_reset_store.get_otp(username))]
+
+        otp = deliveries[0][1]
+        reset_response = client.post(
+            "/api/auth/verify-reset-otp",
+            json={
+                "email": username,
+                "username": username,
+                "otp": otp,
+                "new_password": "new-mobile-password-123",
+            },
+        )
+        assert reset_response.status_code == 200, reset_response.text
+        assert client.post(
+            "/api/auth/login",
+            json={"username": username, "password": "new-mobile-password-123"},
+        ).status_code == 200
+    finally:
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(UserAccount.username == username).delete()
+            session.commit()
+
+
+def test_legacy_patient_mobile_reset_reports_missing_sms_configuration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    username = f"8{uuid4().int % 10**9:09d}"
+    user_repository.create(UserRecord(
+        username=username,
+        password_hash=hash_password("old-password"),
+        role="patient",
+        full_name="Unconfigured SMS Patient",
+    ))
+    monkeypatch.setattr(auth_api, "get_settings", lambda: Settings())
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_sms",
+        lambda *_: pytest.fail("SMS must not be attempted without configuration"),
+    )
+
+    try:
+        response = client.post(
+            "/api/auth/request-password-reset",
+            json={"email": f"+91{username}", "username": username},
+        )
+        assert response.status_code == 503
+        assert "TWILIO_ACCOUNT_SID" in response.json()["detail"]
+        assert "TWILIO_AUTH_TOKEN" in response.json()["detail"]
+        assert "TWILIO_FROM_NUMBER" in response.json()["detail"]
+    finally:
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(UserAccount.username == username).delete()
+            session.commit()
+
+
+def test_administrator_mobile_reset_requires_preconfigured_recovery_phone() -> None:
+    username = f"admin-reset-{uuid4().hex[:12]}"
+    user_repository.create(UserRecord(
+        username=username,
+        password_hash=hash_password("old-password"),
+        role="administrator",
+        full_name="Admin Without Recovery Phone",
+        email=f"{username}@stjude.org",
+    ))
+
+    try:
+        response = client.post(
+            "/api/auth/request-password-reset",
+            json={"email": "+919999999999", "username": username},
+        )
+        assert response.status_code == 503
+        assert "ADMIN_RECOVERY_PHONE" in response.json()["detail"]
+    finally:
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(UserAccount.username == username).delete()
+            session.commit()
+
+
+def test_password_reset_does_not_report_success_when_delivery_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    email = f"admin-{uuid4().hex}@stjude.org"
+    user_repository.create(UserRecord(
+        username="reset-delivery-failure",
+        password_hash=hash_password("old-password"),
+        role="administrator",
+        full_name="Reset Delivery Test",
+        email=email,
+    ))
+    monkeypatch.setattr(auth_api, "send_otp_email", lambda *_: False)
+
+    try:
+        response = client.post(
+            "/api/auth/request-password-reset",
+            json={"email": email, "username": "reset-delivery-failure"},
+        )
+        assert response.status_code == 503
+        assert password_reset_store.get_otp("reset-delivery-failure") is None
+    finally:
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(
+                UserAccount.username == "reset-delivery-failure"
+            ).delete()
+            session.commit()
 
 
 def test_login_with_incorrect_password_fails() -> None:

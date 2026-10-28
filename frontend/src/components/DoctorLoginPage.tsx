@@ -172,7 +172,8 @@ export const DoctorLoginPage: React.FC<DoctorLoginPageProps> = ({ onLogin, onCan
         alignItems: 'center',
         padding: '36px 16px',
         position: 'relative',
-        overflow: 'hidden',
+        overflowX: 'hidden',
+        overflowY: 'auto',
       }}
     >
       <div

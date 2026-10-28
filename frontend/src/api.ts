@@ -1597,82 +1597,52 @@ export async function changeEmail(newEmail: string, token: string): Promise<{ st
   return { status: 'success', message: 'Email address updated successfully in secure local enclave!' }
 }
 
-export async function requestPasswordReset(email: string, username?: string): Promise<{ status: string; message: string; otp?: string; email_dispatch?: { to: string; subject: string; body: string; otp: string } }> {
-  try {
-    const response = await safeFetch(`${apiBaseUrl}/api/auth/request-password-reset`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, username }),
-    })
-
-    if (response.ok) {
-      const data = await safeJson<any>(response, null)
-      if (data && data.status === 'success') return data
-    }
-  } catch (err) {
-    console.warn('Backend requestPasswordReset unreachable, using local enclave fallback:', err)
-  }
-
-  const generatedOtp = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join('')
-  return {
-    status: 'success',
-    message: `Dynamic OTP generated locally: ${generatedOtp}`,
-    otp: generatedOtp,
-    email_dispatch: {
-      to: email,
-      subject: 'Healthcare Security - Dynamic Password Reset OTP',
-      body: `Your dynamic OTP verification code is ${generatedOtp}. Valid for 10 minutes.`,
-      otp: generatedOtp,
+export async function requestPasswordReset(email: string, username?: string): Promise<{ status: string; message: string }> {
+  const response = await safeFetch(`${apiBaseUrl}/api/auth/request-password-reset`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({ email, username }),
+  })
+  const responseBody = await response.text()
+  let data: { status?: unknown; message?: unknown; detail?: unknown } = {}
+  try {
+    data = JSON.parse(responseBody) as typeof data
+  } catch {
+    // Keep the original API response text available for useful error feedback.
+  }
+  if (!response.ok || (data.status !== 'success' && data.status !== 'ok')) {
+    const detail = typeof data.detail === 'string' ? data.detail : ''
+    throw new Error(detail || responseBody || 'Could not send the password reset code.')
+  }
+  return {
+    status: String(data.status),
+    message: typeof data.message === 'string' ? data.message : 'Verification code sent.',
   }
 }
 
-export async function verifyResetOtp(email: string, otp: string, newPassword: string): Promise<{ status: string; message: string }> {
-  try {
-    const response = await safeFetch(`${apiBaseUrl}/api/auth/verify-reset-otp`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, otp, new_password: newPassword }),
-    })
-
-    if (response.ok) {
-      const data = await safeJson<{ status: string; message: string }>(response, { status: 'success', message: 'Password reset successful!' })
-      if (data && data.status) {
-        try {
-          const u = (email || '').toLowerCase().trim()
-          const stored = JSON.parse(localStorage.getItem('ehr_fallback_passwords') || '{}')
-          if (u.includes('admin')) {
-            stored['admin'] = newPassword
-            stored['administrator'] = newPassword
-          } else {
-            stored[u] = newPassword
-          }
-          localStorage.setItem('ehr_fallback_passwords', JSON.stringify(stored))
-        } catch {}
-        return data
-      }
-    }
-  } catch (err) {
-    console.warn('Backend verifyResetOtp unreachable, using local enclave fallback:', err)
+export async function verifyResetOtp(
+  email: string,
+  otp: string,
+  newPassword: string,
+  username?: string,
+): Promise<{ status: string; message: string }> {
+  const response = await safeFetch(`${apiBaseUrl}/api/auth/verify-reset-otp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, otp, new_password: newPassword, username }),
+  })
+  const data = await response.json().catch(() => ({})) as { status?: unknown; message?: unknown; detail?: unknown }
+  if (!response.ok || (data.status !== 'success' && data.status !== 'ok')) {
+    throw new Error(typeof data.detail === 'string' ? data.detail : 'The code could not be verified. Request a new code and try again.')
   }
-
-  try {
-    const u = (email || '').toLowerCase().trim()
-    const stored = JSON.parse(localStorage.getItem('ehr_fallback_passwords') || '{}')
-    if (u.includes('admin')) {
-      stored['admin'] = newPassword
-      stored['administrator'] = newPassword
-    } else {
-      stored[u] = newPassword
-    }
-    localStorage.setItem('ehr_fallback_passwords', JSON.stringify(stored))
-  } catch {}
-
-  return { status: 'success', message: 'Password reset verified & updated successfully in secure local enclave!' }
+  return {
+    status: String(data.status),
+    message: typeof data.message === 'string' ? data.message : 'Password reset successful.',
+  }
 }
 
 export async function requestEmailVerification(email: string, token: string): Promise<{ status: string; message: string }> {
