@@ -401,10 +401,11 @@ def _ensure_default_users() -> None:
     from app.core.users import hash_password
     from app.models.security import UserAccount
     from app.core.settings import get_settings
+    admin_recovery_email = get_settings().admin_recovery_email
     admin_recovery_phone = get_settings().admin_recovery_phone
 
     defaults = [
-        ("admin", "Admin@8431", "administrator", "System Administrator", "admin@stjude.org", admin_recovery_phone),
+        ("admin", "Admin@8431", "administrator", "System Administrator", admin_recovery_email or "admin@stjude.org", admin_recovery_phone),
         ("doctor", "Priya@10", "doctor", "Dr. Priya Nair (Cardiology)", "doctor@stjude.org", None),
         ("doctor_priya", "Priya@10", "doctor", "Dr. Priya Nair (Cardiology)", "priya@stjude.org", None),
         ("doctor_ramesh", "Ramesh@29", "doctor", "Dr. Ramesh Kumar (Neurology)", "ramesh@stjude.org", None),
@@ -422,7 +423,10 @@ def _ensure_default_users() -> None:
             if existing is None:
                 session.add(UserAccount(username=username, password_hash=hash_password(pwd), role=role, full_name=full_name, email=email, phone_number=phone_number, is_blocked=False))
             else:
-                existing.email = existing.email or email
+                if username == "admin" and admin_recovery_email:
+                    existing.email = admin_recovery_email.strip().lower()
+                else:
+                    existing.email = existing.email or email
                 if phone_number:
                     existing.phone_number = phone_number
                 session.add(existing)

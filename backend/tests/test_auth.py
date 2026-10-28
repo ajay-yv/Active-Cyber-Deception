@@ -372,7 +372,7 @@ def test_administrator_can_reset_using_new_mobile_after_two_factor_verification(
         request = client.post(
             "/api/auth/request-password-reset",
             json={
-                "email": mobile,
+                "email": email,
                 "username": username,
                 "recovery_phone": mobile,
             },
@@ -382,7 +382,7 @@ def test_administrator_can_reset_using_new_mobile_after_two_factor_verification(
         assert mobile_deliveries[0][0] == mobile
 
         payload = {
-            "email": mobile,
+            "email": email,
             "username": username,
             "recovery_phone": mobile,
             "otp": email_deliveries[0][1],
@@ -405,6 +405,114 @@ def test_administrator_can_reset_using_new_mobile_after_two_factor_verification(
 
         reused_codes = client.post("/api/auth/verify-reset-otp", json=payload)
         assert reused_codes.status_code == 400
+    finally:
+        password_reset_store.clear_reset_otps(username)
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(UserAccount.username == username).delete()
+            session.commit()
+
+
+def test_administrator_can_verify_new_email_and_update_account_email(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    username = f"admin-email-reset-{uuid4().hex[:12]}"
+    registered_email = f"{username}@stjude.org"
+    recovery_email = f"{uuid4().hex[:12]}@example.com"
+    user_repository.create(UserRecord(
+        username=username,
+        password_hash=hash_password("old-password"),
+        role="administrator",
+        full_name="Admin Email Recovery Test",
+        email=registered_email,
+    ))
+    deliveries: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(smtp_user="smtp-test", smtp_pass="smtp-test-password"),
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_email",
+        lambda destination, otp, *_: deliveries.append((destination, otp)) or True,
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_sms",
+        lambda *_: pytest.fail("No phone was requested"),
+    )
+
+    try:
+        request = client.post(
+            "/api/auth/request-password-reset",
+            json={
+                "email": registered_email,
+                "username": username,
+                "recovery_email": recovery_email,
+            },
+        )
+        assert request.status_code == 200, request.text
+        assert {destination for destination, _ in deliveries} == {
+            registered_email,
+            recovery_email,
+        }
+
+        payload = {
+            "email": registered_email,
+            "username": username,
+            "recovery_email": recovery_email,
+            "otp": next(code for destination, code in deliveries if destination == registered_email),
+            "recovery_email_otp": next(code for destination, code in deliveries if destination == recovery_email),
+            "new_password": "updated-admin-password-123",
+        }
+        reset = client.post("/api/auth/verify-reset-otp", json=payload)
+        assert reset.status_code == 200, reset.text
+        updated = user_repository.get_by_username(username)
+        assert updated.email == recovery_email
+        assert client.post(
+            "/api/auth/login",
+            json={"username": username, "password": payload["new_password"]},
+        ).status_code == 200
+    finally:
+        password_reset_store.clear_reset_otps(username)
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(UserAccount.username == username).delete()
+            session.commit()
+
+
+def test_new_admin_contact_requires_registered_email_verification(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    username = f"admin-contact-{uuid4().hex[:12]}"
+    user_repository.create(UserRecord(
+        username=username,
+        password_hash=hash_password("old-password"),
+        role="administrator",
+        full_name="Admin Contact Verification Test",
+        email=f"{username}@stjude.org",
+    ))
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_email",
+        lambda *_: pytest.fail("No code should be sent before the registered email is verified"),
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_sms",
+        lambda *_: pytest.fail("No code should be sent before the registered email is verified"),
+    )
+
+    try:
+        response = client.post(
+            "/api/auth/request-password-reset",
+            json={
+                "email": f"{uuid4().hex[:12]}@example.com",
+                "username": username,
+                "recovery_phone": "+919876543210",
+            },
+        )
+        assert response.status_code == 400
+        assert "ADMIN_RECOVERY_EMAIL" in response.json()["detail"]
     finally:
         password_reset_store.clear_reset_otps(username)
         with SecuritySessionLocal() as session:

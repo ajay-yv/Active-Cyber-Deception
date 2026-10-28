@@ -300,6 +300,7 @@ class UpdateEmailRequest(BaseModel):
 class PasswordResetRequest(BaseModel):
     email: str = Field(min_length=1, max_length=255)
     username: str | None = None
+    recovery_email: str | None = Field(default=None, min_length=3, max_length=255)
     recovery_phone: str | None = Field(default=None, min_length=10, max_length=20)
 
 
@@ -318,6 +319,8 @@ class VerifyOtpRequest(BaseModel):
     otp: str = Field(pattern=r"^\d{6}$")
     new_password: str = Field(min_length=8, max_length=128)
     username: str | None = None
+    recovery_email: str | None = Field(default=None, min_length=3, max_length=255)
+    recovery_email_otp: str | None = Field(default=None, pattern=r"^\d{6}$")
     recovery_phone: str | None = Field(default=None, min_length=10, max_length=20)
     mobile_otp: str | None = Field(default=None, pattern=r"^\d{6}$")
 
@@ -359,7 +362,10 @@ def _find_password_reset_account(identifier: str, selected_username: str | None 
     if selected_username and account.username != selected_username.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="That recovery contact does not belong to the selected account.",
+            detail=(
+                "That email or mobile is not linked to the selected account. "
+                "For a new recovery contact, enter the account's registered email above and the new contact in its separate field."
+            ),
         )
     if account.is_blocked:
         raise HTTPException(
@@ -393,7 +399,8 @@ def change_email(payload: UpdateEmailRequest, user: User = Depends(get_current_u
 @router.post("/request-password-reset")
 def request_password_reset(payload: PasswordResetRequest) -> dict:
     input_email = payload.email.strip()
-    if payload.recovery_phone and payload.username:
+    has_new_recovery_contact = bool(payload.recovery_email or payload.recovery_phone)
+    if has_new_recovery_contact and payload.username:
         user_record = user_repository.get_by_username(payload.username.strip())
         if user_record is None or user_record.role != "administrator":
             raise HTTPException(
@@ -407,14 +414,55 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
             )
     else:
         user_record = _find_password_reset_account(input_email, payload.username)
-    if payload.recovery_phone:
-        digits = "".join(character for character in payload.recovery_phone if character.isdigit())
-        if not 10 <= len(digits) <= 15:
+    if has_new_recovery_contact:
+        if not user_record.email or input_email.strip().lower() != user_record.email.strip().lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "The registered account email does not match the selected administrator. "
+                    "Set ADMIN_RECOVERY_EMAIL to the administrator's verified email and restart the backend."
+                ),
+            )
+        recovery_email = payload.recovery_email.strip().lower() if payload.recovery_email else None
+        if recovery_email:
+            if "@" not in recovery_email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Enter a valid new recovery email address.",
+                )
+            existing_email_account = user_repository.get_by_email(recovery_email)
+            if existing_email_account and existing_email_account.username != user_record.username:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="That email address is already registered to another account.",
+                )
+            if recovery_email == user_record.email.strip().lower():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="The new recovery email must be different from the registered account email.",
+                )
+
+        if not recovery_email and not payload.recovery_phone:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Enter a new email address or mobile number.",
+            )
+
+        digits = "".join(
+            character
+            for character in (payload.recovery_phone or "")
+            if character.isdigit()
+        )
+        if payload.recovery_phone and not 10 <= len(digits) <= 15:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Enter a valid mobile number with its country code.",
             )
-        existing_phone_account = user_repository.get_by_phone_number(payload.recovery_phone)
+        existing_phone_account = (
+            user_repository.get_by_phone_number(payload.recovery_phone)
+            if payload.recovery_phone
+            else None
+        )
         if existing_phone_account and existing_phone_account.username != user_record.username:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -430,7 +478,7 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
             )
             if not value.strip()
         ]
-        if missing_sms_settings:
+        if payload.recovery_phone and missing_sms_settings:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"SMS delivery is not configured. The administrator must configure: {', '.join(missing_sms_settings)}.",
@@ -438,7 +486,7 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
         if not settings.smtp_user.strip() or not settings.smtp_pass.strip():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Email verification is not configured. The administrator must configure SMTP before resetting the administrator password to a new mobile number.",
+                detail="Email verification is not configured. The administrator must configure SMTP before resetting the administrator password.",
             )
         if not user_record.email:
             raise HTTPException(
@@ -446,25 +494,37 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
                 detail="No registered email address is available to verify this administrator account.",
             )
         email_otp = f"{secrets.randbelow(1_000_000):06d}"
-        mobile_otp = f"{secrets.randbelow(1_000_000):06d}"
+        recovery_otps: dict[str, str] = {}
         email_delivered = send_otp_email(user_record.email, email_otp, user_record.full_name)
-        mobile_delivered = send_otp_sms(payload.recovery_phone, mobile_otp)
-        if not email_delivered or not mobile_delivered:
+        recovery_email_delivered = True
+        if recovery_email:
+            recovery_otps["email"] = f"{secrets.randbelow(1_000_000):06d}"
+            recovery_email_delivered = send_otp_email(
+                recovery_email,
+                recovery_otps["email"],
+                user_record.full_name,
+            )
+        mobile_delivered = True
+        if payload.recovery_phone:
+            recovery_otps["phone"] = f"{secrets.randbelow(1_000_000):06d}"
+            mobile_delivered = send_otp_sms(payload.recovery_phone, recovery_otps["phone"])
+        if not email_delivered or not recovery_email_delivered or not mobile_delivered:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Could not deliver both verification codes. Check SMTP and Twilio configuration, sender status, and destination-country permissions.",
+                detail="Could not deliver all verification codes. Check SMTP and Twilio configuration, sender status, and destination-country permissions.",
             )
         password_reset_store.clear_reset_otps(user_record.username)
         password_reset_store.set_admin_reset_otps(
             user_record.username,
             email_otp,
-            mobile_otp,
+            recovery_otps,
+            recovery_email,
             payload.recovery_phone,
         )
-        record_audit(user_record.username, "request_password_reset", "dual verification codes sent")
+        record_audit(user_record.username, "request_password_reset", "administrator recovery codes sent")
         return {
             "status": "success",
-            "message": "Verification codes sent to the registered email and the new mobile number. Both are required to reset the password.",
+            "message": "Verification codes sent to the registered email and new recovery contact(s). All codes are required to reset the password.",
         }
 
     otp = f"{secrets.randbelow(1_000_000):06d}"
@@ -550,7 +610,8 @@ def verify_email_otp(payload: VerifyEmailOtpRequest, user: User = Depends(get_cu
 @router.post("/verify-reset-otp")
 def verify_reset_otp(payload: VerifyOtpRequest) -> dict:
     input_identifier = payload.email.strip()
-    if payload.recovery_phone:
+    has_new_recovery_contact = bool(payload.recovery_email or payload.recovery_phone)
+    if has_new_recovery_contact:
         user_record = (
             user_repository.get_by_username(payload.username.strip())
             if payload.username
@@ -566,15 +627,40 @@ def verify_reset_otp(payload: VerifyOtpRequest) -> dict:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This account is blocked and cannot reset its password.",
             )
-        if user_record.role != "administrator" or not payload.mobile_otp:
+        if user_record.role != "administrator":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Both verification codes are required for administrator recovery to a new mobile number.",
+                detail="New recovery contacts can only be verified for administrator recovery.",
+            )
+        recovery_email = payload.recovery_email.strip().lower() if payload.recovery_email else None
+        recovery_otps: dict[str, str] = {}
+        if recovery_email:
+            if not payload.recovery_email_otp:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="The OTP sent to the new recovery email is required.",
+                )
+            recovery_otps["email"] = payload.recovery_email_otp
+        if payload.recovery_phone:
+            if not payload.mobile_otp:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="The OTP sent to the new mobile number is required.",
+                )
+            recovery_otps["phone"] = payload.mobile_otp
+        if (
+            not user_record.email
+            or input_identifier.lower() != user_record.email.strip().lower()
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Enter the registered email for the selected administrator.",
             )
         otp_valid = password_reset_store.verify_admin_reset_otps(
             user_record.username,
             payload.otp,
-            payload.mobile_otp,
+            recovery_otps,
+            recovery_email,
             payload.recovery_phone,
         )
     else:
@@ -585,12 +671,13 @@ def verify_reset_otp(payload: VerifyOtpRequest) -> dict:
 
     new_hashed = hash_password(payload.new_password)
     updated = (
-        user_repository.update_password_and_phone(
+        user_repository.update_password_and_recovery_contacts(
             user_record.username,
             new_hashed,
+            payload.recovery_email,
             payload.recovery_phone,
         )
-        if payload.recovery_phone
+        if has_new_recovery_contact
         else user_repository.update_password(user_record.username, new_hashed)
     )
     if not updated:

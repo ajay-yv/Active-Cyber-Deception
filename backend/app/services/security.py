@@ -48,7 +48,10 @@ FAILED_LOGIN_ALERT_WINDOW = timedelta(minutes=5)
 class PasswordResetStore:
     def __init__(self) -> None:
         self._otp_store: dict[str, tuple[str, float]] = {}
-        self._admin_reset_otp_store: dict[str, tuple[str, str, str, float, int]] = {}
+        self._admin_reset_otp_store: dict[
+            str,
+            tuple[str, dict[str, str], str | None, str | None, float, int],
+        ] = {}
         self.expiration_seconds = 300
 
     def _key(self, purpose: str, email: str) -> str:
@@ -79,13 +82,15 @@ class PasswordResetStore:
         self,
         username: str,
         email_otp: str,
-        mobile_otp: str,
-        mobile_number: str,
+        recovery_otps: dict[str, str],
+        recovery_email: str | None,
+        recovery_phone: str | None,
     ) -> None:
         self._admin_reset_otp_store[self._key("admin_reset", username)] = (
             email_otp,
-            mobile_otp,
-            mobile_number,
+            recovery_otps.copy(),
+            recovery_email,
+            recovery_phone,
             time.time() + self.expiration_seconds,
             0,
         )
@@ -94,21 +99,23 @@ class PasswordResetStore:
         self,
         username: str,
         email_otp: str,
-        mobile_otp: str,
-        mobile_number: str,
+        recovery_otps: dict[str, str],
+        recovery_email: str | None,
+        recovery_phone: str | None,
     ) -> bool:
         key = self._key("admin_reset", username)
         value = self._admin_reset_otp_store.get(key)
         if value is None:
             return False
-        stored_email_otp, stored_mobile_otp, stored_mobile, expiry, attempts = value
+        stored_email_otp, stored_recovery_otps, stored_email, stored_phone, expiry, attempts = value
         if time.time() > expiry:
             del self._admin_reset_otp_store[key]
             return False
         if (
             stored_email_otp != email_otp
-            or stored_mobile_otp != mobile_otp
-            or stored_mobile != mobile_number
+            or stored_recovery_otps != recovery_otps
+            or stored_email != recovery_email
+            or stored_phone != recovery_phone
         ):
             attempts += 1
             if attempts >= 5:
@@ -116,8 +123,9 @@ class PasswordResetStore:
             else:
                 self._admin_reset_otp_store[key] = (
                     stored_email_otp,
-                    stored_mobile_otp,
-                    stored_mobile,
+                    stored_recovery_otps,
+                    stored_email,
+                    stored_phone,
                     expiry,
                     attempts,
                 )

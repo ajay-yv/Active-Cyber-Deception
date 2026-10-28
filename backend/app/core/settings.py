@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 1440
     app_env: str = "development"
     firebase_project_id: str | None = None
+    admin_recovery_email: str | None = None
     admin_recovery_phone: str | None = None
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587

@@ -100,18 +100,22 @@ class UserRepository:
             session.commit()
         return True
 
-    def update_password_and_phone(
+    def update_password_and_recovery_contacts(
         self,
         username: str,
         password_hash: str,
-        phone_number: str,
+        email: str | None,
+        phone_number: str | None,
     ) -> bool:
         with SecuritySessionLocal() as session:
             row = session.query(UserAccount).filter(UserAccount.username == username).first()
             if row is None:
                 return False
             row.password_hash = password_hash
-            row.phone_number = phone_number
+            if email:
+                row.email = email.strip().lower()
+            if phone_number:
+                row.phone_number = phone_number
             session.add(row)
             session.commit()
         return True

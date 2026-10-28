@@ -1600,6 +1600,7 @@ export async function changeEmail(newEmail: string, token: string): Promise<{ st
 export async function requestPasswordReset(
   email: string,
   username?: string,
+  recoveryEmail?: string,
   recoveryPhone?: string,
 ): Promise<{ status: string; message: string }> {
   const response = await safeFetch(`${apiBaseUrl}/api/auth/request-password-reset`, {
@@ -1607,7 +1608,12 @@ export async function requestPasswordReset(
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, username, recovery_phone: recoveryPhone }),
+    body: JSON.stringify({
+      email,
+      username,
+      recovery_email: recoveryEmail,
+      recovery_phone: recoveryPhone,
+    }),
   })
   const responseBody = await response.text()
   let data: { status?: unknown; message?: unknown; detail?: unknown } = {}
@@ -1631,6 +1637,8 @@ export async function verifyResetOtp(
   otp: string,
   newPassword: string,
   username?: string,
+  recoveryEmail?: string,
+  recoveryEmailOtp?: string,
   recoveryPhone?: string,
   mobileOtp?: string,
 ): Promise<{ status: string; message: string }> {
@@ -1644,6 +1652,8 @@ export async function verifyResetOtp(
       otp,
       new_password: newPassword,
       username,
+      recovery_email: recoveryEmail,
+      recovery_email_otp: recoveryEmailOtp,
       recovery_phone: recoveryPhone,
       mobile_otp: mobileOtp,
     }),
