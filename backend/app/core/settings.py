@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
@@ -22,9 +22,22 @@ class Settings(BaseSettings):
     admin_recovery_phone: str | None = None
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587
-    smtp_user: str = ""
-    smtp_pass: str = ""
-    smtp_from: str = "stjude.hospital.security@gmail.com"
+    smtp_user: str = Field(
+        default="",
+        validation_alias=AliasChoices("smtp_user", "SMTP_USERNAME", "SMTP_USER"),
+    )
+    smtp_pass: str = Field(
+        default="",
+        validation_alias=AliasChoices("smtp_pass", "SMTP_PASSWORD", "SMTP_PASS"),
+    )
+    smtp_from: str = Field(
+        default="stjude.hospital.security@gmail.com",
+        validation_alias=AliasChoices(
+            "smtp_from",
+            "SMTP_FROM_ADDRESS",
+            "SMTP_FROM",
+        ),
+    )
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_api_key_sid: str = ""
@@ -49,6 +62,7 @@ class Settings(BaseSettings):
         env_file=SETTINGS_ENV_FILES,
         env_file_encoding="utf-8",
         validate_assignment=True,
+        populate_by_name=True,
         extra="ignore",
     )
 

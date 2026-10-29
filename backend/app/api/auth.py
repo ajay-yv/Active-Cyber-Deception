@@ -492,7 +492,11 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
         if not settings.smtp_user.strip() or not settings.smtp_pass.strip():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Email verification is not configured. The administrator must configure SMTP before resetting the administrator password.",
+                detail=(
+                    "Email verification is not configured. The administrator must "
+                    "configure SMTP_USERNAME and SMTP_PASSWORD (or SMTP_USER and "
+                    "SMTP_PASS) before resetting the administrator password."
+                ),
             )
         if not user_record.email:
             raise HTTPException(

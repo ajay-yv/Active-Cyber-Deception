@@ -33,6 +33,34 @@ def test_backend_settings_use_workspace_anchored_env_files() -> None:
     assert workspace_root / ".env.local" in env_files
 
 
+def test_smtp_settings_accept_documented_environment_variable_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SMTP_USERNAME", "smtp-user@example.org")
+    monkeypatch.setenv("SMTP_PASSWORD", "private-password")
+    monkeypatch.setenv("SMTP_FROM_ADDRESS", "portal@example.org")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.smtp_user == "smtp-user@example.org"
+    assert settings.smtp_pass == "private-password"
+    assert settings.smtp_from == "portal@example.org"
+
+
+def test_smtp_settings_keep_supporting_legacy_environment_variable_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SMTP_USER", "legacy-user@example.org")
+    monkeypatch.setenv("SMTP_PASS", "legacy-password")
+    monkeypatch.setenv("SMTP_FROM", "legacy-from@example.org")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.smtp_user == "legacy-user@example.org"
+    assert settings.smtp_pass == "legacy-password"
+    assert settings.smtp_from == "legacy-from@example.org"
+
+
 def test_google_token_verification_uses_configured_project_without_revocation_lookup(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
