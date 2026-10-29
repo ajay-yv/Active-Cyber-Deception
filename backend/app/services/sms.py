@@ -1,8 +1,8 @@
-import base64
 import logging
-from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+
+from twilio.base.exceptions import TwilioException
+from twilio.rest import Client
+
 from app.core.settings import Settings, get_settings
 
 logger = logging.getLogger(__name__)
@@ -34,30 +34,25 @@ def send_otp_sms(to_number: str, otp: str) -> bool:
             return False
         recipient = f"+{country_code}{digits}"
 
-    username, password = (
-        (api_key_sid, api_key_secret)
-        if api_key_sid and api_key_secret
-        else (account_sid, auth_token)
-    )
-    credentials = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
-    request = Request(
-        f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json",
-        data=urlencode({
-            "To": recipient,
-            "From": from_number,
-            "Body": f"Your hospital portal password reset code is {otp}. It expires in 5 minutes.",
-        }).encode("utf-8"),
-        headers={
-            "Authorization": f"Basic {credentials}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        method="POST",
-    )
     try:
-        with urlopen(request, timeout=10) as response:
-            return 200 <= response.status < 300
-    except (HTTPError, URLError, TimeoutError, OSError) as exc:
-        logger.warning("SMS OTP delivery failed (%s)", type(exc).__name__)
+        client = (
+            Client(api_key_sid, api_key_secret, account_sid=account_sid)
+            if api_key_sid and api_key_secret
+            else Client(account_sid, auth_token)
+        )
+        message = client.messages.create(
+            to=recipient,
+            from_=from_number,
+            body=f"Your hospital portal password reset code is {otp}. It expires in 5 minutes.",
+        )
+        return bool(message.sid)
+    except TwilioException as exc:
+        logger.warning(
+            "SMS OTP delivery failed (type=%s, status=%s, code=%s)",
+            type(exc).__name__,
+            getattr(exc, "status", None),
+            getattr(exc, "code", None),
+        )
         return False
 
 
