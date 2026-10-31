@@ -336,6 +336,55 @@ def test_legacy_patient_mobile_reset_reports_missing_sms_configuration(
             session.commit()
 
 
+def test_mobile_reset_falls_back_to_registered_email_without_twilio(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    username = f"7{uuid4().int % 10**9:09d}"
+    email = f"{username}@patient.health"
+    user_repository.create(UserRecord(
+        username=username,
+        password_hash=hash_password("old-password"),
+        role="patient",
+        full_name="Email Fallback Patient",
+        email=email,
+        phone_number=f"+91{username}",
+    ))
+    email_deliveries: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(
+            resend_api_key="re_test_key",
+            resend_from_address="Portal <otp@example.org>",
+        ),
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_email",
+        lambda destination, otp, _name: email_deliveries.append((destination, otp)) or True,
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_sms",
+        lambda *_: pytest.fail("SMS must not be attempted without Twilio configuration"),
+    )
+
+    try:
+        response = client.post(
+            "/api/auth/request-password-reset",
+            json={"email": f"+91{username}", "username": username},
+        )
+
+        assert response.status_code == 200, response.text
+        assert "registered email" in response.json()["message"]
+        assert email_deliveries == [(email, password_reset_store.get_otp(username))]
+    finally:
+        password_reset_store.clear_reset_otps(username)
+        with SecuritySessionLocal() as session:
+            session.query(UserAccount).filter(UserAccount.username == username).delete()
+            session.commit()
+
+
 def test_administrator_mobile_reset_requires_preconfigured_recovery_phone() -> None:
     username = f"admin-reset-{uuid4().hex[:12]}"
     user_repository.create(UserRecord(
@@ -542,7 +591,10 @@ def test_administrator_can_verify_new_email_and_update_account_email(
     monkeypatch.setattr(
         auth_api,
         "get_settings",
-        lambda: Settings(smtp_user="smtp-test", smtp_pass="smtp-test-password"),
+        lambda: Settings(
+            resend_api_key="re_test_key",
+            resend_from_address="Portal <otp@example.org>",
+        ),
     )
     monkeypatch.setattr(
         auth_api,

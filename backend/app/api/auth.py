@@ -14,7 +14,7 @@ from app.repositories.user_repository import user_repository, UserRecord
 from app.services.audit import record_audit
 from app.services.security import log_login, log_login_failure, password_reset_store
 from app.services.registries import patient_repository
-from app.services.email import send_otp_email
+from app.services.email import email_delivery_configured, send_otp_email
 from app.services.sms import missing_twilio_settings, send_otp_sms
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -489,13 +489,13 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"SMS delivery is not configured. The administrator must configure: {', '.join(missing_sms_settings)}.",
             )
-        if not settings.smtp_user.strip() or not settings.smtp_pass.strip():
+        if not email_delivery_configured(settings):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=(
-                    "Email verification is not configured. The administrator must "
-                    "configure SMTP_USERNAME and SMTP_PASSWORD (or SMTP_USER and "
-                    "SMTP_PASS) before resetting the administrator password."
+                    "Email verification is not configured. Configure RESEND_API_KEY "
+                    "and RESEND_FROM_ADDRESS, or SMTP_USERNAME and SMTP_PASSWORD "
+                    "(SMTP_USER and SMTP_PASS are also supported)."
                 ),
             )
         if not user_record.email:
@@ -521,7 +521,7 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
         if not email_delivered or not recovery_email_delivered or not mobile_delivered:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Could not deliver all verification codes. Check SMTP and Twilio configuration, sender status, and destination-country permissions.",
+                detail=                "Could not deliver all verification codes. Check email and Twilio provider configuration, sender verification, and destination-country permissions.",
             )
         password_reset_store.clear_reset_otps(user_record.username)
         password_reset_store.set_admin_reset_otps(
@@ -554,15 +554,28 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
         settings = get_settings()
         missing_sms_settings = missing_twilio_settings(settings)
         if missing_sms_settings:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=(
-                    "Mobile OTP delivery is not configured for this hospital portal. "
-                    f"The administrator must configure: {', '.join(missing_sms_settings)}."
-                ),
+            email_fallback_available = bool(
+                user_record.email
+                and email_delivery_configured(settings)
             )
-        delivered = send_otp_sms(destination, otp)
-        channel = "mobile"
+            if not email_fallback_available:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=(
+                        "Mobile OTP delivery is not configured for this hospital portal. "
+                        f"The administrator must configure: {', '.join(missing_sms_settings)}. "
+                        "An OTP can be sent to the registered email when an email provider is configured."
+                    ),
+                )
+            delivered = send_otp_email(
+                user_record.email,
+                otp,
+                user_record.full_name,
+            )
+            channel = "email"
+        else:
+            delivered = send_otp_sms(destination, otp)
+            channel = "mobile"
 
     if not delivered:
         raise HTTPException(
@@ -571,7 +584,7 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
                 "The SMS provider did not accept the message. Verify the destination number, "
                 "Twilio sender number, account status, and destination-country permissions."
                 if channel == "mobile"
-                else "Could not send the verification email. Check the hospital email delivery configuration and try again."
+                else "Could not send the verification email. Check the configured email provider, verified sender, and destination address."
             ),
         )
 

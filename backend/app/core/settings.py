@@ -38,6 +38,8 @@ class Settings(BaseSettings):
             "SMTP_FROM",
         ),
     )
+    resend_api_key: str = ""
+    resend_from_address: str = ""
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_api_key_sid: str = ""

@@ -1,11 +1,24 @@
-import smtplib
+import json
 import logging
+import smtplib
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 from html import escape
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from app.core.settings import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+def email_delivery_configured(settings=None) -> bool:
+    settings = settings or get_settings()
+    has_resend = bool(
+        settings.resend_api_key.strip()
+        and settings.resend_from_address.strip()
+    )
+    has_smtp = bool(settings.smtp_user.strip() and settings.smtp_pass.strip())
+    return has_resend or has_smtp
 
 
 def send_otp_email(to_email: str, otp: str, username: str = "User") -> bool:
@@ -55,10 +68,79 @@ def send_otp_email(to_email: str, otp: str, username: str = "User") -> bool:
         "This code expires in 5 minutes. If you did not request this, ignore this email."
     )
 
-    if not settings.smtp_user or not settings.smtp_pass:
+    if not email_delivery_configured(settings):
         logger.error("Email OTP delivery is not configured")
         return False
 
+    if settings.resend_api_key.strip() and settings.resend_from_address.strip():
+        return _send_resend_email(
+            settings.resend_api_key.strip(),
+            settings.resend_from_address.strip(),
+            to_email,
+            subject,
+            plain_content,
+            html_content,
+        )
+
+    return _send_smtp_email(
+        settings,
+        to_email,
+        subject,
+        plain_content,
+        html_content,
+    )
+
+
+def _send_resend_email(
+    api_key: str,
+    from_address: str,
+    to_email: str,
+    subject: str,
+    plain_content: str,
+    html_content: str,
+) -> bool:
+    request = Request(
+        "https://api.resend.com/emails",
+        data=json.dumps(
+            {
+                "from": from_address,
+                "to": [to_email],
+                "subject": subject,
+                "text": plain_content,
+                "html": html_content,
+            }
+        ).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=10) as response:
+            if 200 <= response.status < 300:
+                logger.info("Password reset email accepted by Resend")
+                return True
+            logger.warning(
+                "Resend rejected password reset email (status=%s)",
+                response.status,
+            )
+            return False
+    except HTTPError as exc:
+        logger.warning("Resend email delivery failed (status=%s)", exc.code)
+        return False
+    except (URLError, TimeoutError, OSError) as exc:
+        logger.warning("Resend email delivery failed (%s)", type(exc).__name__)
+        return False
+
+
+def _send_smtp_email(
+    settings,
+    to_email: str,
+    subject: str,
+    plain_content: str,
+    html_content: str,
+) -> bool:
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject

@@ -22,3 +22,4 @@ test_results.txt
 
 .vercel
 .env*.local
+!.env.example
