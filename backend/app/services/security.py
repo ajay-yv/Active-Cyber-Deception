@@ -1,12 +1,18 @@
+import base64
+import binascii
+import hmac
+import secrets
+import struct
 import time
-from datetime import datetime, timezone
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+from hashlib import sha256
+from threading import RLock
 from uuid import uuid4
 
-from collections import defaultdict
-from datetime import timedelta
 from typing import Optional
-from hashlib import sha256
 
+from app.core.settings import get_settings
 from app.repositories.password_reset_repository import PasswordResetTokenRecord, password_reset_repository
 from app.repositories.security_repository import SecurityRepository
 from app.repositories.user_repository import user_repository
@@ -16,8 +22,39 @@ security_repository = SecurityRepository()
 blocked_sessions: set[str] = set()
 
 
+def verify_totp(secret_key: str, otp: str, valid_window: int = 1) -> bool:
+    if not secret_key or not otp or not otp.isdigit() or len(otp) != 6 or valid_window < 0:
+        return False
+
+    try:
+        secret = base64.b32decode(
+            secret_key.upper() + "=" * (-len(secret_key) % 8),
+            casefold=True,
+        )
+    except (binascii.Error, ValueError):
+        return False
+    if not secret:
+        return False
+
+    current_counter = int(time.time()) // 30
+    for counter in range(current_counter - valid_window, current_counter + valid_window + 1):
+        if counter < 0:
+            continue
+        digest = hmac.digest(secret, struct.pack(">Q", counter), "sha1")
+        offset = digest[-1] & 0x0F
+        code = (struct.unpack(">I", digest[offset : offset + 4])[0] & 0x7FFFFFFF) % 1_000_000
+        if hmac.compare_digest(f"{code:06d}", otp):
+            return True
+    return False
+
+
 def _hash_reset_token(token: str) -> str:
     return sha256(token.encode("utf-8")).hexdigest()
+
+
+def _hash_otp(otp: str) -> str:
+    secret = get_settings().secret_key.encode("utf-8")
+    return hmac.new(secret, otp.encode("utf-8"), sha256).hexdigest()
 
 
 def create_password_reset_token(username: str, email: str, token: str, expires_at: datetime) -> PasswordResetTokenRecord:
@@ -47,36 +84,50 @@ FAILED_LOGIN_ALERT_WINDOW = timedelta(minutes=5)
 
 class PasswordResetStore:
     def __init__(self) -> None:
-        self._otp_store: dict[str, tuple[str, float]] = {}
+        self._otp_store: dict[str, tuple[str, float, int]] = {}
         self._admin_reset_otp_store: dict[
             str,
             tuple[str, dict[str, str], str | None, str | None, float, int],
         ] = {}
+        self._lock = RLock()
         self.expiration_seconds = 300
+        self.max_attempts = 5
 
     def _key(self, purpose: str, email: str) -> str:
         return f"{purpose}:{email.lower()}"
 
     def set_otp(self, email: str, otp: str) -> None:
-        self._otp_store[self._key('reset', email)] = (otp, time.time() + self.expiration_seconds)
+        with self._lock:
+            self._otp_store[self._key("reset", email)] = (
+                _hash_otp(otp),
+                time.time() + self.expiration_seconds,
+                0,
+            )
 
     def clear_reset_otps(self, username: str) -> None:
-        self._otp_store.pop(self._key("reset", username), None)
-        self._admin_reset_otp_store.pop(self._key("admin_reset", username), None)
+        with self._lock:
+            self._otp_store.pop(self._key("reset", username), None)
+            self._admin_reset_otp_store.pop(self._key("admin_reset", username), None)
 
     def verify_reset_otp(self, email: str, otp: str) -> bool:
         key = self._key('reset', email)
-        value = self._otp_store.get(key)
-        if value is None:
-            return False
-        stored_otp, expiry = value
-        if time.time() > expiry:
-            del self._otp_store[key]
-            return False
-        if stored_otp != otp:
-            return False
-        del self._otp_store[key]
-        return True
+        with self._lock:
+            value = self._otp_store.get(key)
+            if value is None:
+                return False
+            stored_otp_hash, expiry, attempts = value
+            if time.time() >= expiry:
+                self._otp_store.pop(key, None)
+                return False
+            if not hmac.compare_digest(stored_otp_hash, _hash_otp(otp)):
+                attempts += 1
+                if attempts >= self.max_attempts:
+                    self._otp_store.pop(key, None)
+                else:
+                    self._otp_store[key] = (stored_otp_hash, expiry, attempts)
+                return False
+            self._otp_store.pop(key, None)
+            return True
 
     def set_admin_reset_otps(
         self,
@@ -86,14 +137,15 @@ class PasswordResetStore:
         recovery_email: str | None,
         recovery_phone: str | None,
     ) -> None:
-        self._admin_reset_otp_store[self._key("admin_reset", username)] = (
-            email_otp,
-            recovery_otps.copy(),
-            recovery_email,
-            recovery_phone,
-            time.time() + self.expiration_seconds,
-            0,
-        )
+        with self._lock:
+            self._admin_reset_otp_store[self._key("admin_reset", username)] = (
+                _hash_otp(email_otp),
+                {key: _hash_otp(otp) for key, otp in recovery_otps.items()},
+                recovery_email,
+                recovery_phone,
+                time.time() + self.expiration_seconds,
+                0,
+            )
 
     def verify_admin_reset_otps(
         self,
@@ -104,34 +156,49 @@ class PasswordResetStore:
         recovery_phone: str | None,
     ) -> bool:
         key = self._key("admin_reset", username)
-        value = self._admin_reset_otp_store.get(key)
-        if value is None:
-            return False
-        stored_email_otp, stored_recovery_otps, stored_email, stored_phone, expiry, attempts = value
-        if time.time() > expiry:
-            del self._admin_reset_otp_store[key]
-            return False
-        if (
-            stored_email_otp != email_otp
-            or stored_recovery_otps != recovery_otps
-            or stored_email != recovery_email
-            or stored_phone != recovery_phone
-        ):
-            attempts += 1
-            if attempts >= 5:
-                del self._admin_reset_otp_store[key]
-            else:
-                self._admin_reset_otp_store[key] = (
-                    stored_email_otp,
-                    stored_recovery_otps,
-                    stored_email,
-                    stored_phone,
-                    expiry,
-                    attempts,
+        with self._lock:
+            value = self._admin_reset_otp_store.get(key)
+            if value is None:
+                return False
+            (
+                stored_email_otp_hash,
+                stored_recovery_otp_hashes,
+                stored_email,
+                stored_phone,
+                expiry,
+                attempts,
+            ) = value
+            if time.time() >= expiry:
+                self._admin_reset_otp_store.pop(key, None)
+                return False
+
+            recovery_codes_match = stored_recovery_otp_hashes.keys() == recovery_otps.keys()
+            if recovery_codes_match:
+                recovery_codes_match = all(
+                    hmac.compare_digest(stored_recovery_otp_hashes[code_type], _hash_otp(otp))
+                    for code_type, otp in recovery_otps.items()
                 )
-            return False
-        del self._admin_reset_otp_store[key]
-        return True
+            if not (
+                hmac.compare_digest(stored_email_otp_hash, _hash_otp(email_otp))
+                and recovery_codes_match
+                and stored_email == recovery_email
+                and stored_phone == recovery_phone
+            ):
+                attempts += 1
+                if attempts >= self.max_attempts:
+                    self._admin_reset_otp_store.pop(key, None)
+                else:
+                    self._admin_reset_otp_store[key] = (
+                        stored_email_otp_hash,
+                        stored_recovery_otp_hashes,
+                        stored_email,
+                        stored_phone,
+                        expiry,
+                        attempts,
+                    )
+                return False
+            self._admin_reset_otp_store.pop(key, None)
+            return True
 
     def has_admin_reset_for_contact(
         self,
@@ -139,38 +206,242 @@ class PasswordResetStore:
         email: str | None,
         phone_number: str | None,
     ) -> bool:
-        value = self._admin_reset_otp_store.get(self._key("admin_reset", username))
-        if value is None:
-            return False
-        _, _, stored_email, stored_phone, expiry, _ = value
-        if time.time() > expiry:
-            del self._admin_reset_otp_store[self._key("admin_reset", username)]
-            return False
-        return stored_email == email and stored_phone == phone_number
+        key = self._key("admin_reset", username)
+        with self._lock:
+            value = self._admin_reset_otp_store.get(key)
+            if value is None:
+                return False
+            _, _, stored_email, stored_phone, expiry, _ = value
+            if time.time() >= expiry:
+                self._admin_reset_otp_store.pop(key, None)
+                return False
+            return stored_email == email and stored_phone == phone_number
 
-    def set_email_verification_otp(self, email: str, otp: str) -> None:
-        self._otp_store[self._key('verify_email', email)] = (otp, time.time() + self.expiration_seconds)
+    def clear(self) -> None:
+        with self._lock:
+            self._otp_store.clear()
+            self._admin_reset_otp_store.clear()
 
-    def verify_email_otp(self, email: str, otp: str) -> bool:
-        key = self._key('verify_email', email)
-        value = self._otp_store.get(key)
-        if value is None:
-            return False
-        stored_otp, expiry = value
-        if time.time() > expiry:
-            del self._otp_store[key]
-            return False
-        if stored_otp != otp:
-            return False
-        del self._otp_store[key]
-        return True
 
-    def get_otp(self, email: str, purpose: str = 'reset') -> str | None:
-        value = self._otp_store.get(self._key(purpose, email))
-        return value[0] if value else None
+class EmailVerificationStore:
+    def __init__(self) -> None:
+        self._challenges: dict[str, tuple[str, str, float, int]] = {}
+        self._last_issued: dict[str, float] = {}
+        self._lock = RLock()
+        self.expiration_seconds = 300
+        self.max_attempts = 5
+        self.resend_cooldown_seconds = 60
+
+    def issue(self, username: str, email: str, otp: str) -> None:
+        key = username.lower()
+        now = time.time()
+        with self._lock:
+            last_issued = self._last_issued.get(key)
+            if last_issued is not None and now - last_issued < self.resend_cooldown_seconds:
+                raise ValueError("Wait before requesting another verification code.")
+            self._challenges[key] = (
+                email.strip().lower(),
+                _hash_otp(otp),
+                now + self.expiration_seconds,
+                0,
+            )
+            self._last_issued[key] = now
+
+    def verify(self, username: str, email: str, otp: str) -> bool:
+        key = username.lower()
+        with self._lock:
+            challenge = self._challenges.get(key)
+            if challenge is None:
+                return False
+
+            stored_email, stored_otp_hash, expires_at, attempts = challenge
+            if time.time() >= expires_at:
+                self._challenges.pop(key, None)
+                return False
+            if stored_email != email.strip().lower() or not hmac.compare_digest(
+                stored_otp_hash,
+                _hash_otp(otp),
+            ):
+                attempts += 1
+                if attempts >= self.max_attempts:
+                    self._challenges.pop(key, None)
+                else:
+                    self._challenges[key] = (
+                        stored_email,
+                        stored_otp_hash,
+                        expires_at,
+                        attempts,
+                    )
+                return False
+
+            self._challenges.pop(key, None)
+            self._last_issued.pop(key, None)
+            return True
+
+    def cancel(self, username: str, email: str, otp: str) -> None:
+        key = username.lower()
+        with self._lock:
+            challenge = self._challenges.get(key)
+            if (
+                challenge is not None
+                and challenge[0] == email.strip().lower()
+                and hmac.compare_digest(challenge[1], _hash_otp(otp))
+            ):
+                self._challenges.pop(key, None)
+                self._last_issued.pop(key, None)
+
+    def clear(self) -> None:
+        with self._lock:
+            self._challenges.clear()
+            self._last_issued.clear()
+
+
+class LoginOtpStore:
+    def __init__(self) -> None:
+        self._challenges: dict[str, tuple[str, str, float, int]] = {}
+        self._user_challenges: dict[str, str] = {}
+        self._lock = RLock()
+        self.expiration_seconds = 300
+        self.max_attempts = 5
+
+    def issue(self, username: str, otp: str) -> str:
+        challenge_id = secrets.token_urlsafe(32)
+        challenge_key = _hash_reset_token(challenge_id)
+        with self._lock:
+            now = time.time()
+            for key, (expired_username, _, expires_at, _) in list(self._challenges.items()):
+                if now >= expires_at:
+                    self._discard(key, expired_username)
+            previous_key = self._user_challenges.pop(username, None)
+            if previous_key:
+                self._challenges.pop(previous_key, None)
+            self._challenges[challenge_key] = (
+                username,
+                _hash_otp(otp),
+                now + self.expiration_seconds,
+                0,
+            )
+            self._user_challenges[username] = challenge_key
+        return challenge_id
+
+    def verify(self, challenge_id: str, otp: str) -> str | None:
+        challenge_key = _hash_reset_token(challenge_id)
+        with self._lock:
+            challenge = self._challenges.get(challenge_key)
+            if challenge is None:
+                return None
+
+            username, stored_otp_hash, expires_at, attempts = challenge
+            if time.time() >= expires_at:
+                self._discard(challenge_key, username)
+                return None
+            if not hmac.compare_digest(stored_otp_hash, _hash_otp(otp)):
+                attempts += 1
+                if attempts >= self.max_attempts:
+                    self._discard(challenge_key, username)
+                else:
+                    self._challenges[challenge_key] = (
+                        username,
+                        stored_otp_hash,
+                        expires_at,
+                        attempts,
+                    )
+                return None
+
+            self._discard(challenge_key, username)
+            return username
+
+    def clear(self) -> None:
+        with self._lock:
+            self._challenges.clear()
+            self._user_challenges.clear()
+
+    def _discard(self, challenge_key: str, username: str) -> None:
+        self._challenges.pop(challenge_key, None)
+        if self._user_challenges.get(username) == challenge_key:
+            self._user_challenges.pop(username, None)
+
+
+class PhoneVerificationStore:
+    def __init__(self) -> None:
+        self._challenges: dict[str, tuple[str, str, str, float, int]] = {}
+        self._user_challenges: dict[str, str] = {}
+        self._last_issued: dict[str, float] = {}
+        self._lock = RLock()
+        self.expiration_seconds = 300
+        self.max_attempts = 5
+        self.resend_cooldown_seconds = 60
+
+    def issue(self, username: str, phone_number: str, otp: str) -> str:
+        challenge_key = _hash_reset_token(secrets.token_urlsafe(32))
+        now = time.time()
+        with self._lock:
+            last_issued = self._last_issued.get(username)
+            if last_issued is not None and now - last_issued < self.resend_cooldown_seconds:
+                raise ValueError("Wait before requesting another verification code.")
+            previous_key = self._user_challenges.pop(username, None)
+            if previous_key:
+                self._challenges.pop(previous_key, None)
+            self._challenges[challenge_key] = (
+                username,
+                phone_number,
+                _hash_otp(otp),
+                now + self.expiration_seconds,
+                0,
+            )
+            self._user_challenges[username] = challenge_key
+            self._last_issued[username] = now
+        return challenge_key
+
+    def verify(self, username: str, challenge_id: str, otp: str) -> str | None:
+        with self._lock:
+            challenge = self._challenges.get(challenge_id)
+            if challenge is None:
+                return None
+
+            challenge_username, phone_number, stored_otp_hash, expires_at, attempts = challenge
+            if challenge_username != username or time.time() >= expires_at:
+                self._discard(challenge_id, challenge_username)
+                return None
+            if not hmac.compare_digest(stored_otp_hash, _hash_otp(otp)):
+                attempts += 1
+                if attempts >= self.max_attempts:
+                    self._discard(challenge_id, challenge_username)
+                else:
+                    self._challenges[challenge_id] = (
+                        challenge_username,
+                        phone_number,
+                        stored_otp_hash,
+                        expires_at,
+                        attempts,
+                    )
+                return None
+
+            self._discard(challenge_id, challenge_username)
+            return phone_number
+
+    def cancel(self, username: str, challenge_id: str) -> None:
+        with self._lock:
+            challenge = self._challenges.get(challenge_id)
+            if challenge and challenge[0] == username:
+                self._discard(challenge_id, username)
+
+    def clear(self) -> None:
+        with self._lock:
+            self._challenges.clear()
+            self._user_challenges.clear()
+            self._last_issued.clear()
+
+    def _discard(self, challenge_id: str, username: str) -> None:
+        self._challenges.pop(challenge_id, None)
+        if self._user_challenges.get(username) == challenge_id:
+            self._user_challenges.pop(username, None)
 
 
 password_reset_store = PasswordResetStore()
+email_verification_store = EmailVerificationStore()
+login_otp_store = LoginOtpStore()
+phone_verification_store = PhoneVerificationStore()
 
 
 def record_forensic_attack(
@@ -445,6 +716,10 @@ def reset_security_state() -> None:
     _failed_login_accounts.clear()
     _failed_login_counts.clear()
     security_repository.clear_failed_login_attempts()
+    password_reset_store.clear()
+    email_verification_store.clear()
+    login_otp_store.clear()
+    phone_verification_store.clear()
 
 
 def is_session_blocked(session_id: str) -> bool:
