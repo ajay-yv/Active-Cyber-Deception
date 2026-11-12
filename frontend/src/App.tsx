@@ -10,6 +10,7 @@ import type {
   DashboardResponse,
   DeceptionStatusResponse,
   ForensicLeakResponse,
+  LoginChallenge,
   LoginResponse,
   PatientCreate,
   PatientCreateResponse,
@@ -24,7 +25,6 @@ import type {
 } from './api'
 import {
   apiBaseUrl,
-  changeEmail,
   createPatient,
   createSecurityAttack,
   fetchAnalyticsSummary,
@@ -38,7 +38,13 @@ import {
   fetchSecurityEvents,
   fetchSecurityOverview,
   login as loginRequest,
+  requiresLoginOtp,
+  requestEmailVerification,
   requestPasswordReset,
+  requestPhoneVerification,
+  verifyEmailOtp,
+  verifyPhoneNumber,
+  verifyLoginOtp,
   verifyResetOtp,
   uploadFiles,
 } from './api'
@@ -147,10 +153,14 @@ function LoginPage({ onLogin }: { onLogin: (response: LoginResponse) => void }) 
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loginChallenge, setLoginChallenge] = useState<LoginChallenge | null>(null)
+  const [loginOtp, setLoginOtp] = useState('')
 
   function handleRoleChange(selectedRole: 'admin' | 'doctor' | 'patient') {
     setRoleSelect(selectedRole)
     setPassword('')
+    setLoginChallenge(null)
+    setLoginOtp('')
     if (selectedRole === 'admin') {
       setUsername('admin')
     } else if (selectedRole === 'doctor') {
@@ -173,7 +183,17 @@ function LoginPage({ onLogin }: { onLogin: (response: LoginResponse) => void }) 
     setError('')
 
     try {
+      if (loginChallenge) {
+        onLogin(await verifyLoginOtp(loginChallenge.challenge_id, loginOtp.trim()))
+        return
+      }
+
       const response = await loginRequest(username, password)
+      if (requiresLoginOtp(response)) {
+        setLoginChallenge(response)
+        setLoginOtp('')
+        return
+      }
       onLogin(response)
       const r = response.user.role
       if (r === 'hacker') {
@@ -203,6 +223,27 @@ function LoginPage({ onLogin }: { onLogin: (response: LoginResponse) => void }) 
           Admin Authentication & Security Command Center
         </p>
         <form className="login-form" onSubmit={submit}>
+          {loginChallenge ? (
+            <>
+              <p>A verification code was sent to {loginChallenge.email_hint}. It expires in five minutes.</p>
+              <label>
+                Email verification code
+                <input
+                  value={loginOtp}
+                  onChange={(event) => setLoginOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  required
+                />
+              </label>
+              <button type="button" onClick={() => setLoginChallenge(null)}>
+                Use a different account
+              </button>
+            </>
+          ) : (
+            <>
           <label>
             Account Role
             <select
@@ -237,9 +278,11 @@ function LoginPage({ onLogin }: { onLogin: (response: LoginResponse) => void }) 
             Password
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
           </label>
+            </>
+          )}
           {error ? <p className="error-text">{error}</p> : null}
           <button type="submit" disabled={loading}>
-            {loading ? 'Logging in…' : 'Login'}
+            {loading ? 'Logging in…' : loginChallenge ? 'Verify code' : 'Login'}
           </button>
         </form>
         <div className="quick-logins" style={{ marginTop: '1.25rem' }}>
@@ -1245,8 +1288,15 @@ function ProfilePage({
   onSessionUpdate: (session: LoginResponse) => void
 }) {
   const [newEmail, setNewEmail] = useState(session.user.email ?? '')
+  const [emailOtp, setEmailOtp] = useState('')
+  const [emailCodeSent, setEmailCodeSent] = useState(false)
   const [emailMessage, setEmailMessage] = useState('')
   const [emailError, setEmailError] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState(session.user.phone_number ?? '')
+  const [phoneChallengeId, setPhoneChallengeId] = useState('')
+  const [phoneOtp, setPhoneOtp] = useState('')
+  const [phoneMessage, setPhoneMessage] = useState('')
+  const [phoneError, setPhoneError] = useState('')
   const [resetEmail, setResetEmail] = useState(session.user.email ?? '')
   const [otp, setOtp] = useState('')
   const [resetPassword, setResetPassword] = useState('')
@@ -1258,17 +1308,70 @@ function ProfilePage({
     setEmailMessage('')
     setEmailError('')
     try {
-      const result = await changeEmail(newEmail, session.access_token)
+      const result = await requestEmailVerification(newEmail, session.access_token)
       setEmailMessage(result.message)
+      setEmailCodeSent(true)
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : 'Failed to send verification code')
+    }
+  }
+
+  async function verifyEmail(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setEmailMessage('')
+    setEmailError('')
+    try {
+      const result = await verifyEmailOtp(newEmail, emailOtp, session.access_token)
+      setEmailMessage(result.message)
+      setEmailOtp('')
+      setEmailCodeSent(false)
       onSessionUpdate({
         ...session,
         user: {
           ...session.user,
-          email: newEmail,
+          email: newEmail.trim().toLowerCase(),
+          email_verified: true,
         },
       })
     } catch (err) {
-      setEmailError(err instanceof Error ? err.message : 'Failed to update email')
+      setEmailError(err instanceof Error ? err.message : 'Invalid verification code')
+    }
+  }
+
+  async function sendPhoneVerification(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setPhoneMessage('')
+    setPhoneError('')
+    try {
+      const result = await requestPhoneVerification(phoneNumber, session.access_token)
+      setPhoneChallengeId(result.challenge_id)
+      setPhoneOtp('')
+      setPhoneMessage(`Verification code sent to ${result.phone_hint}. It expires in five minutes.`)
+    } catch (err) {
+      setPhoneError(err instanceof Error ? err.message : 'Failed to send mobile verification code')
+    }
+  }
+
+  async function verifyPhone(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setPhoneMessage('')
+    setPhoneError('')
+    try {
+      const result = await verifyPhoneNumber(phoneChallengeId, phoneOtp, session.access_token)
+      setPhoneNumber(result.phone_number)
+      setPhoneChallengeId('')
+      setPhoneOtp('')
+      setPhoneMessage(result.message)
+      onSessionUpdate({
+        ...session,
+        user: {
+          ...session.user,
+          phone_number: result.phone_number,
+          phone_verified: true,
+        },
+      })
+    } catch (err) {
+      setPhoneError(err instanceof Error ? err.message : 'Invalid mobile verification code')
     }
   }
 
@@ -1323,7 +1426,11 @@ function ProfilePage({
             </div>
             <div className="table-row">
               <span>Email</span>
-              <span>{session.user.email ?? 'Not set'}</span>
+              <span>{session.user.email ?? 'Not set'}{session.user.email_verified ? ' · Verified' : ''}</span>
+            </div>
+            <div className="table-row">
+              <span>Mobile</span>
+              <span>{session.user.phone_number ?? 'Not set'}{session.user.phone_verified ? ' · Verified' : ''}</span>
             </div>
           </div>
         </section>
@@ -1335,16 +1442,107 @@ function ProfilePage({
       <div className="grid two-up">
         <section className="panel">
           <h3>Update Email</h3>
-          <form className="login-form" onSubmit={updateEmail}>
+          <form className="login-form" onSubmit={emailCodeSent ? verifyEmail : updateEmail}>
             <label>
-              New email
-              <input value={newEmail} onChange={(event) => setNewEmail(event.target.value)} type="email" required />
+              {emailCodeSent ? 'Verification code' : 'New email'}
+              {emailCodeSent ? (
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  value={emailOtp}
+                  onChange={(event) => setEmailOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  required
+                />
+              ) : (
+                <input value={newEmail} onChange={(event) => setNewEmail(event.target.value)} type="email" required />
+              )}
             </label>
-            <button type="submit">Update email</button>
+            <button type="submit">{emailCodeSent ? 'Verify and update email' : 'Send verification code'}</button>
             {emailMessage ? <p className="success-text">{emailMessage}</p> : null}
             {emailError ? <p className="error-text">{emailError}</p> : null}
           </form>
         </section>
+        {session.user.role !== 'hacker' ? (
+          <section className="panel">
+            <h3>Verify Mobile Number</h3>
+            <p>
+              Brevo SMS requires an approved Sender ID for the destination country and SMS credits.{' '}
+              <a href="https://app.brevo.com/sms-compliance/listing" target="_blank" rel="noreferrer">
+                Set up a Brevo SMS sender
+              </a>
+              {' '}or{' '}
+              <a href="https://app-sms.sendinblue.com/log" target="_blank" rel="noreferrer">
+                check SMS delivery logs
+              </a>
+              .
+            </p>
+            <details>
+              <summary>Not receiving the code?</summary>
+              <ul>
+                <li>Confirm the number is correct and includes the country code, for example +91 98765 43210.</li>
+                <li>Check cellular signal, blocked/unknown senders, and available message storage.</li>
+                <li>Wait a minute before retrying; repeated requests can be rate-limited.</li>
+                <li>Use the email verification option above if SMS is unavailable.</li>
+              </ul>
+              <p>
+                Provider status:{' '}
+                <a href="https://app.brevo.com/sms-compliance/listing" target="_blank" rel="noreferrer">
+                  activate SMS and add credits
+                </a>
+                {' '}·{' '}
+                <a href="mailto:contact@sendinblue.com">contact Brevo support</a>
+              </p>
+            </details>
+            <form className="login-form" onSubmit={phoneChallengeId ? verifyPhone : sendPhoneVerification}>
+              <label>
+                {phoneChallengeId ? 'Mobile verification code' : 'Mobile number (include country code)'}
+                {phoneChallengeId ? (
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    pattern="[0-9]{6}"
+                    maxLength={6}
+                    value={phoneOtp}
+                    onChange={(event) => setPhoneOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                    required
+                  />
+                ) : (
+                  <input
+                    type="tel"
+                    autoComplete="tel"
+                    value={phoneNumber}
+                    onChange={(event) => setPhoneNumber(event.target.value)}
+                    placeholder="+91 98765 43210"
+                    required
+                  />
+                )}
+              </label>
+              <button type="submit">{phoneChallengeId ? 'Verify and save mobile' : 'Send verification code'}</button>
+              {phoneChallengeId ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhoneChallengeId('')
+                    setPhoneOtp('')
+                    setPhoneMessage('')
+                    setPhoneError('')
+                  }}
+                >
+                  Cancel
+                </button>
+              ) : null}
+              {phoneMessage ? <p className="success-text">{phoneMessage}</p> : null}
+              {phoneError ? <p className="error-text">{phoneError}</p> : null}
+              {phoneError && !phoneChallengeId ? (
+                <button type="submit">Retry mobile verification</button>
+              ) : null}
+            </form>
+          </section>
+        ) : null}
         <section className="panel">
           <h3>Password Reset via OTP</h3>
           <form className="login-form" onSubmit={sendPasswordReset}>

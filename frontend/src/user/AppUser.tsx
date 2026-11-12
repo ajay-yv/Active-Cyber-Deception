@@ -27,6 +27,7 @@ import type {
   AuditEvent,
   DashboardResponse,
   LabResultResponse,
+  LoginChallenge,
   LoginResponse,
   PatientCreate,
   PatientRecord,
@@ -54,12 +55,14 @@ import {
   login,
   registerPatient,
   purgeAllPatients,
+  requestPhoneVerification,
   requestEmailVerification,
   requestPasswordReset,
   toggleAttackMode,
   unblockIP,
   updatePatient,
   verifyEmailOtp,
+  verifyPhoneNumber,
   verifyResetOtp,
   scanForensicsLeak,
   fetchADOTelemetry,
@@ -67,6 +70,8 @@ import {
   deployADOLure,
   fetchPatternEvolutionProfile,
   fetchForensicRecords,
+  requiresLoginOtp,
+  verifyLoginOtp,
   websocketBaseUrl,
 } from '../api'
 
@@ -399,8 +404,18 @@ export default function AppUser() {
   const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(googleSignInRequested)
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<LoginResponse['user'] | null>(null)
+  const [accountPhone, setAccountPhone] = useState('')
+  const [phoneVerificationChallenge, setPhoneVerificationChallenge] = useState<string | null>(null)
+  const [phoneVerificationOtp, setPhoneVerificationOtp] = useState('')
+  const [phoneVerificationMessage, setPhoneVerificationMessage] = useState('')
+  const [phoneVerificationError, setPhoneVerificationError] = useState('')
+  const [isPhoneVerificationSubmitting, setIsPhoneVerificationSubmitting] = useState(false)
+  const [isEmailVerificationSubmitting, setIsEmailVerificationSubmitting] = useState(false)
+  const [loginChallenge, setLoginChallenge] = useState<LoginChallenge | null>(null)
+  const [loginOtp, setLoginOtp] = useState('')
   const [isDoctorVerified, setIsDoctorVerified] = useState(false)
   const [showDoctorPortal, setShowDoctorPortal] = useState(false)
+  const showPhoneVerification = Boolean(user && user.role !== 'hacker')
 
   // Patient Registration State
   const [isPatientRegisterModalOpen, setIsPatientRegisterModalOpen] = useState(false)
@@ -419,9 +434,9 @@ export default function AppUser() {
   const [forgotStep, setForgotStep] = useState<'step1' | 'step2' | 'success'>('step1')
   const [forgotUsername, setForgotUsername] = useState('admin')
   const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotOtp, setForgotOtp] = useState('')
   const [forgotRegisteredEmailOtp, setForgotRegisteredEmailOtp] = useState('')
   const [forgotRequiresRegisteredEmailOtp, setForgotRequiresRegisteredEmailOtp] = useState(false)
-  const [forgotOtp, setForgotOtp] = useState('')
   const [forgotNewPassword, setForgotNewPassword] = useState('')
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState('')
   const [forgotStatus, setForgotStatus] = useState('')
@@ -678,10 +693,20 @@ export default function AppUser() {
   const [verificationStatus, setVerificationStatus] = useState('')
   const [verificationError, setVerificationError] = useState('')
 
+  useEffect(() => {
+    setEmailUpdate(user?.email || '')
+  }, [user?.email])
+
+  useEffect(() => {
+    setAccountPhone(user?.phone_number || '')
+  }, [user?.phone_number])
+
   // Reset password state when username selection changes
   function handleUsernameChange(selectedUser: string) {
     setUsername(selectedUser)
     setPassword('')
+    setLoginChallenge(null)
+    setLoginOtp('')
     if (selectedUser === 'doctor') {
       setIsAdminLoginModalOpen(false)
       setShowDoctorPortal(true)
@@ -694,9 +719,9 @@ export default function AppUser() {
   function handleForgotUsernameChange(selectedUser: string) {
     setForgotUsername(selectedUser)
     setForgotEmail('')
+    setForgotOtp('')
     setForgotRegisteredEmailOtp('')
     setForgotRequiresRegisteredEmailOtp(false)
-    setForgotOtp('')
   }
 
   async function handleCheckLogs() {
@@ -1119,8 +1144,16 @@ export default function AppUser() {
 
     login(username, trimmedPassword)
       .then((result) => {
+        if (requiresLoginOtp(result)) {
+          setLoginChallenge(result)
+          setLoginOtp('')
+          setMessage(`Verification code sent to ${result.email_hint}.`)
+          return
+        }
         setToken(result.access_token)
         setUser(result.user)
+        setAccountPhone(result.user.phone_number || '')
+        setLoginChallenge(null)
         setIsAdminLoginModalOpen(false)
         if (result.user.role === 'doctor') {
           setIsDoctorVerified(false)
@@ -1133,6 +1166,26 @@ export default function AppUser() {
         setIsDoctorVerified(false)
         setError(err instanceof Error ? err.message : 'Login failed. Invalid username or password.')
       })
+  }
+
+  async function handleVerifyLoginOtp(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!loginChallenge) return
+    setError('')
+    setMessage('')
+    try {
+      const result = await verifyLoginOtp(loginChallenge.challenge_id, loginOtp.trim())
+      setToken(result.access_token)
+      setUser(result.user)
+      setAccountPhone(result.user.phone_number || '')
+      setLoginChallenge(null)
+      setLoginOtp('')
+      setIsAdminLoginModalOpen(false)
+      if (result.user.role === 'doctor') setIsDoctorVerified(false)
+      setMessage(`Signed in successfully as ${result.user.full_name} (${result.user.role}).`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login verification failed.')
+    }
   }
 
   async function handlePatientRegister(event: React.FormEvent<HTMLFormElement>) {
@@ -1212,6 +1265,7 @@ export default function AppUser() {
       email: session.user?.email || googleUser.email,
       full_name: session.user?.full_name || googleUser.displayName || 'Google Patient',
     })
+    setAccountPhone(session.user.phone_number || '')
     setIsAdminLoginModalOpen(false)
     setIsPatientRegisterModalOpen(false)
     setShowGoogleRedirectFallback(false)
@@ -1337,11 +1391,13 @@ export default function AppUser() {
       setForgotError('Enter the 6-digit code sent to the registered email.')
       return
     }
-    if (forgotRequiresRegisteredEmailOtp && !/^\d{6}$/.test(forgotRegisteredEmailOtp.trim())) {
-      setForgotError('Enter the 6-digit code sent to the registered account email.')
+    if (
+      forgotRequiresRegisteredEmailOtp
+      && !/^\d{6}$/.test(forgotRegisteredEmailOtp.trim())
+    ) {
+      setForgotError('Enter the 6-digit code sent to the account’s registered email.')
       return
     }
-
     if (forgotNewPassword.length < 8) {
       setForgotError('Your new password must be at least 8 characters long.')
       return
@@ -1502,35 +1558,106 @@ export default function AppUser() {
   }
 
 
-  function handleEmailUpdate(event: React.FormEvent<HTMLFormElement>) {
+  async function handleEmailUpdate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setEmailStatus('')
     setEmailError('')
-
     if (!token) return
-
-    requestEmailVerification(emailUpdate, token)
-      .then((result) => {
-        setEmailStatus(result.message)
-        setVerificationEmail(emailUpdate)
-      })
-      .catch((err) => setEmailError(err instanceof Error ? err.message : String(err)))
+    setIsEmailVerificationSubmitting(true)
+    try {
+      const result = await requestEmailVerification(emailUpdate, token)
+      setEmailStatus(result.message)
+      setVerificationEmail(emailUpdate.trim().toLowerCase())
+      setVerificationOtp('')
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setIsEmailVerificationSubmitting(false)
+    }
   }
 
-  function handleVerifyEmailOtp(event: React.FormEvent<HTMLFormElement>) {
+  async function handleVerifyEmailOtp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setVerificationStatus('')
     setVerificationError('')
-
     if (!token) return
+    setIsEmailVerificationSubmitting(true)
+    try {
+      const result = await verifyEmailOtp(verificationEmail, verificationOtp.trim(), token)
+      setVerificationStatus(result.message)
+      setEmailStatus('')
+      setVerificationEmail('')
+      setVerificationOtp('')
+      setUser((current) =>
+        current
+          ? {
+              ...current,
+              email: verificationEmail,
+              email_verified: true,
+            }
+          : current,
+      )
+    } catch (err) {
+      setVerificationError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setIsEmailVerificationSubmitting(false)
+    }
+  }
 
-    verifyEmailOtp(verificationEmail, verificationOtp, token)
-      .then((result) => {
-        setVerificationStatus(result.message)
-        setUser((current) => (current ? { ...current, email: verificationEmail } : current))
-        setVerificationOtp('')
-      })
-      .catch((err) => setVerificationError(err instanceof Error ? err.message : String(err)))
+  async function handleRequestPhoneVerification(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!token) return
+    setPhoneVerificationMessage('')
+    setPhoneVerificationError('')
+    setIsPhoneVerificationSubmitting(true)
+    try {
+      const result = await requestPhoneVerification(accountPhone, token)
+      setPhoneVerificationChallenge(result.challenge_id)
+      setPhoneVerificationOtp('')
+      setPhoneVerificationMessage(
+        `Verification code sent to ${result.phone_hint}. It expires in five minutes.`,
+      )
+    } catch (err) {
+      setPhoneVerificationError(
+        err instanceof Error ? err.message : 'Could not send the mobile verification code.',
+      )
+    } finally {
+      setIsPhoneVerificationSubmitting(false)
+    }
+  }
+
+  async function handleVerifyPhone(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!token || !phoneVerificationChallenge) return
+    setPhoneVerificationMessage('')
+    setPhoneVerificationError('')
+    setIsPhoneVerificationSubmitting(true)
+    try {
+      const result = await verifyPhoneNumber(
+        phoneVerificationChallenge,
+        phoneVerificationOtp.trim(),
+        token,
+      )
+      setAccountPhone(result.phone_number)
+      setPhoneVerificationChallenge(null)
+      setPhoneVerificationOtp('')
+      setPhoneVerificationMessage(result.message)
+      setUser((current) =>
+        current
+          ? {
+              ...current,
+              phone_number: result.phone_number,
+              phone_verified: result.phone_verified,
+            }
+          : current,
+      )
+    } catch (err) {
+      setPhoneVerificationError(
+        err instanceof Error ? err.message : 'The mobile verification code is invalid.',
+      )
+    } finally {
+      setIsPhoneVerificationSubmitting(false)
+    }
   }
 
   function handleFetchLab(event: React.FormEvent<HTMLFormElement>) {
@@ -1636,6 +1763,8 @@ export default function AppUser() {
                   type="button"
                   onClick={() => {
                     setPassword('')
+                    setLoginChallenge(null)
+                    setLoginOtp('')
                     setIsAdminLoginModalOpen(false)
                   }}
                   style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', color: '#64748b', fontSize: '1.2rem', cursor: 'pointer' }}
@@ -1667,61 +1796,99 @@ export default function AppUser() {
                   </div>
                 ) : null}
 
-                <form onSubmit={handleLogin} style={{ display: 'grid', gap: 16 }}>
-                  <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
-                    Account Role
-                    <select
-                      value={username}
-                      onChange={(e) => handleUsernameChange(e.target.value)}
-                      style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.9rem', fontWeight: 700 }}
-                    >
-                      <option value="admin">Administrator (admin)</option>
-                      <option value="doctor">Doctor (doctor)</option>
-                      <option value="patient">Patient (patient)</option>
-                    </select>
-                  </label>
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <label style={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
-                        Password
+                <form
+                  onSubmit={loginChallenge ? handleVerifyLoginOtp : handleLogin}
+                  style={{ display: 'grid', gap: 16 }}
+                >
+                  {loginChallenge ? (
+                    <>
+                      <p style={{ margin: 0, color: '#475569', fontSize: '0.88rem', lineHeight: 1.5 }}>
+                        Enter the six-digit verification code sent to {loginChallenge.email_hint}. It expires in five minutes.
+                      </p>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
+                        Email verification code
+                        <input
+                          autoFocus
+                          required
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          pattern="[0-9]{6}"
+                          maxLength={6}
+                          value={loginOtp}
+                          onChange={(event) => setLoginOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                          placeholder="6-digit code"
+                          style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.95rem', letterSpacing: '0.2em' }}
+                        />
                       </label>
                       <button
                         type="button"
                         onClick={() => {
-                          setForgotUsername('admin')
-                          setForgotEmail('')
-                          setForgotRegisteredEmailOtp('')
-                          setForgotRequiresRegisteredEmailOtp(false)
-                          setForgotOtp('')
-                          setForgotStep('step1')
-                          setForgotStatus('')
-                          setForgotError('')
-                          setIsForgotModalOpen(true)
+                          setLoginChallenge(null)
+                          setLoginOtp('')
+                          setMessage('')
+                          setError('')
                         }}
-                        style={{ background: 'none', border: 'none', color: '#0284c7', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}
+                        style={{ justifySelf: 'start', padding: 0, border: 'none', background: 'none', color: '#0284c7', cursor: 'pointer', textDecoration: 'underline' }}
                       >
-                        Forgot password?
+                        Use a different account
                       </button>
-                    </div>
-
-                    <input
-                      autoFocus
-                      required
-                      type="password"
-                      autoComplete="new-password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter account password"
-                      style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.95rem' }}
-                    />
-                  </div>
+                    </>
+                  ) : (
+                    <>
+                      <label style={{ display: 'grid', gap: 6, fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
+                        Account Role
+                        <select
+                          value={username}
+                          onChange={(e) => handleUsernameChange(e.target.value)}
+                          style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.9rem', fontWeight: 700 }}
+                        >
+                          <option value="admin">Administrator (admin)</option>
+                          <option value="doctor">Doctor (doctor)</option>
+                          <option value="patient">Patient (patient)</option>
+                        </select>
+                      </label>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <label style={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600 }}>
+                            Password
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setForgotUsername('admin')
+                              setForgotEmail('')
+                              setForgotOtp('')
+                              setForgotRegisteredEmailOtp('')
+                              setForgotRequiresRegisteredEmailOtp(false)
+                              setForgotStep('step1')
+                              setForgotStatus('')
+                              setForgotError('')
+                              setIsForgotModalOpen(true)
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#0284c7', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}
+                          >
+                            Forgot password?
+                          </button>
+                        </div>
+                        <input
+                          autoFocus
+                          required
+                          type="password"
+                          autoComplete="current-password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Enter account password"
+                          style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: '0.95rem' }}
+                        />
+                      </div>
+                    </>
+                  )}
 
                   <button
                     type="submit"
                     style={{ padding: 14, borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', fontSize: '0.98rem', fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: '0 4px 16px rgba(2, 132, 199, 0.35)' }}
                   >
-                    Authenticate & Enter Portal →
+                    {loginChallenge ? 'Verify code & enter portal →' : 'Authenticate & Enter Portal →'}
                   </button>
                 </form>
 
@@ -4532,15 +4699,222 @@ export default function AppUser() {
 
             {/* TAB 11: PROFILE */}
             {activeTab === 'profile' ? (
-              <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, maxWidth: 600, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
+              <div style={{ display: 'grid', gap: 18, maxWidth: 680 }}>
+              <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
                 <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', color: '#0f172a', fontWeight: 800 }}>👤 Account Profile</h3>
                 <div style={{ display: 'grid', gap: 10, fontSize: '0.88rem', color: '#334155' }}>
                   <div><strong>Full Name:</strong> {user?.full_name}</div>
                   <div><strong>Username:</strong> {user?.username}</div>
                   <div><strong>Assigned Role:</strong> <span style={{ color: '#0284c7', fontWeight: 700 }}>{user?.role}</span></div>
-                  <div><strong>Email Address:</strong> {user?.email || 'doctor@stjude.org'}</div>
+                  <div>
+                    <strong>Email Address:</strong> {user?.email || 'Not set'}
+                    {user?.email_verified ? (
+                      <span style={{ marginLeft: 8, color: '#059669', fontWeight: 700 }}>✓ Verified</span>
+                    ) : (
+                      <span style={{ marginLeft: 8, color: '#b45309', fontWeight: 700 }}>Not verified</span>
+                    )}
+                  </div>
+                  <div>
+                    <strong>Mobile Number:</strong> {user?.phone_number || 'Not set'}
+                    {user?.phone_verified ? (
+                      <span style={{ marginLeft: 8, color: '#059669', fontWeight: 700 }}>✓ Verified</span>
+                    ) : (
+                      <span style={{ marginLeft: 8, color: '#b45309', fontWeight: 700 }}>Not verified</span>
+                    )}
+                  </div>
                   <div><strong>Session Node:</strong> HOSPITAL-001 (Main Health Facility)</div>
                 </div>
+              </div>
+              {user && user.role !== 'hacker' ? (
+                <section style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
+                  <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem', color: '#0f172a', fontWeight: 800 }}>
+                    Verify email address
+                  </h3>
+                  <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: '0.86rem', lineHeight: 1.5 }}>
+                    We send a six-digit code to the address you enter. Your account email is updated only after the code is verified.
+                  </p>
+                  <form
+                    onSubmit={verificationEmail ? handleVerifyEmailOtp : handleEmailUpdate}
+                    style={{ display: 'grid', gap: 12 }}
+                  >
+                    <label style={{ display: 'grid', gap: 6, color: '#334155', fontSize: '0.84rem', fontWeight: 700 }}>
+                      Email address
+                      <input
+                        type="email"
+                        autoComplete="email"
+                        value={emailUpdate}
+                        onChange={(event) => setEmailUpdate(event.target.value)}
+                        disabled={Boolean(verificationEmail) || isEmailVerificationSubmitting}
+                        required
+                        style={{ width: '100%', padding: '11px 13px', border: '1px solid #cbd5e1', borderRadius: 10, background: verificationEmail ? '#f1f5f9' : '#fff', color: '#0f172a', font: 'inherit' }}
+                      />
+                    </label>
+                    {verificationEmail ? (
+                      <label style={{ display: 'grid', gap: 6, color: '#334155', fontSize: '0.84rem', fontWeight: 700 }}>
+                        Email verification code
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          pattern="[0-9]{6}"
+                          maxLength={6}
+                          value={verificationOtp}
+                          onChange={(event) => setVerificationOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                          placeholder="6-digit code"
+                          required
+                          style={{ width: '100%', padding: '11px 13px', border: '1px solid #cbd5e1', borderRadius: 10, color: '#0f172a', font: 'inherit', letterSpacing: '0.2em' }}
+                        />
+                      </label>
+                    ) : null}
+                    {emailStatus ? (
+                      <p role="status" style={{ margin: 0, color: '#047857', fontSize: '0.84rem' }}>{emailStatus}</p>
+                    ) : null}
+                    {emailError || verificationError ? (
+                      <p role="alert" style={{ margin: 0, color: '#b91c1c', fontSize: '0.84rem' }}>{emailError || verificationError}</p>
+                    ) : null}
+                    {verificationStatus ? (
+                      <p role="status" style={{ margin: 0, color: '#047857', fontSize: '0.84rem' }}>{verificationStatus}</p>
+                    ) : null}
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        type="submit"
+                        disabled={isEmailVerificationSubmitting}
+                        style={{ padding: '11px 16px', border: 0, borderRadius: 10, background: '#0284c7', color: '#fff', fontWeight: 700, cursor: isEmailVerificationSubmitting ? 'wait' : 'pointer' }}
+                      >
+                        {isEmailVerificationSubmitting
+                          ? 'Please wait…'
+                          : verificationEmail
+                            ? 'Verify and save email'
+                            : 'Send verification code'}
+                      </button>
+                      {verificationEmail ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVerificationEmail('')
+                            setVerificationOtp('')
+                            setEmailError('')
+                            setVerificationError('')
+                            setEmailStatus('')
+                          }}
+                          disabled={isEmailVerificationSubmitting}
+                          style={{ padding: '11px 16px', border: '1px solid #cbd5e1', borderRadius: 10, background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          Cancel
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
+                </section>
+              ) : null}
+              {showPhoneVerification ? (
+                <section style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
+                  <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem', color: '#0f172a', fontWeight: 800 }}>
+                    Verify mobile number
+                  </h3>
+                  <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: '0.86rem', lineHeight: 1.5 }}>
+                    Add a mobile number and confirm the SMS code to save it to your account.
+                    {' '}Brevo SMS requires an approved Sender ID and SMS credits.{' '}
+                    <a href="https://app.brevo.com/sms-compliance/listing" target="_blank" rel="noreferrer">
+                      Set up a Brevo SMS sender
+                    </a>
+                    {' '}or{' '}
+                    <a href="https://app-sms.sendinblue.com/log" target="_blank" rel="noreferrer">
+                      check SMS delivery logs
+                    </a>
+                    .
+                  </p>
+                  <details style={{ marginBottom: 16, color: '#475569', fontSize: '0.84rem', lineHeight: 1.5 }}>
+                    <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Not receiving the code?</summary>
+                    <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
+                      <li>Confirm the number includes the country code, for example +91 98765 43210.</li>
+                      <li>Check cellular signal, blocked senders, and available message storage.</li>
+                      <li>Wait a minute before retrying; repeated requests can be rate-limited.</li>
+                      <li>Use email verification if SMS is unavailable.</li>
+                    </ul>
+                    <span>
+                      Provider status:{' '}
+                      <a href="https://app.brevo.com/sms-compliance/listing" target="_blank" rel="noreferrer">
+                        activate SMS and add credits
+                      </a>
+                      {' '}·{' '}
+                      <a href="mailto:contact@sendinblue.com">contact Brevo support</a>
+                    </span>
+                  </details>
+                  <form
+                    onSubmit={phoneVerificationChallenge ? handleVerifyPhone : handleRequestPhoneVerification}
+                    style={{ display: 'grid', gap: 12 }}
+                  >
+                    <label style={{ display: 'grid', gap: 6, color: '#334155', fontSize: '0.84rem', fontWeight: 700 }}>
+                      Mobile number (include country code)
+                      <input
+                        type="tel"
+                        autoComplete="tel"
+                        inputMode="tel"
+                        value={accountPhone}
+                        onChange={(event) => setAccountPhone(event.target.value)}
+                        disabled={Boolean(phoneVerificationChallenge) || isPhoneVerificationSubmitting}
+                        placeholder="+91 98765 43210"
+                        required
+                        style={{ width: '100%', padding: '11px 13px', border: '1px solid #cbd5e1', borderRadius: 10, background: phoneVerificationChallenge ? '#f1f5f9' : '#fff', color: '#0f172a', font: 'inherit' }}
+                      />
+                    </label>
+                    {phoneVerificationChallenge ? (
+                      <label style={{ display: 'grid', gap: 6, color: '#334155', fontSize: '0.84rem', fontWeight: 700 }}>
+                        SMS verification code
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          pattern="[0-9]{6}"
+                          maxLength={6}
+                          value={phoneVerificationOtp}
+                          onChange={(event) => setPhoneVerificationOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                          placeholder="6-digit code"
+                          required
+                          style={{ width: '100%', padding: '11px 13px', border: '1px solid #cbd5e1', borderRadius: 10, color: '#0f172a', font: 'inherit', letterSpacing: '0.2em' }}
+                        />
+                      </label>
+                    ) : null}
+                    {phoneVerificationMessage ? (
+                      <p role="status" style={{ margin: 0, color: '#047857', fontSize: '0.84rem' }}>{phoneVerificationMessage}</p>
+                    ) : null}
+                    {phoneVerificationError ? (
+                      <p role="alert" style={{ margin: 0, color: '#b91c1c', fontSize: '0.84rem' }}>{phoneVerificationError}</p>
+                    ) : null}
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        type="submit"
+                        disabled={isPhoneVerificationSubmitting}
+                        style={{ padding: '11px 16px', border: 0, borderRadius: 10, background: '#0284c7', color: '#fff', fontWeight: 700, cursor: isPhoneVerificationSubmitting ? 'wait' : 'pointer' }}
+                      >
+                        {isPhoneVerificationSubmitting
+                          ? 'Please wait…'
+                          : phoneVerificationChallenge
+                            ? 'Verify and save mobile'
+                            : user?.phone_verified
+                              ? 'Change mobile number'
+                              : 'Send verification code'}
+                      </button>
+                      {phoneVerificationChallenge ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPhoneVerificationChallenge(null)
+                            setPhoneVerificationOtp('')
+                            setPhoneVerificationError('')
+                            setPhoneVerificationMessage('')
+                          }}
+                          disabled={isPhoneVerificationSubmitting}
+                          style={{ padding: '11px 16px', border: '1px solid #cbd5e1', borderRadius: 10, background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          Cancel
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
+                </section>
+              ) : null}
               </div>
             ) : null}
 
@@ -4692,14 +5066,14 @@ export default function AppUser() {
                 <span style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                   Forgot Password - Step 2 of 2
                 </span>
-                <h2 style={{ margin: '4px 0 6px', fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>Enter OTP & Set New Password</h2>
+                <h2 style={{ margin: '4px 0 6px', fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>Verify and Set New Password</h2>
                 <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 20px', lineHeight: 1.5 }}>
-                  Enter the code sent to <strong>{forgotEmail}</strong>.
+                  {forgotStatus || `Enter the verification code sent for ${forgotEmail}.`}
                 </p>
 
                 <form onSubmit={handleVerifyOtpAndReset} style={{ display: 'grid', gap: 14 }}>
                   <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
-                    Email or Mobile OTP Code *
+                    {forgotRequiresRegisteredEmailOtp ? 'New Recovery Email OTP *' : 'Email or Mobile OTP Code *'}
                     <input
                       required
                       type="text"
@@ -4716,7 +5090,7 @@ export default function AppUser() {
 
                   {forgotRequiresRegisteredEmailOtp ? (
                     <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
-                      Registered Account Email OTP Code *
+                      Registered Email OTP *
                       <input
                         required
                         type="text"
@@ -4765,7 +5139,7 @@ export default function AppUser() {
                     disabled={isForgotSubmitting}
                     style={{ padding: '14px', borderRadius: 12, border: 'none', background: '#059669', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', marginTop: 4, boxShadow: '0 2px 8px rgba(5, 150, 105, 0.3)' }}
                   >
-                    {isForgotSubmitting ? 'Verifying OTP…' : 'Verify OTP & Reset Password ✓'}
+                    {isForgotSubmitting ? 'Verifying code…' : 'Verify Code & Reset Password ✓'}
                   </button>
 
                   <button
