@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,6 +18,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
     app_env: str = "development"
+    frontend_url: str = "https://frontend-eosin-omega-65.vercel.app"
+    login_email_otp_enabled: bool = False
     firebase_project_id: str | None = None
     admin_recovery_email: str | None = None
     admin_recovery_phone: str | None = None
@@ -38,8 +41,15 @@ class Settings(BaseSettings):
             "SMTP_FROM",
         ),
     )
+    brevo_api_key: str = ""
+    brevo_email_sender: str = ""
+    brevo_email_sender_name: str = "Healthcare EHR Portal"
+    brevo_sms_sender: str = ""
     resend_api_key: str = ""
     resend_from_address: str = ""
+    otp_sms_provider: Literal["twilio", "msg91", "brevo"] = "brevo"
+    msg91_auth_key: str = ""
+    msg91_template_id: str = ""
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_api_key_sid: str = ""

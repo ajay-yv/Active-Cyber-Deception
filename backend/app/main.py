@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app.api.auth import router as auth_router
@@ -145,9 +145,11 @@ if frontend_dist.exists():
 @app.get("/")
 @app.get("/hospital")
 @app.get("/admin")
-def admin_dashboard() -> FileResponse:
+def admin_dashboard() -> Response:
     dashboard_file = frontend_dist / "index.user.html"
-    return FileResponse(dashboard_file) if dashboard_file.exists() else FileResponse(root_dir / "frontend" / "index.user.html")
+    if dashboard_file.exists():
+        return FileResponse(dashboard_file)
+    return RedirectResponse(url=get_settings().frontend_url, status_code=307)
 
 
 @app.get("/hacker")
