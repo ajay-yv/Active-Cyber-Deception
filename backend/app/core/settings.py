@@ -41,10 +41,25 @@ class Settings(BaseSettings):
             "SMTP_FROM",
         ),
     )
-    brevo_api_key: str = ""
-    brevo_email_sender: str = ""
-    brevo_email_sender_name: str = "Healthcare EHR Portal"
-    brevo_sms_sender: str = ""
+    brevo_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("brevo_api_key", "BREVO_API_KEY"),
+    )
+    brevo_email_sender: str = Field(
+        default="",
+        validation_alias=AliasChoices("brevo_email_sender", "BREVO_EMAIL_SENDER"),
+    )
+    brevo_email_sender_name: str = Field(
+        default="Healthcare EHR Portal",
+        validation_alias=AliasChoices(
+            "brevo_email_sender_name",
+            "BREVO_EMAIL_SENDER_NAME",
+        ),
+    )
+    brevo_sms_sender: str = Field(
+        default="",
+        validation_alias=AliasChoices("brevo_sms_sender", "BREVO_SMS_SENDER"),
+    )
     resend_api_key: str = ""
     resend_from_address: str = ""
     otp_sms_provider: Literal["twilio", "msg91", "brevo"] = "brevo"

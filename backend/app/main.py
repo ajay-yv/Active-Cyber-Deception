@@ -19,13 +19,24 @@ from app.api.audit import router as audit_router
 from app.api.analytics import router as analytics_router
 from app.db.bootstrap import create_all_tables
 from app.core.settings import get_settings
+from app.services.email import email_delivery_configured
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     import asyncio
+    import logging
     from app.services.realtime import manager
 
     manager.loop = asyncio.get_running_loop()
+    settings = get_settings()
+    logging.getLogger(__name__).info(
+        "OTP email providers configured: brevo=%s resend=%s smtp=%s",
+        bool(settings.brevo_api_key.strip() and settings.brevo_email_sender.strip()),
+        bool(settings.resend_api_key.strip() and settings.resend_from_address.strip()),
+        bool(settings.smtp_user.strip() and settings.smtp_pass.strip()),
+    )
+    if not email_delivery_configured(settings):
+        logging.getLogger(__name__).error("No OTP email provider is configured")
     yield
 
 
