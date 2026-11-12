@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -37,7 +38,14 @@ def send_otp_sms(to_number: str, otp: str) -> bool:
     settings = get_settings()
     provider = _sms_provider(settings)
     if provider == "brevo":
-        return _send_brevo_otp(settings, to_number, otp)
+        for attempt in range(2):
+            if _send_brevo_otp(settings, to_number, otp):
+                return True
+            if attempt == 0 and sms_delivery_error() == "Brevo SMS delivery temporarily failed.":
+                time.sleep(0.5)
+                continue
+            break
+        return False
     if provider == "msg91":
         return _send_msg91_otp(settings, to_number, otp)
 
@@ -212,6 +220,7 @@ def _send_brevo_otp(settings: Settings, to_number: str, otp: str) -> bool:
         return False
     except (URLError, TimeoutError, OSError) as exc:
         logger.warning("Brevo OTP SMS delivery failed (%s)", type(exc).__name__)
+        _set_sms_delivery_error("Brevo SMS delivery temporarily failed.")
         return False
 
 

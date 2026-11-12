@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import smtplib
+import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from html import escape
@@ -10,6 +11,16 @@ from email.mime.text import MIMEText
 from app.core.settings import get_settings
 
 logger = logging.getLogger(__name__)
+_last_email_delivery_error = ""
+
+
+def email_delivery_error() -> str:
+    return _last_email_delivery_error
+
+
+def _set_email_delivery_error(message: str) -> None:
+    global _last_email_delivery_error
+    _last_email_delivery_error = message
 
 
 def _configured_value(settings, attribute: str, environment_name: str) -> str:
@@ -35,6 +46,7 @@ def email_delivery_configured(settings=None) -> bool:
 
 
 def send_otp_email(to_email: str, otp: str, username: str = "User") -> bool:
+    _set_email_delivery_error("")
     settings = get_settings()
     subject = "Healthcare EHR Security Portal - Verification Code"
     safe_username = escape(username)
@@ -82,6 +94,7 @@ def send_otp_email(to_email: str, otp: str, username: str = "User") -> bool:
     )
 
     if not email_delivery_configured(settings):
+        _set_email_delivery_error("No email provider is configured.")
         logger.error("Email OTP delivery is not configured")
         return False
 
@@ -151,8 +164,17 @@ def send_otp_email(to_email: str, otp: str, username: str = "User") -> bool:
         )
 
     for index, (provider, send) in enumerate(providers):
-        if send():
-            return True
+        for attempt in range(2):
+            if send():
+                return True
+            if (
+                attempt == 0
+                and provider == "Brevo"
+                and email_delivery_error() == "Brevo email delivery temporarily failed."
+            ):
+                time.sleep(0.5)
+                continue
+            break
         if index < len(providers) - 1:
             logger.warning(
                 "OTP email provider %s failed; trying the next configured provider",
@@ -196,6 +218,7 @@ def _send_brevo_email(
                 logger.info("OTP email accepted by Brevo")
                 return True
             logger.warning("Brevo rejected OTP email (status=%s)", response.status)
+            _set_email_delivery_error(f"Brevo rejected the email request (HTTP {response.status}).")
             return False
     except HTTPError as exc:
         try:
@@ -219,9 +242,14 @@ def _send_brevo_email(
             error_code[:80],
             reason,
         )
+        if reason == "ip_not_authorized":
+            _set_email_delivery_error("Brevo rejected the backend outbound IP address.")
+        else:
+            _set_email_delivery_error("Brevo rejected the configured sender or email request.")
         return False
     except (URLError, TimeoutError, OSError) as exc:
         logger.warning("Brevo OTP email delivery failed (%s)", type(exc).__name__)
+        _set_email_delivery_error("Brevo email delivery temporarily failed.")
         return False
 
 

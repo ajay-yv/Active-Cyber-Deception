@@ -21,7 +21,7 @@ from app.services.security import (
     email_verification_store,
 )
 from app.services.registries import patient_repository
-from app.services.email import email_delivery_configured, send_otp_email
+from app.services.email import email_delivery_configured, email_delivery_error, send_otp_email
 from app.services.sms import missing_sms_settings, send_otp_sms, sms_delivery_error
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -856,6 +856,9 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
                     " Email delivery failed; verify the Brevo sender and authorize the "
                     "backend outbound IP if Brevo API access is restricted."
                 )
+                provider_error = email_delivery_error()
+                if provider_error:
+                    detail += f" Provider response: {provider_error}"
             sms_provider = settings.otp_sms_provider.strip().lower()
             if not mobile_delivered and sms_provider == "brevo":
                 missing = missing_sms_settings(settings)
