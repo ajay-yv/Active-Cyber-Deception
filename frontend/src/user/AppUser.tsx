@@ -5073,7 +5073,7 @@ export default function AppUser() {
 
                 <form onSubmit={handleVerifyOtpAndReset} style={{ display: 'grid', gap: 14 }}>
                   <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
-                    Email or Mobile OTP Code *
+                    {forgotRequiresRegisteredEmailOtp ? 'Verification OTP *' : 'Email or Mobile OTP Code *'}
                     <input
                       required
                       type="text"
