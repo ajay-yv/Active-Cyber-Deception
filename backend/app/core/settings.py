@@ -62,15 +62,45 @@ class Settings(BaseSettings):
     )
     resend_api_key: str = ""
     resend_from_address: str = ""
-    otp_sms_provider: Literal["twilio", "msg91", "brevo"] = "brevo"
-    msg91_auth_key: str = ""
-    msg91_template_id: str = ""
-    twilio_account_sid: str = ""
-    twilio_auth_token: str = ""
-    twilio_api_key_sid: str = ""
-    twilio_api_key_secret: str = ""
-    twilio_from_number: str = ""
-    twilio_default_country_code: str = "91"
+    otp_sms_provider: Literal["twilio", "msg91", "brevo"] = Field(
+        default="brevo",
+        validation_alias=AliasChoices("otp_sms_provider", "OTP_SMS_PROVIDER"),
+    )
+    msg91_auth_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("msg91_auth_key", "MSG91_AUTH_KEY"),
+    )
+    msg91_template_id: str = Field(
+        default="",
+        validation_alias=AliasChoices("msg91_template_id", "MSG91_TEMPLATE_ID"),
+    )
+    twilio_account_sid: str = Field(
+        default="",
+        validation_alias=AliasChoices("twilio_account_sid", "TWILIO_ACCOUNT_SID"),
+    )
+    twilio_auth_token: str = Field(
+        default="",
+        validation_alias=AliasChoices("twilio_auth_token", "TWILIO_AUTH_TOKEN"),
+    )
+    twilio_api_key_sid: str = Field(
+        default="",
+        validation_alias=AliasChoices("twilio_api_key_sid", "TWILIO_API_KEY_SID"),
+    )
+    twilio_api_key_secret: str = Field(
+        default="",
+        validation_alias=AliasChoices("twilio_api_key_secret", "TWILIO_API_KEY_SECRET"),
+    )
+    twilio_from_number: str = Field(
+        default="",
+        validation_alias=AliasChoices("twilio_from_number", "TWILIO_FROM_NUMBER"),
+    )
+    twilio_default_country_code: str = Field(
+        default="91",
+        validation_alias=AliasChoices(
+            "twilio_default_country_code",
+            "TWILIO_DEFAULT_COUNTRY_CODE",
+        ),
+    )
     simulator_max_requests: int = 100
     simulator_max_records: int = 25
     simulator_min_interval_ms: int = 50

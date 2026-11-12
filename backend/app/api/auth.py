@@ -12,18 +12,53 @@ from app.core.settings import get_settings
 from app.core.users import User, verify_password, hash_password
 from app.repositories.user_repository import user_repository, UserRecord
 from app.services.audit import record_audit
-from app.services.security import log_login, log_login_failure, password_reset_store
+from app.services.security import (
+    log_login,
+    log_login_failure,
+    login_otp_store,
+    password_reset_store,
+    phone_verification_store,
+    email_verification_store,
+)
 from app.services.registries import patient_repository
 from app.services.email import email_delivery_configured, send_otp_email
-from app.services.sms import missing_twilio_settings, send_otp_sms
+from app.services.sms import missing_sms_settings, send_otp_sms
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
+BREVO_IP_AUTHORIZATION_HELP = (
+    " If using Brevo, check Settings > Security > Authorized IPs and authorize "
+    "the backend's outbound IP: https://app.brevo.com/security/authorised_ips."
+)
+BREVO_SMS_SETUP_HELP = (
+    " Register and approve a transactional SMS Sender ID for the recipient's "
+    "country in Brevo, set that exact ID as BREVO_SMS_SENDER in backend/.env, "
+    "and ensure the account has SMS credits: "
+    "https://app.brevo.com/sms-compliance/listing."
+)
+BREVO_SMS_DELIVERY_HELP = (
+    " Check Brevo's Transactional SMS logs for carrier delivery status: "
+    "https://app-sms.sendinblue.com/log."
+)
 
 
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class VerifyLoginOtpRequest(BaseModel):
+    challenge_id: str = Field(min_length=32, max_length=128)
+    otp: str = Field(pattern=r"^\d{6}$")
+
+
+class RequestPhoneVerification(BaseModel):
+    phone_number: str = Field(min_length=7, max_length=24)
+
+
+class VerifyPhoneVerification(BaseModel):
+    challenge_id: str = Field(min_length=32, max_length=128)
+    otp: str = Field(pattern=r"^\d{6}$")
 
 
 class GoogleSignInRequest(BaseModel):
@@ -95,6 +130,76 @@ def login(payload: LoginRequest, context: dict[str, str] = Depends(request_conte
         )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
 
+    if get_settings().login_email_otp_enabled:
+        if not user.email or "@" not in user.email:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Email verification is required, but this account has no registered email address.",
+            )
+        if not email_delivery_configured():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Email verification is required, but email delivery is not configured.",
+            )
+
+        otp = f"{secrets.randbelow(1_000_000):06d}"
+        if not send_otp_email(user.email, otp, user.full_name or user.username):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Could not send the login verification code. Check the email provider configuration.",
+            )
+
+        challenge_id = login_otp_store.issue(user.username, otp)
+        email_name, separator, email_domain = user.email.partition("@")
+        masked_email = (
+            f"{email_name[:1]}***@{email_domain}"
+            if separator
+            else "your registered email"
+        )
+        record_audit(user.username, "login_otp_requested", "login verification code sent")
+        return {
+            "requires_email_otp": True,
+            "challenge_id": challenge_id,
+            "email_hint": masked_email,
+            "expires_in": login_otp_store.expiration_seconds,
+        }
+
+    return _create_login_response(user, context)
+
+
+@router.post("/verify-login-otp")
+def verify_login_otp(
+    payload: VerifyLoginOtpRequest,
+    context: dict[str, str] = Depends(request_context_headers),
+) -> dict:
+    username = login_otp_store.verify(payload.challenge_id, payload.otp)
+    if username is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired login verification code.",
+        )
+
+    user_record = user_repository.get_by_username(username)
+    if user_record is None or user_record.is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="This account is unavailable. Please sign in again.",
+        )
+    user = User(
+        username=user_record.username,
+        password=user_record.password_hash,
+        role=user_record.role,
+        full_name=user_record.full_name,
+        email=user_record.email,
+        patient_record_id=user_record.patient_record_id,
+    )
+    return _create_login_response(user, context)
+
+
+def _create_login_response(user: User, context: dict[str, str]) -> dict:
+    account = user_repository.get_by_username(user.username)
+    phone_number = account.phone_number if account else None
+    google_verified_email = user.username.startswith("google:") and bool(user.email)
     token = create_access_token(
         user.username,
         {
@@ -115,6 +220,16 @@ def login(payload: LoginRequest, context: dict[str, str] = Depends(request_conte
             "full_name": user.full_name,
             "email": user.email,
             "patient_record_id": user.patient_record_id,
+            "auth_provider": "google" if google_verified_email else None,
+            "email_verified": (
+                google_verified_email
+                or user_repository.is_email_verified(user.username, user.email)
+            ),
+            "phone_number": phone_number,
+            "phone_verified": user_repository.is_phone_number_verified(
+                user.username,
+                phone_number,
+            ),
         },
     }
 
@@ -205,18 +320,168 @@ def login_with_google(
             "email": normalized_email,
             "patient_record_id": patient.id,
             "auth_provider": "google",
+            "email_verified": True,
+            "phone_number": account.phone_number,
+            "phone_verified": user_repository.is_phone_number_verified(
+                account.username,
+                account.phone_number,
+            ),
         },
     }
 
 
 @router.get("/me")
 def me(user: User = Depends(get_current_user)) -> dict:
+    account = user_repository.get_by_username(user.username)
+    phone_number = account.phone_number if account else None
+    google_verified_email = user.username.startswith("google:") and bool(user.email)
     return {
         "username": user.username,
         "role": user.role,
         "full_name": user.full_name,
         "email": user.email,
+        "email_verified": (
+            google_verified_email
+            or user_repository.is_email_verified(user.username, user.email)
+        ),
+        "phone_number": phone_number,
+        "phone_verified": user_repository.is_phone_number_verified(
+            user.username,
+            phone_number,
+        ),
         "patient_record_id": user.patient_record_id,
+        "auth_provider": "google" if google_verified_email else None,
+    }
+
+
+def _normalize_account_phone(phone_number: str) -> str:
+    digits = "".join(character for character in phone_number if character.isdigit())
+    settings = get_settings()
+    if not phone_number.strip().startswith("+"):
+        country_code = "".join(
+            character
+            for character in settings.twilio_default_country_code
+            if character.isdigit()
+        )
+        if not country_code:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Configure a default country code or enter the mobile number in international format.",
+            )
+        if not digits.startswith(country_code):
+            digits = f"{country_code}{digits}"
+    if not 10 <= len(digits) <= 15:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Enter a valid mobile number with its country code.",
+        )
+    return f"+{digits}"
+
+
+@router.post("/request-phone-verification")
+def request_phone_verification(
+    payload: RequestPhoneVerification,
+    user: User = Depends(get_current_user),
+) -> dict:
+    if user.role == "hacker":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Mobile verification is not available for this account.",
+        )
+    phone_number = _normalize_account_phone(payload.phone_number)
+    if user_repository.is_phone_number_in_use(phone_number, exclude_username=user.username):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This mobile number is already associated with another account.",
+        )
+    settings = get_settings()
+    missing_settings = missing_sms_settings(settings)
+    if missing_settings:
+        detail = f"SMS verification is not configured. Configure: {', '.join(missing_settings)}."
+        if settings.otp_sms_provider == "brevo":
+            detail += BREVO_SMS_SETUP_HELP
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=detail,
+        )
+
+    otp = f"{secrets.randbelow(1_000_000):06d}"
+    try:
+        challenge_id = phone_verification_store.issue(
+            user.username,
+            phone_number,
+            otp,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+        ) from exc
+
+    if not send_otp_sms(phone_number, otp):
+        phone_verification_store.cancel(user.username, challenge_id)
+        detail = (
+            "Could not send the verification code. Check SMS provider configuration "
+            "and destination permissions."
+        )
+        if settings.otp_sms_provider == "brevo":
+            detail += (
+                BREVO_SMS_SETUP_HELP
+                + BREVO_SMS_DELIVERY_HELP
+                + BREVO_IP_AUTHORIZATION_HELP
+            )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=detail,
+        )
+
+    record_audit(user.username, "request_phone_verification", "account phone verification code sent")
+    return {
+        "status": "ok",
+        "challenge_id": challenge_id,
+        "phone_hint": f"••••{phone_number[-4:]}",
+        "expires_in": phone_verification_store.expiration_seconds,
+    }
+
+
+@router.post("/verify-phone")
+def verify_phone(
+    payload: VerifyPhoneVerification,
+    user: User = Depends(get_current_user),
+) -> dict:
+    phone_number = phone_verification_store.verify(
+        user.username,
+        payload.challenge_id,
+        payload.otp,
+    )
+    if phone_number is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired mobile verification code.",
+        )
+    if user_repository.is_phone_number_in_use(phone_number, exclude_username=user.username):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This mobile number is already associated with another account.",
+        )
+    try:
+        updated = user_repository.update_phone_number(user.username, phone_number)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not save the verified mobile number.",
+        )
+    record_audit(user.username, "verify_phone", "account mobile number verified")
+    return {
+        "status": "ok",
+        "message": "Mobile number verified and saved.",
+        "phone_number": phone_number,
+        "phone_verified": True,
     }
 
 
@@ -306,12 +571,16 @@ class PasswordResetRequest(BaseModel):
 
 
 class EmailVerificationRequest(BaseModel):
-    email: str
+    email: str = Field(
+        min_length=6,
+        max_length=255,
+        pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+    )
 
 
 class VerifyEmailOtpRequest(BaseModel):
-    email: str
-    otp: str
+    email: str = Field(min_length=6, max_length=255)
+    otp: str = Field(pattern=r"^\d{6}$")
 
 
 class VerifyOtpRequest(BaseModel):
@@ -390,11 +659,7 @@ def change_password(payload: ChangePasswordRequest, user: User = Depends(get_cur
 
 @router.post("/change-email")
 def change_email(payload: UpdateEmailRequest, user: User = Depends(get_current_user)) -> dict:
-    updated = user_repository.update_email(user.username, payload.new_email)
-    if not updated:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update email")
-    record_audit(user.username, "change_email", f"user changed email to {payload.new_email}")
-    return {"status": "ok", "message": "Email updated"}
+    return _request_email_otp(payload.new_email, user)
 
 
 @router.post("/request-password-reset")
@@ -420,6 +685,68 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
             if "@" in input_email
             else user_repository.get_by_phone_number(input_email)
         )
+
+    is_admin_registered_email = bool(
+        selected_account
+        and selected_account.role == "administrator"
+        and "@" in input_email
+        and selected_account.email
+        and input_email.lower() == selected_account.email.strip().lower()
+    )
+    if (
+        selected_account
+        and selected_account.role == "administrator"
+        and not payload.recovery_email
+        and not payload.recovery_phone
+        and ("@" not in input_email or is_admin_registered_email)
+    ):
+        user_record = selected_account
+        if user_record.is_blocked:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This account is blocked and cannot reset its password.",
+            )
+        settings = get_settings()
+        if not email_delivery_configured(settings):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=(
+                    "Email verification is not configured. Configure BREVO_API_KEY "
+                    "and BREVO_EMAIL_SENDER, RESEND_API_KEY and RESEND_FROM_ADDRESS, "
+                    "or SMTP_USERNAME and SMTP_PASSWORD "
+                    "(SMTP_USER and SMTP_PASS are also supported)."
+                ),
+            )
+        if not user_record.email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No registered email address is available to verify this administrator account.",
+            )
+        otp = f"{secrets.randbelow(1_000_000):06d}"
+        if not send_otp_email(user_record.email, otp, user_record.full_name):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=(
+                    "Could not send the verification email. Check the configured "
+                    "email provider and verified sender."
+                    + BREVO_IP_AUTHORIZATION_HELP
+                ),
+            )
+        password_reset_store.clear_reset_otps(user_record.username)
+        password_reset_store.set_otp(user_record.username, otp)
+        record_audit(
+            user_record.username,
+            "request_password_reset",
+            "administrator password reset code sent to registered email",
+        )
+        return {
+            "status": "success",
+            "requires_registered_email_otp": False,
+            "message": (
+                "Verification code sent to the administrator account's registered email. "
+                "Recovery contact details are not changed during password reset."
+            ),
+        }
 
     is_new_admin_contact = bool(
         selected_account
@@ -483,18 +810,19 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
                 detail="Enter a valid mobile number with its country code.",
             )
         settings = get_settings()
-        missing_sms_settings = missing_twilio_settings(settings)
-        if recovery_phone and missing_sms_settings:
+        sms_missing_settings = missing_sms_settings(settings)
+        if recovery_phone and sms_missing_settings:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"SMS delivery is not configured. The administrator must configure: {', '.join(missing_sms_settings)}.",
+                detail=f"SMS delivery is not configured. The administrator must configure: {', '.join(sms_missing_settings)}.",
             )
         if not email_delivery_configured(settings):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=(
-                    "Email verification is not configured. Configure RESEND_API_KEY "
-                    "and RESEND_FROM_ADDRESS, or SMTP_USERNAME and SMTP_PASSWORD "
+                    "Email verification is not configured. Configure BREVO_API_KEY "
+                    "and BREVO_EMAIL_SENDER, RESEND_API_KEY and RESEND_FROM_ADDRESS, "
+                    "or SMTP_USERNAME and SMTP_PASSWORD "
                     "(SMTP_USER and SMTP_PASS are also supported)."
                 ),
             )
@@ -519,9 +847,32 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
             recovery_otps["phone"] = f"{secrets.randbelow(1_000_000):06d}"
             mobile_delivered = send_otp_sms(recovery_phone, recovery_otps["phone"])
         if not email_delivered or not recovery_email_delivered or not mobile_delivered:
+            detail = (
+                "Could not deliver all verification codes. Check email and SMS provider "
+                "configuration, sender verification, and destination-country permissions."
+            )
+            if not email_delivered or not recovery_email_delivered:
+                detail += (
+                    " Email delivery failed; verify the Brevo sender and authorize the "
+                    "backend outbound IP if Brevo API access is restricted."
+                )
+            sms_provider = settings.otp_sms_provider.strip().lower()
+            if not mobile_delivered and sms_provider == "brevo":
+                missing = missing_sms_settings(settings)
+                if missing:
+                    detail += f" Missing SMS settings: {', '.join(missing)}."
+                detail += BREVO_SMS_SETUP_HELP + BREVO_SMS_DELIVERY_HELP + BREVO_IP_AUTHORIZATION_HELP
+            elif not mobile_delivered:
+                missing = missing_sms_settings(settings)
+                if missing:
+                    detail += f" Missing {sms_provider.upper()} settings: {', '.join(missing)}."
+                detail += (
+                    f" SMS delivery is configured for {sms_provider.upper()}; "
+                    "verify its sender, destination permissions, account balance, and delivery logs."
+                )
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=                "Could not deliver all verification codes. Check email and Twilio provider configuration, sender verification, and destination-country permissions.",
+                detail=detail,
             )
         password_reset_store.clear_reset_otps(user_record.username)
         password_reset_store.set_admin_reset_otps(
@@ -552,8 +903,8 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
     else:
         destination = user_record.phone_number or user_record.username
         settings = get_settings()
-        missing_sms_settings = missing_twilio_settings(settings)
-        if missing_sms_settings:
+        sms_missing_settings = missing_sms_settings(settings)
+        if sms_missing_settings:
             email_fallback_available = bool(
                 user_record.email
                 and email_delivery_configured(settings)
@@ -563,7 +914,7 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail=(
                         "Mobile OTP delivery is not configured for this hospital portal. "
-                        f"The administrator must configure: {', '.join(missing_sms_settings)}. "
+                        f"The administrator must configure: {', '.join(sms_missing_settings)}. "
                         "An OTP can be sent to the registered email when an email provider is configured."
                     ),
                 )
@@ -582,9 +933,18 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=(
                 "The SMS provider did not accept the message. Verify the destination number, "
-                "Twilio sender number, account status, and destination-country permissions."
+                "provider credentials, sender/template configuration, and destination-country permissions."
+                + (
+                    BREVO_SMS_SETUP_HELP + BREVO_SMS_DELIVERY_HELP
+                    if channel == "mobile" and settings.otp_sms_provider == "brevo"
+                    else ""
+                )
                 if channel == "mobile"
-                else "Could not send the verification email. Check the configured email provider, verified sender, and destination address."
+                else (
+                    "Could not send the verification email. Check the configured email "
+                    "provider, verified sender, and destination address."
+                    + BREVO_IP_AUTHORIZATION_HELP
+                )
             ),
         )
 
@@ -602,26 +962,76 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
 
 @router.post("/request-email-verification")
 def request_email_verification(payload: EmailVerificationRequest, user: User = Depends(get_current_user)) -> dict:
-    existing = user_repository.get_by_email(payload.email)
+    return _request_email_otp(payload.email, user)
+
+
+def _request_email_otp(email: str, user: User) -> dict:
+    normalized_email = email.strip().lower()
+    if "@" not in normalized_email or any(character.isspace() for character in normalized_email):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Enter a valid email address.",
+        )
+    existing = user_repository.get_by_email(normalized_email)
     if existing is not None and existing.username != user.username:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already in use")
-    otp = str(uuid4().hex[:6]).upper()
-    from app.services.security import password_reset_store
-    password_reset_store.set_email_verification_otp(payload.email, otp)
-    record_audit(user.username, "request_email_verification", f"email={payload.email}")
-    return {"status": "ok", "message": "Verification OTP sent to the new email address."}
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already in use")
+    settings = get_settings()
+    if not email_delivery_configured(settings):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Email verification is not configured. Configure BREVO_API_KEY and "
+                "BREVO_EMAIL_SENDER, RESEND_API_KEY and RESEND_FROM_ADDRESS, or "
+                "SMTP_USERNAME and SMTP_PASSWORD."
+            ),
+        )
+    otp = f"{secrets.randbelow(1_000_000):06d}"
+    try:
+        email_verification_store.issue(user.username, normalized_email, otp)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+        ) from exc
+    if not send_otp_email(normalized_email, otp, user.full_name or user.username):
+        email_verification_store.cancel(user.username, normalized_email, otp)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Could not send the verification code. Check the email provider, "
+                "verified sender address, and recipient address."
+                + BREVO_IP_AUTHORIZATION_HELP
+            ),
+        )
+    record_audit(user.username, "request_email_verification", "account email verification code sent")
+    return {
+        "status": "ok",
+        "message": "Verification code sent. It expires in five minutes.",
+        "expires_in": email_verification_store.expiration_seconds,
+    }
 
 
 @router.post("/verify-email-otp")
 def verify_email_otp(payload: VerifyEmailOtpRequest, user: User = Depends(get_current_user)) -> dict:
-    from app.services.security import password_reset_store
-    if not password_reset_store.verify_email_otp(payload.email, payload.otp):
+    normalized_email = payload.email.strip().lower()
+    if not email_verification_store.verify(user.username, normalized_email, payload.otp):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email verification OTP")
-    updated = user_repository.update_email(user.username, payload.email)
+    try:
+        updated = user_repository.update_email(user.username, normalized_email, verified=True)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
     if not updated:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to verify email")
-    record_audit(user.username, "verify_email", f"email={payload.email}")
-    return {"status": "ok", "message": "Email verified and updated."}
+    record_audit(user.username, "verify_email", "account email verified and updated")
+    return {
+        "status": "ok",
+        "message": "Email verified and updated.",
+        "email": normalized_email,
+        "email_verified": True,
+    }
 
 
 @router.post("/verify-reset-otp")
@@ -700,6 +1110,17 @@ def verify_reset_otp(payload: VerifyOtpRequest) -> dict:
             recovery_otps,
             recovery_email,
             payload.recovery_phone,
+        )
+    elif selected_account and selected_account.role == "administrator":
+        user_record = selected_account
+        if user_record.is_blocked:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This account is blocked and cannot reset its password.",
+            )
+        otp_valid = password_reset_store.verify_reset_otp(
+            user_record.username,
+            payload.otp,
         )
     else:
         user_record = _find_password_reset_account(input_identifier, payload.username)
