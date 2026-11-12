@@ -22,7 +22,7 @@ from app.services.security import (
 )
 from app.services.registries import patient_repository
 from app.services.email import email_delivery_configured, send_otp_email
-from app.services.sms import missing_sms_settings, send_otp_sms
+from app.services.sms import missing_sms_settings, send_otp_sms, sms_delivery_error
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
@@ -862,6 +862,9 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
                 if missing:
                     detail += f" Missing SMS settings: {', '.join(missing)}."
                 detail += BREVO_SMS_SETUP_HELP + BREVO_SMS_DELIVERY_HELP + BREVO_IP_AUTHORIZATION_HELP
+                provider_error = sms_delivery_error()
+                if provider_error:
+                    detail += f" Provider response: {provider_error}"
             elif not mobile_delivered:
                 missing = missing_sms_settings(settings)
                 if missing:

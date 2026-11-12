@@ -11,6 +11,16 @@ from twilio.rest import Client
 from app.core.settings import Settings, get_settings
 
 logger = logging.getLogger(__name__)
+_last_sms_delivery_error = ""
+
+
+def sms_delivery_error() -> str:
+    return _last_sms_delivery_error
+
+
+def _set_sms_delivery_error(message: str) -> None:
+    global _last_sms_delivery_error
+    _last_sms_delivery_error = message
 
 
 def _configured_value(settings: Settings, attribute: str, environment_name: str) -> str:
@@ -23,6 +33,7 @@ def _sms_provider(settings: Settings) -> str:
 
 
 def send_otp_sms(to_number: str, otp: str) -> bool:
+    _set_sms_delivery_error("")
     settings = get_settings()
     provider = _sms_provider(settings)
     if provider == "brevo":
@@ -101,6 +112,7 @@ def missing_sms_settings(settings: Settings) -> list[str]:
 def _send_brevo_otp(settings: Settings, to_number: str, otp: str) -> bool:
     missing = missing_sms_settings(settings)
     if missing:
+        _set_sms_delivery_error(f"Missing SMS settings: {', '.join(missing)}.")
         logger.error("Brevo SMS OTP delivery is not configured")
         return False
 
@@ -159,6 +171,8 @@ def _send_brevo_otp(settings: Settings, to_number: str, otp: str) -> bool:
             reason = "ip_not_authorized"
         elif exc.code == 402 or error_code in {"not_enough_credits", "insufficient_credits"}:
             reason = "insufficient_credits"
+        elif "sending status is not yet activated" in message:
+            reason = "account_not_activated"
         elif (
             "sender" in f"{error_code} {message}"
             and any(
@@ -182,6 +196,19 @@ def _send_brevo_otp(settings: Settings, to_number: str, otp: str) -> bool:
             safe_error_code,
             reason,
         )
+        if reason == "account_not_activated":
+            _set_sms_delivery_error(
+                "Brevo SMS sending is not activated for this account; contact Brevo support "
+                "to activate transactional SMS."
+            )
+        elif reason == "insufficient_credits":
+            _set_sms_delivery_error("Brevo SMS has insufficient credits.")
+        elif reason == "ip_not_authorized":
+            _set_sms_delivery_error("Brevo rejected the backend outbound IP address.")
+        elif reason == "sender_not_accepted":
+            _set_sms_delivery_error("Brevo rejected the configured SMS sender.")
+        else:
+            _set_sms_delivery_error("Brevo rejected the SMS request.")
         return False
     except (URLError, TimeoutError, OSError) as exc:
         logger.warning("Brevo OTP SMS delivery failed (%s)", type(exc).__name__)
