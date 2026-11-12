@@ -40,6 +40,11 @@ BREVO_SMS_DELIVERY_HELP = (
     " Check Brevo's Transactional SMS logs for carrier delivery status: "
     "https://app-sms.sendinblue.com/log."
 )
+BREVO_SMS_ACTIVATION_HELP = (
+    " Brevo must activate transactional SMS for this account before API delivery can "
+    "start. Contact Brevo support at contact@sendinblue.com, then purchase SMS credits "
+    "from https://app.brevo.com/sms-compliance/listing."
+)
 
 
 class LoginRequest(BaseModel):
@@ -868,6 +873,8 @@ def request_password_reset(payload: PasswordResetRequest) -> dict:
                 provider_error = sms_delivery_error()
                 if provider_error:
                     detail += f" Provider response: {provider_error}"
+                    if "not activated" in provider_error.lower():
+                        detail += BREVO_SMS_ACTIVATION_HELP
             elif not mobile_delivered:
                 missing = missing_sms_settings(settings)
                 if missing:
