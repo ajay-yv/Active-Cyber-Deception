@@ -870,6 +870,7 @@ function AdminDashboard({ token }: { token: string }) {
   const alarmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const alarmOscillatorRef = useRef<OscillatorNode | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+  const seenSecurityAlertIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     const unlockAudio = () => {
@@ -1005,6 +1006,41 @@ function AdminDashboard({ token }: { token: string }) {
 
   useEffect(() => {
     refreshAdminData()
+  }, [token])
+
+  useEffect(() => {
+    let initialized = false
+
+    const pollSecurityAlerts = async () => {
+      try {
+        const events = await fetchAuditEvents(token)
+        const thresholdEvents = events.filter(
+          (event) =>
+            event.event_type.toUpperCase().includes('FAILED_LOGIN') ||
+            event.event_type.toUpperCase().includes('BRUTE_FORCE'),
+        )
+
+        if (!initialized) {
+          thresholdEvents.forEach((event) => seenSecurityAlertIdsRef.current.add(event.id))
+          initialized = true
+          return
+        }
+
+        const newEvents = thresholdEvents.filter(
+          (event) => !seenSecurityAlertIdsRef.current.has(event.id),
+        )
+        if (newEvents.length > 0) {
+          newEvents.forEach((event) => seenSecurityAlertIdsRef.current.add(event.id))
+          triggerAdminAlarm()
+        }
+      } catch {
+        // Realtime notifications remain the primary alert path.
+      }
+    }
+
+    void pollSecurityAlerts()
+    const interval = window.setInterval(() => void pollSecurityAlerts(), 3000)
+    return () => window.clearInterval(interval)
   }, [token])
 
   useRealtimeNotifications(setNotifications, async (type) => {

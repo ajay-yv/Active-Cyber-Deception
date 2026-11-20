@@ -648,6 +648,10 @@ def log_login_failure(username: str, session_id: str, ip_address: str, device: s
             f"username={attempted_username}; session={session_id}; ip={ip_address}; attempts={failure_count}; window_minutes={alert_payload['window_minutes']}",
         )
         publish_event("FAILED_LOGIN_THRESHOLD_REACHED", alert_payload)
+        publish_event("hacker_attack_alert", {
+            **alert_payload,
+            "details": f"Brute-force threshold reached for {attempted_username}",
+        })
 
 
 def log_decision(session_id: str, route: str, score: int, reason: str = "", username: str | None = None) -> None:
