@@ -919,6 +919,57 @@ export default function AppUser() {
     }
   }, [token, user?.role, user?.email])
 
+  useEffect(() => {
+    if (!token || user?.role !== 'administrator') return
+
+    const seenAttackIds = new Set<string>()
+    let cancelled = false
+    let firstPoll = true
+
+    const pollForensicAlerts = async () => {
+      try {
+        const response = await fetchForensicRecords(token, 25)
+        if (cancelled) return
+
+        const incoming = response.records || []
+        setSecurityAlerts((current) => mergeAttackAlerts(current, incoming))
+
+        if (firstPoll) {
+          incoming.forEach((alert) => {
+            if (alert.attack_id) seenAttackIds.add(String(alert.attack_id))
+          })
+          firstPoll = false
+          return
+        }
+
+        const newHighRiskAlert = incoming.find((alert) => {
+          const alertId = String(alert.attack_id || '')
+          if (!alertId || seenAttackIds.has(alertId)) return false
+          seenAttackIds.add(alertId)
+          return Number(alert.risk_score || 0) >= 70
+        })
+
+        if (newHighRiskAlert) {
+          setAlarmMuted(false)
+          setActiveTab('gateway')
+          triggerBurglarAlarm()
+        }
+      } catch {
+        // Polling is a fallback; the realtime WebSocket remains the primary signal.
+      }
+    }
+
+    void pollForensicAlerts()
+    const pollTimer = window.setInterval(() => {
+      void pollForensicAlerts()
+    }, 3000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(pollTimer)
+    }
+  }, [token, user?.role])
+
   useRealtimeNotifications(token, async (type, payload: any) => {
     if (type === 'FAILED_LOGIN_THRESHOLD_REACHED') {
       const failureCount = Number(payload?.attempt_count || 0)

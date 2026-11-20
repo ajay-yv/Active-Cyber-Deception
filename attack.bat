@@ -42,7 +42,17 @@ if not "%~2"=="" set "COUNT_ARG=--count %~2"
 if not "%~3"=="" set "TARGET_ARG=--target %~3"
 
 :run
-%PYTHON_BIN% "%~dp0tools\security_simulator.py" --attack %ATTACK% %COUNT_ARG% %TARGET_ARG%
+set "EXTRA_FLAGS=--allow-private-network"
+set "TARGET_URL="
+if not "%~3"=="" set "TARGET_URL=%~3"
+if not defined TARGET_URL goto execute
+powershell -NoProfile -Command "exit 0" >nul
+if /i not "%TARGET_URL:~0,8%"=="https://" goto execute
+for /f "usebackq delims=" %%H in (`powershell -NoProfile -Command "$u=[uri]'%TARGET_URL%'; $u.Host"`) do set "PUBLIC_HOST=%%H"
+if defined PUBLIC_HOST set "EXTRA_FLAGS=--authorized-demo-host %PUBLIC_HOST%"
+
+:execute
+%PYTHON_BIN% "%~dp0tools\security_simulator.py" --attack %ATTACK% %COUNT_ARG% %TARGET_ARG% %EXTRA_FLAGS%
 goto :eof
 
 :help
