@@ -4,7 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from app.db.engines import SecuritySessionLocal
-from app.models.security import UserAccount
+from app.models.security import UserAccount, VerifiedEmailAddress, VerifiedPhoneNumber
 
 
 def _normalize_phone_number(value: str | None) -> str:
@@ -80,25 +80,91 @@ class UserRepository:
             session.commit()
         return True
 
-    def update_email(self, username: str, new_email: str) -> bool:
+    def update_email(self, username: str, new_email: str, verified: bool = False) -> bool:
         with SecuritySessionLocal() as session:
             row = session.query(UserAccount).filter(UserAccount.username == username).first()
             if row is None:
                 return False
-            row.email = new_email
+            normalized_email = new_email.strip().lower()
+            row.email = normalized_email
             session.add(row)
-            session.commit()
+            if verified:
+                verification = session.get(VerifiedEmailAddress, username)
+                if verification is None:
+                    verification = VerifiedEmailAddress(
+                        username=username,
+                        email=normalized_email,
+                    )
+                else:
+                    verification.email = normalized_email
+                session.add(verification)
+            try:
+                session.commit()
+            except IntegrityError as exc:
+                session.rollback()
+                raise ValueError("This email address is already verified for another account.") from exc
         return True
+
+    def is_email_verified(self, username: str, email: str | None) -> bool:
+        if not email:
+            return False
+        with SecuritySessionLocal() as session:
+            verification = session.get(VerifiedEmailAddress, username)
+            return bool(
+                verification
+                and verification.email.strip().lower() == email.strip().lower()
+            )
 
     def update_phone_number(self, username: str, phone_number: str) -> bool:
         with SecuritySessionLocal() as session:
             row = session.query(UserAccount).filter(UserAccount.username == username).first()
             if row is None:
                 return False
+            verification = session.get(VerifiedPhoneNumber, username)
+            if verification is None:
+                verification = VerifiedPhoneNumber(
+                    username=username,
+                    phone_number=phone_number,
+                )
+            else:
+                verification.phone_number = phone_number
             row.phone_number = phone_number
             session.add(row)
-            session.commit()
+            session.add(verification)
+            try:
+                session.commit()
+            except IntegrityError as exc:
+                session.rollback()
+                raise ValueError("This mobile number is already verified for another account.") from exc
         return True
+
+    def is_phone_number_verified(self, username: str, phone_number: str | None) -> bool:
+        if not phone_number:
+            return False
+        with SecuritySessionLocal() as session:
+            verification = session.get(VerifiedPhoneNumber, username)
+            return bool(
+                verification
+                and _normalize_phone_number(verification.phone_number)
+                == _normalize_phone_number(phone_number)
+            )
+
+    def is_phone_number_in_use(
+        self,
+        phone_number: str,
+        exclude_username: str | None = None,
+    ) -> bool:
+        normalized_phone = _normalize_phone_number(phone_number)
+        if not normalized_phone:
+            return False
+        with SecuritySessionLocal() as session:
+            query = session.query(UserAccount).filter(UserAccount.phone_number.isnot(None))
+            if exclude_username:
+                query = query.filter(UserAccount.username != exclude_username)
+            return any(
+                _normalize_phone_number(row.phone_number) == normalized_phone
+                for row in query.all()
+            )
 
     def update_password_and_recovery_contacts(
         self,

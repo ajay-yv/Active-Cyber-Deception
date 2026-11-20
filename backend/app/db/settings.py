@@ -1,13 +1,15 @@
 from functools import lru_cache
+import os
 from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT_DIR = Path(__file__).resolve().parents[3]
-REAL_DB_PATH = (ROOT_DIR / "real_healthcare.db").as_posix()
-SYN_DB_PATH = (ROOT_DIR / "synthetic_healthcare.db").as_posix()
-SEC_DB_PATH = (ROOT_DIR / "security_events.db").as_posix()
+DATABASE_ROOT = Path("/tmp") if os.getenv("VERCEL") else ROOT_DIR
+REAL_DB_PATH = (DATABASE_ROOT / "real_healthcare.db").as_posix()
+SYN_DB_PATH = (DATABASE_ROOT / "synthetic_healthcare.db").as_posix()
+SEC_DB_PATH = (DATABASE_ROOT / "security_events.db").as_posix()
 
 
 class DatabaseSettings(BaseSettings):

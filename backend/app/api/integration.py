@@ -8,7 +8,11 @@ from fastapi import File, UploadFile
 import os
 from uuid import uuid4
 
-UPLOAD_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads')
+UPLOAD_ROOT = os.getenv("UPLOAD_ROOT") or (
+    "/tmp/uploads"
+    if os.getenv("VERCEL")
+    else os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
+)
 os.makedirs(UPLOAD_ROOT, exist_ok=True)
 
 router = APIRouter(prefix="/integration", tags=["integration"])

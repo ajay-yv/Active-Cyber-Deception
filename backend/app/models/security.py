@@ -40,6 +40,30 @@ class UserAccount(SecurityBase):
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class VerifiedPhoneNumber(SecurityBase):
+    __tablename__ = "verified_phone_numbers"
+
+    username: Mapped[str] = mapped_column(String(128), primary_key=True)
+    phone_number: Mapped[str] = mapped_column(String(32), nullable=False, unique=True)
+    verified_at: Mapped[object] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
+class VerifiedEmailAddress(SecurityBase):
+    __tablename__ = "verified_email_addresses"
+
+    username: Mapped[str] = mapped_column(String(128), primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    verified_at: Mapped[object] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
 class PasswordResetToken(SecurityBase):
     __tablename__ = "password_reset_tokens"
 

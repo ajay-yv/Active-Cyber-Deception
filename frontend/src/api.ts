@@ -192,7 +192,23 @@ export type LoginResponse = {
     email?: string
     patient_record_id?: string | null
     auth_provider?: 'google'
+    email_verified?: boolean
+    phone_number?: string | null
+    phone_verified?: boolean
   }
+}
+
+export type LoginChallenge = {
+  requires_email_otp: true
+  challenge_id: string
+  email_hint: string
+  expires_in: number
+}
+
+export type LoginResult = LoginResponse | LoginChallenge
+
+export function requiresLoginOtp(result: LoginResult): result is LoginChallenge {
+  return 'requires_email_otp' in result && result.requires_email_otp
 }
 
 export type PatientCreate = {
@@ -444,7 +460,7 @@ export async function safeJson<T>(response: Response, fallbackValue: T): Promise
   }
 }
 
-export async function login(username: string, password: string): Promise<LoginResponse> {
+export async function login(username: string, password: string): Promise<LoginResult> {
   const u = (username || '').toLowerCase().trim()
   const p = (password || '').trim()
 
@@ -459,28 +475,34 @@ export async function login(username: string, password: string): Promise<LoginRe
       body: JSON.stringify({ username: u, password: p }),
     })
   } catch (err) {
-    console.warn('Backend server not reachable, evaluating offline/enclave authentication:', err)
+    const reason = err instanceof Error ? `: ${err.message}` : ''
+    throw new Error(`Unable to reach the hospital authentication service${reason}`)
   }
 
-  // If a real backend answered with JSON, respect its response!
+  // A backend error must not fall through to local demo credentials.
   const contentType = response?.headers.get('content-type') || ''
   const isRealBackendResponse = Boolean(
     response &&
     contentType.includes('application/json') &&
     response.status !== 405 &&
-    response.status !== 404 &&
-    response.status !== 500 &&
-    response.status !== 502 &&
-    response.status !== 503 &&
-    response.status !== 504
+    response.status !== 404
   )
 
   if (isRealBackendResponse && response) {
     if (response.ok) {
-      const data = await response.json().catch(() => null)
-      if (data && data.access_token) {
-        return data as LoginResponse
+      const data = await response.json().catch(() => null) as Record<string, unknown> | null
+      if (data?.requires_email_otp === true && typeof data.challenge_id === 'string') {
+        return {
+          requires_email_otp: true,
+          challenge_id: data.challenge_id,
+          email_hint: typeof data.email_hint === 'string' ? data.email_hint : 'your registered email',
+          expires_in: typeof data.expires_in === 'number' ? data.expires_in : 300,
+        }
       }
+      if (data && typeof data.access_token === 'string' && data.user) {
+        return data as unknown as LoginResponse
+      }
+      throw new Error('The authentication service returned an invalid login response.')
     } else {
       let detail = 'Invalid username or password'
       try {
@@ -491,25 +513,12 @@ export async function login(username: string, password: string): Promise<LoginRe
       } catch {
         // ignore
       }
-      // If patient or doctor login against backend failed, check if local storage/fallback has registered credentials before rejecting
-      if (!['patient', 'p-'].includes(u) && !u.startsWith('p-') && !u.startsWith('patient')) {
-        const uNorm = u.toLowerCase().replace(/[\s\-_.]/g, '')
-        const pNorm = p.toLowerCase()
-        const doctorKeys = ['doctor', 'doctorpriya', 'doctorramesh', 'doctorsarah', 'doctorrajesh', 'doctoranita', 'priya', 'ramesh', 'sarah', 'rajesh', 'anita']
-        const validDoctorPasswordsLower = ['priya@10', 'ramesh@29', 'sarah@38', 'rajesh@47', 'anita@56', 'doctor@1432', 'doctor123']
-        const isDocCredential =
-          (doctorKeys.includes(uNorm) || uNorm.startsWith('doctor')) &&
-          validDoctorPasswordsLower.includes(pNorm)
-
-        if (['admin', 'administrator'].includes(u) && (p === 'Admin@8431' || p === 'admin123')) {
-          console.warn('Backend rejected admin credentials; evaluating local credential fallback.')
-        } else if (isDocCredential) {
-          console.warn('Backend rejected doctor credentials; evaluating local credential fallback.')
-        } else {
-          throw new Error(detail)
-        }
-      }
+      throw new Error(detail)
     }
+  }
+
+  if (response) {
+    throw new Error('The hospital authentication service is unavailable. Please try again later.')
   }
 
   // Offline / standalone fallback credentials with robust patient verification
@@ -712,6 +721,31 @@ export async function login(username: string, password: string): Promise<LoginRe
       email: `${activeDocKey.replace('doctor_', '')}@stjude.org`,
     },
   }
+}
+
+export async function verifyLoginOtp(challengeId: string, otp: string): Promise<LoginResponse> {
+  let response: Response
+  try {
+    response = await fetch(`${apiBaseUrl}/api/auth/verify-login-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challenge_id: challengeId, otp }),
+    })
+  } catch (error) {
+    const reason = error instanceof Error ? `: ${error.message}` : ''
+    throw new Error(`Unable to reach the login verification service${reason}`)
+  }
+
+  const data = await response.json().catch(() => ({})) as {
+    access_token?: unknown
+    user?: unknown
+    detail?: unknown
+  }
+  if (response.ok && typeof data.access_token === 'string' && data.user && typeof data.user === 'object') {
+    return data as LoginResponse
+  }
+  const detail = typeof data.detail === 'string' ? data.detail : ''
+  throw new Error(detail || `Login verification failed (HTTP ${response.status}).`)
 }
 
 export async function exchangeGoogleToken(idToken: string): Promise<LoginResponse> {
@@ -1591,10 +1625,11 @@ export async function changeEmail(newEmail: string, token: string): Promise<{ st
       if (data && data.status) return data
     }
   } catch (err) {
-    console.warn('Backend changeEmail unreachable, using local enclave fallback:', err)
+    console.warn('Backend changeEmail request failed:', err)
+    throw err
   }
 
-  return { status: 'success', message: 'Email address updated successfully in secure local enclave!' }
+  throw new Error('Could not send the email verification code.')
 }
 
 export async function requestPasswordReset(
@@ -1685,10 +1720,11 @@ export async function requestEmailVerification(email: string, token: string): Pr
       if (data && data.status) return data
     }
   } catch (err) {
-    console.warn('Backend requestEmailVerification unreachable, using local fallback:', err)
+    console.warn('Backend requestEmailVerification failed:', err)
+    throw err
   }
 
-  return { status: 'success', message: 'Verification code dispatched successfully!' }
+  throw new Error('Could not send the email verification code.')
 }
 
 export async function verifyEmailOtp(email: string, otp: string, token: string): Promise<{ status: string; message: string }> {
@@ -1707,10 +1743,74 @@ export async function verifyEmailOtp(email: string, otp: string, token: string):
       if (data && data.status) return data
     }
   } catch (err) {
-    console.warn('Backend verifyEmailOtp unreachable, using local fallback:', err)
+    console.warn('Backend verifyEmailOtp failed:', err)
+    throw err
   }
 
-  return { status: 'success', message: 'Email address verified successfully!' }
+  throw new Error('The email verification code could not be verified.')
+}
+
+export async function requestPhoneVerification(
+  phoneNumber: string,
+  token: string,
+): Promise<{ challenge_id: string; phone_hint: string; expires_in: number }> {
+  const response = await safeFetch(`${apiBaseUrl}/api/auth/request-phone-verification`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ phone_number: phoneNumber }),
+  })
+  const data = await response.json().catch(() => ({})) as {
+    challenge_id?: unknown
+    phone_hint?: unknown
+    expires_in?: unknown
+    detail?: unknown
+  }
+  if (!response.ok || typeof data.challenge_id !== 'string') {
+    throw new Error(typeof data.detail === 'string' ? data.detail : 'Could not send the mobile verification code.')
+  }
+  return {
+    challenge_id: data.challenge_id,
+    phone_hint: typeof data.phone_hint === 'string' ? data.phone_hint : 'your mobile number',
+    expires_in: typeof data.expires_in === 'number' ? data.expires_in : 300,
+  }
+}
+
+export async function verifyPhoneNumber(
+  challengeId: string,
+  otp: string,
+  token: string,
+): Promise<{ status: string; message: string; phone_number: string; phone_verified: boolean }> {
+  const response = await safeFetch(`${apiBaseUrl}/api/auth/verify-phone`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ challenge_id: challengeId, otp }),
+  })
+  const data = await response.json().catch(() => ({})) as {
+    status?: unknown
+    message?: unknown
+    phone_number?: unknown
+    phone_verified?: unknown
+    detail?: unknown
+  }
+  if (
+    !response.ok ||
+    typeof data.phone_number !== 'string' ||
+    data.phone_verified !== true
+  ) {
+    throw new Error(typeof data.detail === 'string' ? data.detail : 'Could not verify this mobile number.')
+  }
+  return {
+    status: typeof data.status === 'string' ? data.status : 'ok',
+    message: typeof data.message === 'string' ? data.message : 'Mobile number verified.',
+    phone_number: data.phone_number,
+    phone_verified: true,
+  }
 }
 
 export async function fetchSentEmails(email?: string): Promise<{ logs: string[] }> {

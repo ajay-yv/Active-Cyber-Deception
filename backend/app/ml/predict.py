@@ -1,9 +1,6 @@
 import logging
+import importlib.util
 from pathlib import Path
-
-import joblib
-import pandas as pd
-from app.ml.preprocess import build_simple_feature_set, transform_features
 
 MODEL_DIR = Path(__file__).resolve().parent / "saved_models"
 _logger = logging.getLogger(__name__)
@@ -24,7 +21,13 @@ class MLModelLoader:
 
     def load_models(self) -> None:
         self.model_dir.mkdir(parents=True, exist_ok=True)
+        if not all(importlib.util.find_spec(package) for package in ("joblib", "pandas")):
+            _logger.info("Optional ML dependencies are unavailable; using rule-based gateway defaults.")
+            self.loaded = False
+            return
         try:
+            import joblib
+
             self.isolation_forest = joblib.load(self.model_dir / "isolation_forest.joblib")
             self.random_forest = joblib.load(self.model_dir / "random_forest.joblib")
             self.xgboost = joblib.load(self.model_dir / "xgboost.joblib")
@@ -55,6 +58,9 @@ class MLModelLoader:
             return self._default_predictions()
 
         try:
+            import pandas as pd
+            from app.ml.preprocess import build_simple_feature_set, transform_features
+
             df = pd.DataFrame([request_context])
             features = build_simple_feature_set(df)
             transformed = transform_features(features, self.encoders, self.scaler)

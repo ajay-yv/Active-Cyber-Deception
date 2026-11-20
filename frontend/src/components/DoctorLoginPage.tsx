@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import type { LoginResponse } from '../api'
-import { login as loginRequest } from '../api'
+import type { LoginChallenge, LoginResponse, LoginResult } from '../api'
+import { login as loginRequest, requiresLoginOtp, verifyLoginOtp } from '../api'
 
 export interface DoctorProfile {
   id: string
@@ -12,7 +12,6 @@ export interface DoctorProfile {
   license: string
   icon: string
   accent: string
-  defaultPassword?: string
 }
 
 export interface DoctorLoginPageProps {
@@ -32,7 +31,6 @@ export const DOCTORS_LIST: DoctorProfile[] = [
     license: 'MCI-84920',
     icon: '🫀',
     accent: '#0284c7',
-    defaultPassword: 'Priya@10',
   },
   {
     id: 'doctor_ramesh',
@@ -44,7 +42,6 @@ export const DOCTORS_LIST: DoctorProfile[] = [
     license: 'MCI-92314',
     icon: '🧠',
     accent: '#a855f7',
-    defaultPassword: 'Ramesh@29',
   },
   {
     id: 'doctor_sarah',
@@ -56,7 +53,6 @@ export const DOCTORS_LIST: DoctorProfile[] = [
     license: 'MCI-71089',
     icon: '👶',
     accent: '#ec4899',
-    defaultPassword: 'Sarah@38',
   },
   {
     id: 'doctor_rajesh',
@@ -68,7 +64,6 @@ export const DOCTORS_LIST: DoctorProfile[] = [
     license: 'MCI-65432',
     icon: '🦴',
     accent: '#f59e0b',
-    defaultPassword: 'Rajesh@47',
   },
   {
     id: 'doctor_anita',
@@ -80,13 +75,14 @@ export const DOCTORS_LIST: DoctorProfile[] = [
     license: 'MCI-54321',
     icon: '🩺',
     accent: '#10b981',
-    defaultPassword: 'Anita@56',
   },
 ]
 
 export const DoctorLoginPage: React.FC<DoctorLoginPageProps> = ({ onLogin, onCancel, initialDoctorId }) => {
   const [selectedDocId, setSelectedDocId] = useState<string>(initialDoctorId || 'doctor_priya')
   const [password, setPassword] = useState('')
+  const [loginChallenge, setLoginChallenge] = useState<LoginChallenge | null>(null)
+  const [loginOtp, setLoginOtp] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -98,6 +94,17 @@ export const DoctorLoginPage: React.FC<DoctorLoginPageProps> = ({ onLogin, onCan
     setLoading(true)
     setError('')
 
+    if (loginChallenge) {
+      try {
+        onLogin(await verifyLoginOtp(loginChallenge.challenge_id, loginOtp.trim()))
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Login verification failed.')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
     const trimmedPassword = password.trim()
     if (!trimmedPassword) {
       setError(`Please enter the password for ${activeDoc.name}.`)
@@ -107,41 +114,30 @@ export const DoctorLoginPage: React.FC<DoctorLoginPageProps> = ({ onLogin, onCan
 
     try {
       // Authenticate with specific doctor account credentials
-      let response: LoginResponse | null = null
+      let response: LoginResult | null = null
       try {
         response = await loginRequest(activeDoc.username, trimmedPassword)
-      } catch {
-        if (activeDoc.altUsername) {
-          try {
-            response = await loginRequest(activeDoc.altUsername, trimmedPassword)
-          } catch {
-            // evaluate direct match below
-          }
+      } catch (err) {
+        if (
+          !activeDoc.altUsername ||
+          !(err instanceof Error) ||
+          !err.message.toLowerCase().includes('invalid username or password')
+        ) {
+          throw err
         }
-      }
-
-      // Direct fallback if network rejected or was offline but doctor password matches
-      if (
-        !response &&
-        activeDoc.defaultPassword &&
-        (trimmedPassword === activeDoc.defaultPassword || trimmedPassword.toLowerCase() === activeDoc.defaultPassword.toLowerCase())
-      ) {
-        response = {
-          access_token: `doctor-token-${activeDoc.id}-${Date.now()}`,
-          token_type: 'bearer',
-          user: {
-            username: activeDoc.username,
-            role: 'doctor',
-            full_name: activeDoc.name,
-            email: `${activeDoc.username.replace('doctor_', '')}@stjude.org`,
-          },
-        }
+        response = await loginRequest(activeDoc.altUsername, trimmedPassword)
       }
 
       if (!response) {
         throw new Error(`Login failed. Invalid password for ${activeDoc.name}.`)
       }
 
+      if (requiresLoginOtp(response)) {
+        setLoginChallenge(response)
+        setLoginOtp('')
+        setError('')
+        return
+      }
       onLogin(response)
     } catch (err) {
       setError(
@@ -157,6 +153,8 @@ export const DoctorLoginPage: React.FC<DoctorLoginPageProps> = ({ onLogin, onCan
   function handleSelectDoctor(docId: string) {
     setSelectedDocId(docId)
     setPassword('')
+    setLoginChallenge(null)
+    setLoginOtp('')
     setError('')
   }
 
@@ -224,7 +222,7 @@ export const DoctorLoginPage: React.FC<DoctorLoginPageProps> = ({ onLogin, onCan
           >
             🩺 Select Doctor Option:
           </label>
-          <select
+          {!loginChallenge ? <select
             id="doctor-selector"
             value={selectedDocId}
             onChange={(e) => handleSelectDoctor(e.target.value)}
@@ -247,7 +245,11 @@ export const DoctorLoginPage: React.FC<DoctorLoginPageProps> = ({ onLogin, onCan
                 {doc.icon} {doc.name} — {doc.dept} (License {doc.license})
               </option>
             ))}
-          </select>
+          </select> : (
+            <p style={{ margin: 0, color: '#475569', fontSize: '0.88rem', lineHeight: 1.5 }}>
+              Enter the six-digit verification code sent to {loginChallenge.email_hint}. It expires in five minutes.
+            </p>
+          )}
         </div>
 
         {/* Respective Doctor Password Form */}
@@ -287,7 +289,48 @@ export const DoctorLoginPage: React.FC<DoctorLoginPageProps> = ({ onLogin, onCan
             </div>
           </div>
 
-          {/* Password Input Field */}
+          {loginChallenge ? (
+            <div style={{ display: 'grid', gap: 8, marginBottom: 20 }}>
+              <label htmlFor="doctor-login-otp" style={{ fontSize: '0.86rem', color: '#334155', fontWeight: 700 }}>
+                Email verification code
+              </label>
+              <input
+                id="doctor-login-otp"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                value={loginOtp}
+                onChange={(event) => setLoginOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="6-digit code"
+                required
+                autoFocus
+                style={{
+                  width: '100%',
+                  padding: '13px 16px',
+                  borderRadius: 12,
+                  border: '1px solid #cbd5e1',
+                  background: '#ffffff',
+                  color: '#0f172a',
+                  fontSize: '0.98rem',
+                  letterSpacing: '0.2em',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginChallenge(null)
+                  setLoginOtp('')
+                  setError('')
+                }}
+                style={{ justifySelf: 'start', padding: 0, border: 'none', background: 'none', color: '#0284c7', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Use a different doctor account
+              </button>
+            </div>
+          ) : (
+          /* Password Input Field */
           <div style={{ display: 'grid', gap: 8, marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label
@@ -334,6 +377,7 @@ export const DoctorLoginPage: React.FC<DoctorLoginPageProps> = ({ onLogin, onCan
               }}
             />
           </div>
+          )}
 
           {/* Error Message */}
           {error && (
@@ -401,7 +445,7 @@ export const DoctorLoginPage: React.FC<DoctorLoginPageProps> = ({ onLogin, onCan
               {loading ? (
                 <>⏳ Verifying Credentials…</>
               ) : (
-                <>🔓 Login to {activeDoc.name.replace(/^Dr\.\s*/i, '')}&apos;s Dashboard &rarr;</>
+                <>{loginChallenge ? 'Verify email code' : `🔓 Login to ${activeDoc.name.replace(/^Dr\.\s*/i, '')}'s Dashboard →`}</>
               )}
             </button>
           </div>

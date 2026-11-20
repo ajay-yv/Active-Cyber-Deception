@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { DashboardCard } from '../components/DashboardCard'
 import { DashboardList } from '../components/DashboardList'
-import type { BreachResponse, DashboardResponse, LoginResponse, PatientRecord } from '../api'
-import { createBreachRequest, fetchDashboard, fetchPatients, login, requestPasswordReset, verifyResetOtp } from '../api'
+import type { BreachResponse, DashboardResponse, LoginChallenge, LoginResponse, PatientRecord } from '../api'
+import { createBreachRequest, fetchDashboard, fetchPatients, login, requestPasswordReset, requiresLoginOtp, verifyLoginOtp, verifyResetOtp } from '../api'
 import { executeHackMode, fetchHackModes } from '../api_extra'
 
 type Notification = {
@@ -117,6 +117,8 @@ export default function AppHacker() {
   const [isForgotPasswordView, setIsForgotPasswordView] = useState(false)
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<LoginResponse['user'] | null>(null)
+  const [loginChallenge, setLoginChallenge] = useState<LoginChallenge | null>(null)
+  const [loginOtp, setLoginOtp] = useState('')
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [attackMessage, setAttackMessage] = useState('')
   const [error, setError] = useState('')
@@ -193,16 +195,34 @@ export default function AppHacker() {
     setError('')
     setAttackMessage('')
 
+    const finishLogin = (result: LoginResponse) => {
+      setLoginChallenge(null)
+      setLoginOtp('')
+      if (result.user.role !== 'hacker') {
+        setError('Please sign in with the hacker account for this dashboard.')
+        return
+      }
+      setToken(result.access_token)
+      setUser(result.user)
+    }
+
+    if (loginChallenge) {
+      verifyLoginOtp(loginChallenge.challenge_id, loginOtp.trim())
+        .then(finishLogin)
+        .catch((err) => setError(err instanceof Error ? err.message : 'Login verification failed.'))
+      return
+    }
+
     login(username, password)
       .then((result) => {
-        if (result.user.role !== 'hacker') {
-          setError('Please sign in with the hacker account for this dashboard.')
+        if (requiresLoginOtp(result)) {
+          setLoginChallenge(result)
+          setLoginOtp('')
           return
         }
-        setToken(result.access_token)
-        setUser(result.user)
+        finishLogin(result)
       })
-      .catch(() => setError('Login failed. Please check your username and passcode.'))
+      .catch((err) => setError(err instanceof Error ? err.message : 'Login failed. Please check your username and passcode.'))
   }
 
   async function handleRequestPasswordReset(event: React.FormEvent<HTMLFormElement>) {
@@ -378,48 +398,83 @@ export default function AppHacker() {
 
             {!isForgotPasswordView ? (
               <form onSubmit={handleLogin} style={{ display: 'grid', gap: 18 }}>
-                <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
-                  Attacker Handle / Email ID
-                  <input
-                    id="hacker-username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="hacker@stjude.org"
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.3)', background: '#090d16', color: '#4ade80', fontSize: '0.95rem', outline: 'none' }}
-                    required
-                  />
-                </label>
-
-                <div style={{ display: 'grid', gap: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <label htmlFor="hacker-password" style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
-                      Passcode
+                {loginChallenge ? (
+                  <>
+                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                      Enter the six-digit verification code sent to {loginChallenge.email_hint}. It expires in five minutes.
+                    </p>
+                    <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      Email verification code
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        value={loginOtp}
+                        onChange={(event) => setLoginOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="6-digit code"
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.3)', background: '#090d16', color: '#4ade80', fontSize: '0.95rem', outline: 'none', letterSpacing: '0.2em' }}
+                        required
+                      />
                     </label>
                     <button
                       type="button"
                       onClick={() => {
-                        setIsForgotPasswordView(true)
+                        setLoginChallenge(null)
+                        setLoginOtp('')
                         setError('')
-                        setResetStatus('')
-                        setResetError('')
-                        if (username && username.includes('@')) setResetEmail(username)
                       }}
-                      style={{ background: 'none', border: 'none', color: '#22c55e', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}
+                      style={{ justifySelf: 'start', padding: 0, border: 'none', background: 'none', color: '#22c55e', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}
                     >
-                      Reset Passcode?
+                      Use a different account
                     </button>
-                  </div>
-                  <input
-                    id="hacker-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.3)', background: '#090d16', color: '#4ade80', fontSize: '0.95rem', outline: 'none' }}
-                    required
-                  />
-                </div>
+                  </>
+                ) : (
+                  <>
+                    <label style={{ display: 'grid', gap: 6, fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
+                      Attacker Handle / Email ID
+                      <input
+                        id="hacker-username"
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="hacker@stjude.org"
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.3)', background: '#090d16', color: '#4ade80', fontSize: '0.95rem', outline: 'none' }}
+                        required
+                      />
+                    </label>
+                    <div style={{ display: 'grid', gap: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <label htmlFor="hacker-password" style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
+                          Passcode
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsForgotPasswordView(true)
+                            setError('')
+                            setResetStatus('')
+                            setResetError('')
+                            if (username && username.includes('@')) setResetEmail(username)
+                          }}
+                          style={{ background: 'none', border: 'none', color: '#22c55e', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}
+                        >
+                          Reset Passcode?
+                        </button>
+                      </div>
+                      <input
+                        id="hacker-password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.3)', background: '#090d16', color: '#4ade80', fontSize: '0.95rem', outline: 'none' }}
+                        required
+                      />
+                    </div>
+                  </>
+                )}
 
                 {error ? (
                   <div style={{ padding: '12px', borderRadius: 10, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', fontSize: '0.85rem' }}>
@@ -432,7 +487,7 @@ export default function AppHacker() {
                   type="submit"
                   style={{ padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: '#020617', fontSize: '1rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 0 20px rgba(34, 197, 94, 0.4)', fontFamily: 'inherit', letterSpacing: '0.02em' }}
                 >
-                  INITIALIZE MATRIX SESSION →
+                  {loginChallenge ? 'VERIFY EMAIL CODE →' : 'INITIALIZE MATRIX SESSION →'}
                 </button>
               </form>
             ) : (

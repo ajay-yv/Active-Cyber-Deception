@@ -79,3 +79,35 @@ export async function signOutFromGoogle(): Promise<void> {
   const app = getApps()[0]
   if (app) await signOut(getAuth(app))
 }
+
+export async function requestFirebaseEmailVerification(): Promise<string> {
+  const auth = getFirebaseAuth()
+  const user = auth.currentUser
+  if (!user) {
+    throw new Error('Sign in to Firebase before requesting email verification.')
+  }
+  if (!user.email) {
+    throw new Error('This Firebase account does not have an email address.')
+  }
+
+  const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'patient-1d860'
+  const functionUrl = `https://us-central1-${projectId}.cloudfunctions.net/emailVerification`
+  const response = await fetch(functionUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${await user.getIdToken()}`,
+      'Content-Type': 'application/json',
+    },
+  })
+  const data = await response.json().catch(() => ({})) as { message?: unknown; error?: unknown }
+  if (!response.ok) {
+    throw new Error(
+      typeof data.error === 'string'
+        ? data.error
+        : 'Could not request an email verification link.',
+    )
+  }
+  return typeof data.message === 'string'
+    ? data.message
+    : `A verification link was sent to ${user.email}.`
+}

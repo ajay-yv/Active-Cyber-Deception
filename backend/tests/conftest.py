@@ -9,6 +9,7 @@ TEST_DIR.mkdir(parents=True, exist_ok=True)
 os.environ["DATABASE_URL"] = f"sqlite:///{(TEST_DIR / 'test_real.db').as_posix()}"
 os.environ["SYNTHETIC_DATABASE_URL"] = f"sqlite:///{(TEST_DIR / 'test_syn.db').as_posix()}"
 os.environ["SECURITY_DATABASE_URL"] = f"sqlite:///{(TEST_DIR / 'test_sec.db').as_posix()}"
+os.environ["LOGIN_EMAIL_OTP_ENABLED"] = "false"
 
 from app.db.bootstrap import create_all_tables
 create_all_tables()

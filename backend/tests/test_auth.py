@@ -13,12 +13,19 @@ from app.core import dependencies as dependency_module
 from app.core.users import hash_password
 from app.db.engines import SecuritySessionLocal
 from app.main import app
-from app.models.security import FailedLoginAttempt, UserAccount
+from app.models.security import (
+    FailedLoginAttempt,
+    UserAccount,
+    VerifiedPhoneNumber,
+)
 from app.repositories.user_repository import UserRecord, user_repository
 from app.schemas import PatientRecord
 from app.services.registries import patient_repository
 from app.services import security as security_service
-from app.services.security import password_reset_store
+from app.services.security import (
+    login_otp_store,
+    password_reset_store,
+)
 
 client = TestClient(app)
 
@@ -139,12 +146,144 @@ def test_login_and_me_returns_user_context() -> None:
     assert me_response.json()["role"] == "administrator"
 
 
-def test_request_email_verification_and_verify_otp_updates_email() -> None:
+def test_login_requires_email_otp_before_issuing_access_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = Settings(
+        login_email_otp_enabled=True,
+        resend_api_key="re_test_key",
+        resend_from_address="Portal <otp@example.org>",
+    )
+    deliveries: list[tuple[str, str]] = []
+    monkeypatch.setattr(auth_api, "get_settings", lambda: settings)
+    monkeypatch.setattr(auth_api, "email_delivery_configured", lambda: True)
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_email",
+        lambda email, otp, *_: deliveries.append((email, otp)) or True,
+    )
+
+    login_response = client.post(
+        "/api/auth/login",
+        json={"username": "admin", "password": "Admin@8431"},
+    )
+    assert login_response.status_code == 200, login_response.text
+    challenge = login_response.json()
+    assert challenge["requires_email_otp"] is True
+    assert "access_token" not in challenge
+    assert challenge["email_hint"].endswith(deliveries[0][0].split("@", 1)[1])
+    assert challenge["expires_in"] == 300
+    assert len(deliveries) == 1
+    assert challenge["email_hint"] != deliveries[0][0]
+
+    wrong_code = f"{(int(deliveries[0][1]) + 1) % 1_000_000:06d}"
+    invalid_response = client.post(
+        "/api/auth/verify-login-otp",
+        json={"challenge_id": challenge["challenge_id"], "otp": wrong_code},
+    )
+    assert invalid_response.status_code == 400
+
+    verified_response = client.post(
+        "/api/auth/verify-login-otp",
+        json={
+            "challenge_id": challenge["challenge_id"],
+            "otp": deliveries[0][1],
+        },
+    )
+    assert verified_response.status_code == 200, verified_response.text
+    assert verified_response.json()["access_token"]
+    assert verified_response.json()["user"]["username"] == "admin"
+
+    reused_response = client.post(
+        "/api/auth/verify-login-otp",
+        json={
+            "challenge_id": challenge["challenge_id"],
+            "otp": deliveries[0][1],
+        },
+    )
+    assert reused_response.status_code == 400
+
+
+def test_login_otp_fails_closed_when_email_delivery_is_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(login_email_otp_enabled=True),
+    )
+    monkeypatch.setattr(auth_api, "email_delivery_configured", lambda: False)
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_email",
+        lambda *_: pytest.fail("Email must not be sent without provider configuration"),
+    )
+
+    response = client.post(
+        "/api/auth/login",
+        json={"username": "admin", "password": "Admin@8431"},
+    )
+
+    assert response.status_code == 503
+    assert "email delivery is not configured" in response.json()["detail"]
+
+
+def test_login_otp_delivery_failure_does_not_create_a_challenge(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(login_email_otp_enabled=True),
+    )
+    monkeypatch.setattr(auth_api, "email_delivery_configured", lambda: True)
+    monkeypatch.setattr(auth_api, "send_otp_email", lambda *_: False)
+
+    response = client.post(
+        "/api/auth/login",
+        json={"username": "admin", "password": "Admin@8431"},
+    )
+
+    assert response.status_code == 503
+    assert "Could not send" in response.json()["detail"]
+    assert not login_otp_store._challenges
+
+
+def test_login_otp_store_enforces_expiry_attempt_limit_and_single_use() -> None:
+    store = security_service.LoginOtpStore()
+
+    store.expiration_seconds = 0
+    expired_challenge = store.issue("expired-user", "123456")
+    assert store.verify(expired_challenge, "123456") is None
+
+    store.expiration_seconds = 300
+    locked_challenge = store.issue("locked-user", "654321")
+    for _ in range(store.max_attempts):
+        assert store.verify(locked_challenge, "000000") is None
+    assert store.verify(locked_challenge, "654321") is None
+
+    challenge = store.issue("valid-user", "456789")
+    stored_challenge = next(iter(store._challenges.values()))
+    assert stored_challenge[1] != "456789"
+    assert store.verify(challenge, "456789") == "valid-user"
+    assert store.verify(challenge, "456789") is None
+
+
+def test_request_email_verification_sends_otp_and_verify_updates_email(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     login_response = client.post("/api/auth/login", json={"username": "admin", "password": "Admin@8431"})
     assert login_response.status_code == 200
     token = login_response.json()["access_token"]
 
     new_email = "admin+verify@example.com"
+    deliveries: list[tuple[str, str, str]] = []
+    monkeypatch.setattr(auth_api, "email_delivery_configured", lambda *_: True)
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_email",
+        lambda email, otp, name: deliveries.append((email, otp, name)) or True,
+    )
     request_response = client.post(
         "/api/auth/request-email-verification",
         json={"email": new_email},
@@ -153,8 +292,8 @@ def test_request_email_verification_and_verify_otp_updates_email() -> None:
     assert request_response.status_code == 200
     assert request_response.json()["status"] == "ok"
 
-    otp = password_reset_store.get_otp(new_email, "verify_email")
-    assert otp is not None
+    assert deliveries[0][0] == new_email
+    otp = deliveries[0][1]
 
     verify_response = client.post(
         "/api/auth/verify-email-otp",
@@ -163,10 +302,95 @@ def test_request_email_verification_and_verify_otp_updates_email() -> None:
     )
     assert verify_response.status_code == 200
     assert verify_response.json()["status"] == "ok"
+    assert verify_response.json()["email_verified"] is True
 
     me_response = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert me_response.status_code == 200
     assert me_response.json()["email"] == new_email
+    assert me_response.json()["email_verified"] is True
+    assert user_repository.is_email_verified("admin", new_email)
+
+
+def test_request_email_verification_fails_closed_when_email_is_not_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    login_response = client.post(
+        "/api/auth/login",
+        json={"username": "admin", "password": "Admin@8431"},
+    )
+    assert login_response.status_code == 200
+    monkeypatch.setattr(auth_api, "email_delivery_configured", lambda *_: False)
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_email",
+        lambda *_: pytest.fail("must not attempt delivery without configured provider"),
+    )
+
+    response = client.post(
+        "/api/auth/request-email-verification",
+        json={"email": "new-address@example.test"},
+        headers={"Authorization": f"Bearer {login_response.json()['access_token']}"},
+    )
+
+    assert response.status_code == 503
+    assert "Email verification is not configured" in response.json()["detail"]
+
+
+def test_email_verification_store_limits_attempts_and_is_single_use() -> None:
+    store = security_service.EmailVerificationStore()
+    store.resend_cooldown_seconds = 0
+    store.issue("test-user", "user@example.test", "123456")
+    for _ in range(store.max_attempts):
+        assert not store.verify("test-user", "user@example.test", "000000")
+    assert not store.verify("test-user", "user@example.test", "123456")
+
+    store.issue("test-user", "user@example.test", "654321")
+    assert not store.verify("other-user", "user@example.test", "654321")
+    assert store.verify("test-user", "user@example.test", "654321")
+    assert not store.verify("test-user", "user@example.test", "654321")
+
+
+def test_password_reset_store_hashes_codes_and_enforces_attempt_limit() -> None:
+    store = security_service.PasswordResetStore()
+    store.set_otp("reset-user", "123456")
+
+    assert store._otp_store["reset:reset-user"][0] != "123456"
+    for _ in range(store.max_attempts):
+        assert not store.verify_reset_otp("reset-user", "000000")
+    assert not store.verify_reset_otp("reset-user", "123456")
+    assert "reset:reset-user" not in store._otp_store
+
+
+def test_admin_password_reset_store_hashes_codes_and_limits_attempts() -> None:
+    store = security_service.PasswordResetStore()
+    store.set_admin_reset_otps(
+        "reset-admin",
+        "111111",
+        {"email": "222222", "phone": "333333"},
+        "recovery@example.test",
+        "+919876543210",
+    )
+    saved_codes = store._admin_reset_otp_store["admin_reset:reset-admin"]
+    assert saved_codes[0] != "111111"
+    assert saved_codes[1]["email"] != "222222"
+    assert saved_codes[1]["phone"] != "333333"
+
+    for _ in range(store.max_attempts):
+        assert not store.verify_admin_reset_otps(
+            "reset-admin",
+            "000000",
+            {"email": "000000", "phone": "000000"},
+            "recovery@example.test",
+            "+919876543210",
+        )
+    assert not store.verify_admin_reset_otps(
+        "reset-admin",
+        "111111",
+        {"email": "222222", "phone": "333333"},
+        "recovery@example.test",
+        "+919876543210",
+    )
+    assert "admin_reset:reset-admin" not in store._admin_reset_otp_store
 
 
 def test_password_reset_sends_email_otp_and_updates_password(
@@ -198,7 +422,9 @@ def test_password_reset_sends_email_otp_and_updates_password(
         payload = response.json()
         assert payload["status"] == "success"
         assert "otp" not in payload
-        assert deliveries == [(email, password_reset_store.get_otp(username), "Reset Test Doctor")]
+        assert len(deliveries) == 1
+        assert deliveries[0][0] == email
+        assert deliveries[0][2] == "Reset Test Doctor"
         otp = deliveries[0][1]
         assert len(otp) == 6 and otp.isdigit()
 
@@ -262,6 +488,7 @@ def test_password_reset_requires_registered_contact_and_sends_sms_otp(
         auth_api,
         "get_settings",
         lambda: Settings(
+            otp_sms_provider="twilio",
             twilio_account_sid="AC-test",
             twilio_auth_token="test-token",
             twilio_from_number="+15005550006",
@@ -281,7 +508,9 @@ def test_password_reset_requires_registered_contact_and_sends_sms_otp(
             json={"email": username, "username": username},
         )
         assert response.status_code == 200, response.text
-        assert deliveries == [(phone, password_reset_store.get_otp(username))]
+        assert len(deliveries) == 1
+        assert deliveries[0][0] == phone
+        assert len(deliveries[0][1]) == 6 and deliveries[0][1].isdigit()
 
         otp = deliveries[0][1]
         reset_response = client.post(
@@ -314,7 +543,11 @@ def test_legacy_patient_mobile_reset_reports_missing_sms_configuration(
         role="patient",
         full_name="Unconfigured SMS Patient",
     ))
-    monkeypatch.setattr(auth_api, "get_settings", lambda: Settings())
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(otp_sms_provider="twilio"),
+    )
     monkeypatch.setattr(
         auth_api,
         "send_otp_sms",
@@ -377,7 +610,9 @@ def test_mobile_reset_falls_back_to_registered_email_without_twilio(
 
         assert response.status_code == 200, response.text
         assert "registered email" in response.json()["message"]
-        assert email_deliveries == [(email, password_reset_store.get_otp(username))]
+        assert len(email_deliveries) == 1
+        assert email_deliveries[0][0] == email
+        assert len(email_deliveries[0][1]) == 6 and email_deliveries[0][1].isdigit()
     finally:
         password_reset_store.clear_reset_otps(username)
         with SecuritySessionLocal() as session:
@@ -385,30 +620,66 @@ def test_mobile_reset_falls_back_to_registered_email_without_twilio(
             session.commit()
 
 
-def test_administrator_mobile_reset_requires_preconfigured_recovery_phone() -> None:
+def test_administrator_password_reset_uses_registered_email_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     username = f"admin-reset-{uuid4().hex[:12]}"
+    email = f"{username}@stjude.org"
     user_repository.create(UserRecord(
         username=username,
         password_hash=hash_password("old-password"),
         role="administrator",
         full_name="Admin Without Recovery Phone",
-        email=f"{username}@stjude.org",
+        email=email,
     ))
+    deliveries: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(
+            resend_api_key="re_test_key",
+            resend_from_address="Portal <otp@example.org>",
+        ),
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_email",
+        lambda destination, otp, *_: deliveries.append((destination, otp)) or True,
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_sms",
+        lambda *_: pytest.fail("Administrator password reset must use registered email"),
+    )
 
     try:
         response = client.post(
             "/api/auth/request-password-reset",
             json={"email": "+919999999999", "username": username},
         )
-        assert response.status_code == 503
-        assert "TWILIO_ACCOUNT_SID" in response.json()["detail"]
+        assert response.status_code == 200, response.text
+        assert response.json()["requires_registered_email_otp"] is False
+        assert deliveries[0][0] == email
+
+        reset = client.post(
+            "/api/auth/verify-reset-otp",
+            json={
+                "email": "+919999999999",
+                "username": username,
+                "otp": deliveries[0][1],
+                "new_password": "updated-admin-password-123",
+            },
+        )
+        assert reset.status_code == 200, reset.text
+        assert user_repository.get_by_username(username).phone_number is None
     finally:
+        password_reset_store.clear_reset_otps(username)
         with SecuritySessionLocal() as session:
             session.query(UserAccount).filter(UserAccount.username == username).delete()
             session.commit()
 
 
-def test_administrator_can_reset_using_new_mobile_after_two_factor_verification(
+def test_administrator_reset_does_not_change_recovery_phone(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     username = f"admin-reset-{uuid4().hex[:12]}"
@@ -422,11 +693,11 @@ def test_administrator_can_reset_using_new_mobile_after_two_factor_verification(
         email=email,
     ))
     email_deliveries: list[tuple[str, str]] = []
-    mobile_deliveries: list[tuple[str, str]] = []
     monkeypatch.setattr(
         auth_api,
         "get_settings",
         lambda: Settings(
+            otp_sms_provider="twilio",
             twilio_account_sid="AC-test",
             twilio_auth_token="test-token",
             twilio_from_number="+15005550006",
@@ -442,7 +713,7 @@ def test_administrator_can_reset_using_new_mobile_after_two_factor_verification(
     monkeypatch.setattr(
         auth_api,
         "send_otp_sms",
-        lambda destination, otp: mobile_deliveries.append((destination, otp)) or True,
+        lambda *_: pytest.fail("SMS is not used by administrator password reset"),
     )
 
     try:
@@ -454,36 +725,24 @@ def test_administrator_can_reset_using_new_mobile_after_two_factor_verification(
             },
         )
         assert request.status_code == 200, request.text
-        assert request.json()["requires_registered_email_otp"] is True
+        assert request.json()["requires_registered_email_otp"] is False
         assert email_deliveries[0][0] == email
-        assert mobile_deliveries[0][0] == mobile
 
         payload = {
             "email": mobile,
             "username": username,
-            "otp": mobile_deliveries[0][1],
-            "registered_email_otp": email_deliveries[0][1],
+            "otp": email_deliveries[0][1],
             "new_password": "updated-admin-password-123",
         }
-        wrong_mobile_code = client.post(
+        wrong_code = client.post(
             "/api/auth/verify-reset-otp",
-            json={**payload, "otp": "000000" if mobile_deliveries[0][1] != "000000" else "000001"},
+            json={**payload, "otp": "000000" if email_deliveries[0][1] != "000000" else "000001"},
         )
-        assert wrong_mobile_code.status_code == 400
-        wrong_registered_email_code = client.post(
-            "/api/auth/verify-reset-otp",
-            json={
-                **payload,
-                "registered_email_otp": (
-                    "000000" if email_deliveries[0][1] != "000000" else "000001"
-                ),
-            },
-        )
-        assert wrong_registered_email_code.status_code == 400
+        assert wrong_code.status_code == 400
 
         reset = client.post("/api/auth/verify-reset-otp", json=payload)
         assert reset.status_code == 200, reset.text
-        assert user_repository.get_by_username(username).phone_number == mobile
+        assert user_repository.get_by_username(username).phone_number is None
         assert client.post(
             "/api/auth/login",
             json={"username": username, "password": "updated-admin-password-123"},
@@ -498,7 +757,7 @@ def test_administrator_can_reset_using_new_mobile_after_two_factor_verification(
             session.commit()
 
 
-def test_admin_recovery_can_verify_phone_shared_with_another_account(
+def test_admin_password_reset_does_not_claim_phone_shared_with_another_account(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     username = f"admin-shared-phone-{uuid4().hex[:12]}"
@@ -520,11 +779,11 @@ def test_admin_recovery_can_verify_phone_shared_with_another_account(
         phone_number=mobile,
     ))
     email_deliveries: list[tuple[str, str]] = []
-    mobile_deliveries: list[tuple[str, str]] = []
     monkeypatch.setattr(
         auth_api,
         "get_settings",
         lambda: Settings(
+            otp_sms_provider="twilio",
             twilio_account_sid="AC-test",
             twilio_auth_token="test-token",
             twilio_from_number="+15005550006",
@@ -540,7 +799,7 @@ def test_admin_recovery_can_verify_phone_shared_with_another_account(
     monkeypatch.setattr(
         auth_api,
         "send_otp_sms",
-        lambda destination, otp: mobile_deliveries.append((destination, otp)) or True,
+        lambda *_: pytest.fail("SMS is not used by administrator password reset"),
     )
 
     try:
@@ -550,20 +809,18 @@ def test_admin_recovery_can_verify_phone_shared_with_another_account(
         )
         assert request.status_code == 200, request.text
         assert {destination for destination, _ in email_deliveries} == {email}
-        assert {destination for destination, _ in mobile_deliveries} == {mobile}
 
         reset = client.post(
             "/api/auth/verify-reset-otp",
             json={
                 "email": mobile,
                 "username": username,
-                "otp": mobile_deliveries[0][1],
-                "registered_email_otp": email_deliveries[0][1],
+                "otp": email_deliveries[0][1],
                 "new_password": "updated-admin-password-123",
             },
         )
         assert reset.status_code == 200, reset.text
-        assert user_repository.get_by_phone_number(mobile, username).username == username
+        assert user_repository.get_by_username(username).phone_number is None
         assert user_repository.get_by_phone_number(mobile, patient_username).username == patient_username
     finally:
         password_reset_store.clear_reset_otps(username)
@@ -574,7 +831,7 @@ def test_admin_recovery_can_verify_phone_shared_with_another_account(
             session.commit()
 
 
-def test_administrator_can_verify_new_email_and_update_account_email(
+def test_administrator_new_recovery_email_requires_both_codes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     username = f"admin-email-reset-{uuid4().hex[:12]}"
@@ -625,8 +882,10 @@ def test_administrator_can_verify_new_email_and_update_account_email(
         payload = {
             "email": recovery_email,
             "username": username,
-            "otp": next(code for destination, code in deliveries if destination == recovery_email),
-            "registered_email_otp": next(code for destination, code in deliveries if destination == registered_email),
+            "otp": next(otp for destination, otp in deliveries if destination == recovery_email),
+            "registered_email_otp": next(
+                otp for destination, otp in deliveries if destination == registered_email
+            ),
             "new_password": "updated-admin-password-123",
         }
         reset = client.post("/api/auth/verify-reset-otp", json=payload)
@@ -644,7 +903,7 @@ def test_administrator_can_verify_new_email_and_update_account_email(
             session.commit()
 
 
-def test_new_admin_mobile_requires_sms_configuration(
+def test_new_admin_mobile_reset_sends_only_registered_email_otp(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     username = f"admin-contact-{uuid4().hex[:12]}"
@@ -655,10 +914,19 @@ def test_new_admin_mobile_requires_sms_configuration(
         full_name="Admin Contact Verification Test",
         email=f"{username}@stjude.org",
     ))
+    email_deliveries: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(
+            resend_api_key="re_test_key",
+            resend_from_address="Portal <otp@example.org>",
+        ),
+    )
     monkeypatch.setattr(
         auth_api,
         "send_otp_email",
-        lambda *_: pytest.fail("No code should be sent before the registered email is verified"),
+        lambda destination, otp, *_: email_deliveries.append((destination, otp)) or True,
     )
     monkeypatch.setattr(
         auth_api,
@@ -674,8 +942,10 @@ def test_new_admin_mobile_requires_sms_configuration(
                 "username": username,
             },
         )
-        assert response.status_code == 503
-        assert "TWILIO_ACCOUNT_SID" in response.json()["detail"]
+        assert response.status_code == 200, response.text
+        assert response.json()["requires_registered_email_otp"] is False
+        assert len(email_deliveries) == 1
+        assert email_deliveries[0][0] == f"{username}@stjude.org"
     finally:
         password_reset_store.clear_reset_otps(username)
         with SecuritySessionLocal() as session:
@@ -694,6 +964,14 @@ def test_password_reset_does_not_report_success_when_delivery_fails(
         full_name="Reset Delivery Test",
         email=email,
     ))
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(
+            brevo_api_key="test-key",
+            brevo_email_sender="otp@example.org",
+        ),
+    )
     monkeypatch.setattr(auth_api, "send_otp_email", lambda *_: False)
 
     try:
@@ -702,7 +980,9 @@ def test_password_reset_does_not_report_success_when_delivery_fails(
             json={"email": email, "username": "reset-delivery-failure"},
         )
         assert response.status_code == 503
-        assert password_reset_store.get_otp("reset-delivery-failure") is None
+        assert "Authorized IPs" in response.json()["detail"]
+        assert "https://app.brevo.com/security/authorised_ips" in response.json()["detail"]
+        assert "reset:reset-delivery-failure" not in password_reset_store._otp_store
     finally:
         with SecuritySessionLocal() as session:
             session.query(UserAccount).filter(
@@ -878,8 +1158,16 @@ def test_google_sign_in_links_unique_email_and_scopes_patient_access(monkeypatch
     assert payload["user"]["email"] == email
     assert payload["user"]["patient_record_id"] == patient.id
     assert payload["user"]["auth_provider"] == "google"
+    assert payload["user"]["email_verified"] is True
+    assert payload["user"]["phone_number"] is None
+    assert payload["user"]["phone_verified"] is False
     token = payload["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
+
+    profile_response = client.get("/api/auth/me", headers=headers)
+    assert profile_response.status_code == 200
+    assert profile_response.json()["email_verified"] is True
+    assert profile_response.json()["auth_provider"] == "google"
 
     self_response = client.get("/api/patients/me", headers=headers)
     assert self_response.status_code == 200
@@ -896,6 +1184,274 @@ def test_google_sign_in_links_unique_email_and_scopes_patient_access(monkeypatch
     assert repeat_response.status_code == 200
     assert repeat_response.json()["user"]["username"] == payload["user"]["username"]
     assert repeat_response.json()["user"]["patient_record_id"] == patient.id
+
+
+def test_google_patient_can_verify_mobile_number_by_sms(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    email = f"phone-verify-{uuid4().hex}@example.test"
+    patient = _add_patient(email)
+    uid = uuid4().hex
+    username = f"google:{uid}"
+    monkeypatch.setattr(
+        auth_api,
+        "verify_google_id_token",
+        lambda _: _google_claims(email, uid),
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(
+            otp_sms_provider="twilio",
+            twilio_account_sid="AC-test",
+            twilio_auth_token="test-token",
+            twilio_from_number="+15005550006",
+        ),
+    )
+    monkeypatch.setattr(auth_api, "missing_sms_settings", lambda _: [])
+    deliveries: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_sms",
+        lambda phone, otp: deliveries.append((phone, otp)) or True,
+    )
+
+    try:
+        sign_in = client.post(
+            "/api/auth/google",
+            json={"id_token": "firebase-id-token"},
+        )
+        assert sign_in.status_code == 200, sign_in.text
+        headers = {"Authorization": f"Bearer {sign_in.json()['access_token']}"}
+
+        request = client.post(
+            "/api/auth/request-phone-verification",
+            json={"phone_number": "9876543210"},
+            headers=headers,
+        )
+        assert request.status_code == 200, request.text
+        challenge = request.json()
+        assert challenge["phone_hint"] == "••••3210"
+        assert challenge["expires_in"] == 300
+        assert deliveries[0][0] == "+919876543210"
+
+        invalid = client.post(
+            "/api/auth/verify-phone",
+            json={
+                "challenge_id": challenge["challenge_id"],
+                "otp": f"{(int(deliveries[0][1]) + 1) % 1_000_000:06d}",
+            },
+            headers=headers,
+        )
+        assert invalid.status_code == 400
+        assert user_repository.get_by_username(username).phone_number is None
+
+        verify = client.post(
+            "/api/auth/verify-phone",
+            json={
+                "challenge_id": challenge["challenge_id"],
+                "otp": deliveries[0][1],
+            },
+            headers=headers,
+        )
+        assert verify.status_code == 200, verify.text
+        assert verify.json()["phone_verified"] is True
+        assert user_repository.get_by_username(username).phone_number == "+919876543210"
+
+        profile = client.get("/api/auth/me", headers=headers)
+        assert profile.status_code == 200
+        assert profile.json()["email"] == email
+        assert profile.json()["email_verified"] is True
+        assert profile.json()["phone_number"] == "+919876543210"
+        assert profile.json()["phone_verified"] is True
+        assert profile.json()["patient_record_id"] == patient.id
+    finally:
+        with SecuritySessionLocal() as session:
+            session.query(VerifiedPhoneNumber).filter(
+                VerifiedPhoneNumber.username == username
+            ).delete()
+            session.query(UserAccount).filter(
+                UserAccount.username == username
+            ).delete()
+            session.commit()
+
+
+def test_phone_verification_requires_google_sign_in_and_sms_configuration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    email = f"phone-verify-config-{uuid4().hex}@example.test"
+    patient = _add_patient(email)
+    uid = uuid4().hex
+    username = f"google:{uid}"
+    monkeypatch.setattr(
+        auth_api,
+        "verify_google_id_token",
+        lambda _: _google_claims(email, uid),
+    )
+    monkeypatch.setattr(auth_api, "get_settings", lambda: Settings())
+    monkeypatch.setattr(auth_api, "send_otp_sms", lambda *_: pytest.fail("SMS provider is not configured"))
+
+    try:
+        sign_in = client.post(
+            "/api/auth/google",
+            json={"id_token": "firebase-id-token"},
+        )
+        assert sign_in.status_code == 200
+        headers = {"Authorization": f"Bearer {sign_in.json()['access_token']}"}
+
+        response = client.post(
+            "/api/auth/request-phone-verification",
+            json={"phone_number": "+14155550123"},
+            headers=headers,
+        )
+
+        assert response.status_code == 503
+        assert "SMS verification is not configured" in response.json()["detail"]
+        assert "BREVO_SMS_SENDER" in response.json()["detail"]
+        assert "https://app.brevo.com/sms-compliance/listing" in response.json()["detail"]
+        assert "https://app-sms.sendinblue.com/log" not in response.json()["detail"]
+    finally:
+        with SecuritySessionLocal() as session:
+            session.query(VerifiedPhoneNumber).filter(
+                VerifiedPhoneNumber.username == username
+            ).delete()
+            session.query(UserAccount).filter(
+                UserAccount.username == username
+            ).delete()
+            session.commit()
+
+
+def test_password_patient_can_verify_mobile_number(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    username = f"patient-phone-{uuid4().hex[:12]}"
+    user_repository.create(
+        UserRecord(
+            username=username,
+            password_hash=hash_password("patient-test-password"),
+            role="patient",
+            full_name="Phone Verification Patient",
+            email=f"{username}@example.test",
+        )
+    )
+    monkeypatch.setattr(auth_api, "get_settings", lambda: Settings())
+    monkeypatch.setattr(auth_api, "missing_sms_settings", lambda _: [])
+    deliveries: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_sms",
+        lambda phone, otp: deliveries.append((phone, otp)) or True,
+    )
+
+    try:
+        sign_in = client.post(
+            "/api/auth/login",
+            json={"username": username, "password": "patient-test-password"},
+        )
+        assert sign_in.status_code == 200
+        headers = {"Authorization": f"Bearer {sign_in.json()['access_token']}"}
+
+        request = client.post(
+            "/api/auth/request-phone-verification",
+            json={"phone_number": "+14155550123"},
+            headers=headers,
+        )
+        assert request.status_code == 200, request.text
+        challenge = request.json()
+        assert deliveries[0][0] == "+14155550123"
+
+        verify = client.post(
+            "/api/auth/verify-phone",
+            json={
+                "challenge_id": challenge["challenge_id"],
+                "otp": deliveries[0][1],
+            },
+            headers=headers,
+        )
+
+        assert verify.status_code == 200, verify.text
+        assert verify.json()["phone_verified"] is True
+    finally:
+        with SecuritySessionLocal() as session:
+            session.query(VerifiedPhoneNumber).filter(
+                VerifiedPhoneNumber.username == username
+            ).delete()
+            session.query(UserAccount).filter(
+                UserAccount.username == username
+            ).delete()
+            session.commit()
+
+
+def test_administrator_can_verify_mobile_number_by_sms(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    username = f"admin-phone-{uuid4().hex[:12]}"
+    phone_number = f"+1415{uuid4().int % 10**7:07d}"
+    user_repository.create(
+        UserRecord(
+            username=username,
+            password_hash=hash_password("admin-phone-test-password"),
+            role="administrator",
+            full_name="Mobile Verification Administrator",
+            email=f"{username}@example.test",
+        )
+    )
+    monkeypatch.setattr(
+        auth_api,
+        "get_settings",
+        lambda: Settings(
+            otp_sms_provider="twilio",
+            twilio_account_sid="AC-test",
+            twilio_auth_token="test-token",
+            twilio_from_number="+15005550006",
+        ),
+    )
+    monkeypatch.setattr(auth_api, "missing_sms_settings", lambda _: [])
+    deliveries: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        auth_api,
+        "send_otp_sms",
+        lambda phone, otp: deliveries.append((phone, otp)) or True,
+    )
+
+    try:
+        sign_in = client.post(
+            "/api/auth/login",
+            json={"username": username, "password": "admin-phone-test-password"},
+        )
+        assert sign_in.status_code == 200
+        headers = {"Authorization": f"Bearer {sign_in.json()['access_token']}"}
+
+        request = client.post(
+            "/api/auth/request-phone-verification",
+            json={"phone_number": phone_number},
+            headers=headers,
+        )
+        assert request.status_code == 200, request.text
+        challenge = request.json()
+        assert len(deliveries) == 1
+        assert deliveries[0][0] == phone_number
+
+        verify = client.post(
+            "/api/auth/verify-phone",
+            json={
+                "challenge_id": challenge["challenge_id"],
+                "otp": deliveries[0][1],
+            },
+            headers=headers,
+        )
+        assert verify.status_code == 200, verify.text
+        assert verify.json()["phone_verified"] is True
+        assert user_repository.get_by_username(username).phone_number == phone_number
+    finally:
+        with SecuritySessionLocal() as session:
+            session.query(VerifiedPhoneNumber).filter(
+                VerifiedPhoneNumber.username == username
+            ).delete()
+            session.query(UserAccount).filter(
+                UserAccount.username == username
+            ).delete()
+            session.commit()
 
 
 def test_google_sign_in_uses_selected_verified_email_when_uid_has_stale_patient_link(
