@@ -1016,6 +1016,7 @@ function AdminDashboard({ token }: { token: string }) {
       type === 'DATA_EXFILTRATION' ||
       type === 'PATIENT_ENUMERATION' ||
       type === 'SQL_INJECTION' ||
+      type === 'FAILED_LOGIN_THRESHOLD_REACHED' ||
       type === 'attack_alert'
     ) {
       triggerAdminAlarm()
